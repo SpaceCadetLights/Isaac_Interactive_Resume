@@ -1,0 +1,2543 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>Isaac Norris • Interactive Resume • v6</title>
+<style>
+  :root{
+    --bg0:#070A12;
+    --text:rgba(255,255,255,.93);
+    --muted:rgba(255,255,255,.74);
+    --muted2:rgba(255,255,255,.58);
+    --glass:blur(18px) saturate(140%);
+    --shadow:0 20px 60px rgba(0,0,0,.55);
+    --shadow2:0 10px 30px rgba(0,0,0,.45);
+    --r:26px;
+    --a:#7CF7FF;
+    --b:#B48CFF;
+    --c:#FF7AE5;
+    --d:#7CFF9A;
+    --lineGlow:0 0 22px rgba(124,247,255,.35);
+    --font:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family:var(--font);
+    color:var(--text);
+    background:
+      radial-gradient(1200px 800px at 15% 15%, rgba(124,247,255,.18), transparent 60%),
+      radial-gradient(900px 700px at 85% 25%, rgba(180,140,255,.16), transparent 58%),
+      radial-gradient(700px 900px at 65% 85%, rgba(255,122,229,.14), transparent 62%),
+      radial-gradient(900px 900px at 25% 85%, rgba(124,255,154,.10), transparent 60%),
+      linear-gradient(180deg, #050611, #070A12 50%, #050611);
+    overflow-x:hidden;
+  }
+  .stars{
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    opacity:.45;
+    background:
+      radial-gradient(1px 1px at 20px 30px, rgba(255,255,255,.9), transparent 60%),
+      radial-gradient(1px 1px at 120px 180px, rgba(255,255,255,.65), transparent 60%),
+      radial-gradient(1px 1px at 220px 90px, rgba(255,255,255,.7), transparent 60%),
+      radial-gradient(1px 1px at 320px 260px, rgba(255,255,255,.5), transparent 60%),
+      radial-gradient(1px 1px at 520px 120px, rgba(255,255,255,.75), transparent 60%),
+      radial-gradient(1px 1px at 720px 220px, rgba(255,255,255,.6), transparent 60%);
+    background-size:1100px 520px;
+    background-repeat:no-repeat;
+    background-position:center;
+    animation:drift 26s linear infinite;
+    filter:blur(.25px);
+  }
+  @keyframes drift{from{transform:translate3d(0,0,0)}to{transform:translate3d(-120px,80px,0)}}
+  .wrap{max-width:1180px; margin:0 auto; padding:20px clamp(14px,3vw,28px) 70px;}
+  .topbar{display:flex; flex-direction:column; align-items:center; justify-content:space-between; gap:14px; margin:10px 0 14px; flex-wrap:nowrap;}
+  .brand{display:flex; align-items:center; gap:12px; min-width:220px;}
+  .orb{
+    width:42px;
+    height:42px;
+    border-radius:999px;
+    position:relative;
+    overflow:hidden;
+    background:radial-gradient(circle at 30% 30%, rgba(255,255,255,.75), rgba(255,255,255,.05) 44%, rgba(124,247,255,.22) 60%, rgba(180,140,255,.18) 76%, rgba(255,122,229,.12) 100%);
+    box-shadow:0 0 0 1px rgba(255,255,255,.16), 0 18px 50px rgba(0,0,0,.55);
+  }
+  .orb:after{
+    content:"";
+    position:absolute;
+    inset:-40%;
+    background:conic-gradient(from 180deg, rgba(124,247,255,0), rgba(124,247,255,.26), rgba(180,140,255,.24), rgba(255,122,229,.20), rgba(124,255,154,.18), rgba(124,247,255,0));
+    animation:spin 10s linear infinite;
+    filter:blur(8px);
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .brand h1{font-size:16px; margin:0; letter-spacing:.2px}
+  .brand .sub{font-size:12px; color:var(--muted2); margin-top:2px}
+  .actions{display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end}
+  .pill{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:9px 12px;
+    border-radius:999px;
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.14);
+    backdrop-filter:var(--glass);
+    box-shadow:var(--shadow2);
+    text-decoration:none;
+    font-size:13px;
+    color:var(--muted);
+    transition:transform .12s ease, border-color .12s ease, background .12s ease;
+    user-select:none;
+    cursor:pointer;
+  }
+  .pill:hover{transform:translateY(-1px); border-color:rgba(255,255,255,.22); background:rgba(255,255,255,.08)}
+  .dot{width:8px; height:8px; border-radius:999px; background:linear-gradient(90deg,var(--a),var(--b),var(--c)); box-shadow:0 0 0 4px rgba(124,247,255,.10)}
+  .gear{width:40px; height:40px; border-radius:999px; display:grid; place-items:center; font-size:18px; color:rgba(255,255,255,.95)}
+
+  .hero{display:grid; grid-template-columns:1.15fr .85fr 1fr; gap:14px; align-items:stretch; margin:10px 0 14px;}
+  @media(max-width:1040px){.hero{grid-template-columns:1fr 1fr;}}
+  @media(max-width:820px){.hero{grid-template-columns:1fr;}}
+  .card{
+    background:rgba(255,255,255,.07);
+    border:1px solid rgba(255,255,255,.14);
+    border-radius:var(--r);
+    box-shadow:var(--shadow);
+    backdrop-filter:var(--glass);
+    overflow:hidden;
+    position:relative;
+  }
+  .card:before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:
+      radial-gradient(600px 260px at 10% 0%, rgba(124,247,255,.14), transparent 60%),
+      radial-gradient(520px 240px at 90% 10%, rgba(180,140,255,.12), transparent 56%),
+      radial-gradient(520px 260px at 60% 110%, rgba(255,122,229,.10), transparent 58%);
+    pointer-events:none;
+  }
+  .card>*{position:relative}
+  .heroMain{padding:16px 16px 14px}
+  .heroMain h2{margin:0 0 6px; font-size:20px; letter-spacing:.2px}
+  .heroMain p{margin:0 0 10px; color:var(--muted); line-height:1.5; font-size:14px}
+  .chips{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px}
+  .chip{padding:6px 10px; border-radius:999px; background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.12); color:rgba(255,255,255,.82); font-size:12px; user-select:none}
+  .heroSide{padding:14px; display:grid; gap:10px}
+  .kpi{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; border-radius:16px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12)}
+  .kpi .label{color:var(--muted2); font-size:12px}
+  .kpi .value{font-weight:650; letter-spacing:.2px; font-size:13px}
+  .mvv{padding:14px}
+  .mvv h3{margin:0 0 8px; font-size:14px; letter-spacing:.25px}
+  .mvv .blk{margin-bottom:10px; padding:10px 12px; border-radius:16px; background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.12)}
+  .mvv .blk .t{font-weight:700; font-size:12px; letter-spacing:.2px}
+  .mvv .blk .b{color:var(--muted); font-size:13px; line-height:1.5; margin-top:6px}
+
+  .nav{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin:10px 0 12px;
+    justify-content:center;
+  }
+  @media(max-width:760px){
+    .nav{
+      justify-content:flex-start;
+      overflow-x:auto;
+      flex-wrap:nowrap;
+      padding-bottom:2px;
+      -webkit-overflow-scrolling:touch;
+      scrollbar-width:thin;
+    }
+    .nav .tab{flex:0 0 auto}
+  }
+  .tab{
+    appearance:none;
+    border:1px solid rgba(255,255,255,.14);
+    background:rgba(255,255,255,.06);
+    color:rgba(255,255,255,.86);
+    padding:10px 12px;
+    border-radius:999px;
+    cursor:pointer;
+    font-size:13px;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    backdrop-filter:var(--glass);
+    box-shadow:var(--shadow2);
+    transition:transform .12s ease, background .12s ease, border-color .12s ease;
+    user-select:none;
+  }
+  .tab:hover{transform:translateY(-1px); border-color:rgba(255,255,255,.22); background:rgba(255,255,255,.08)}
+  .tab[aria-selected="true"]{
+    background:linear-gradient(90deg, rgba(124,247,255,.18), rgba(180,140,255,.16), rgba(255,122,229,.14));
+    border-color:rgba(255,255,255,.24);
+    color:rgba(255,255,255,.94);
+  }
+  .spark{width:10px; height:10px; border-radius:999px; background:radial-gradient(circle at 30% 30%, rgba(255,255,255,.9), rgba(255,255,255,.15) 55%, rgba(255,255,255,0)); box-shadow:0 0 0 3px rgba(255,255,255,.08)}
+  .panel{display:none}
+  .panel.active{display:block; animation:fadeIn .18s ease-out}
+  @keyframes fadeIn{from{opacity:0; transform:translateY(4px)}to{opacity:1; transform:translateY(0)}}
+
+  .cardSection{padding:14px}
+  .cardSection h3{margin:0 0 10px; font-size:14px; letter-spacing:.25px; text-align:center}
+  .toolbar{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:6px auto 12px; justify-content:center}
+  .input{flex:1; min-width:240px; max-width:720px; display:flex; gap:8px; align-items:center; padding:10px 12px; border-radius:999px; border:1px solid rgba(255,255,255,.14); background:rgba(0,0,0,.22); backdrop-filter:var(--glass)}
+  .input input{width:100%; background:transparent; border:0; outline:none; color:rgba(255,255,255,.92); font-size:13px}
+  #panel-skills .toolbar .input,
+  #panel-timeline .toolbar .input{
+    flex:0 1 520px;
+    max-width:520px;
+  }
+  @media(max-width:760px){
+    #panel-skills .toolbar .input,
+    #panel-timeline .toolbar .input{
+      flex:1 1 100%;
+      max-width:100%;
+    }
+  }
+  .compactSearchToolbar{
+    position:relative;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:42px;
+  }
+  .compactSearchToolbar .input{
+    width:min(460px, calc(100% - 280px));
+    min-width:0;
+    max-width:460px;
+    margin:0 auto;
+    flex:none;
+  }
+  .compactSearchToolbar .sortWrap{
+    position:absolute;
+    right:94px;
+    top:50%;
+    transform:translateY(-50%);
+    margin-left:0;
+  }
+  .compactSearchToolbar > .btn{
+    position:absolute;
+    right:0;
+    top:50%;
+    transform:translateY(-50%);
+    margin:0;
+  }
+  .compactSearchToolbar > .btn:hover{
+    transform:translateY(calc(-50% - 1px));
+  }
+  @media(max-width:760px){
+    .compactSearchToolbar{
+      min-height:0;
+      flex-wrap:wrap;
+      justify-content:center;
+    }
+    .compactSearchToolbar .input{
+      max-width:100%;
+      width:100%;
+    }
+    .compactSearchToolbar .sortWrap{
+      position:static;
+      transform:none;
+      width:auto;
+      justify-content:flex-end;
+    }
+    .compactSearchToolbar > .btn{
+      position:static;
+      transform:none;
+    }
+    .compactSearchToolbar > .btn:hover{transform:translateY(-1px)}
+  }
+  .sortWrap{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    margin-left:auto;
+    color:var(--muted2);
+    font-size:12px;
+  }
+  .sortWrap select{
+    border-radius:999px;
+    border:1px solid rgba(255,255,255,.14);
+    background:rgba(0,0,0,.22);
+    color:rgba(255,255,255,.92);
+    padding:9px 12px;
+    font-size:12px;
+    outline:none;
+    backdrop-filter:var(--glass);
+  }
+  .sortWrap select:hover{border-color:rgba(255,255,255,.22)}
+  @media(max-width:760px){
+    .sortWrap{
+      margin-left:0;
+      width:100%;
+      justify-content:flex-end;
+    }
+  }
+  .btn{
+    appearance:none;
+    border:1px solid rgba(255,255,255,.14);
+    background:rgba(255,255,255,.06);
+    color:rgba(255,255,255,.90);
+    padding:10px 12px;
+    border-radius:999px;
+    cursor:pointer;
+    font-size:13px;
+    box-shadow:var(--shadow2);
+    backdrop-filter:var(--glass);
+    transition:transform .12s ease, border-color .12s ease, background .12s ease;
+    user-select:none;
+  }
+  .btn:hover{transform:translateY(-1px); border-color:rgba(255,255,255,.22); background:rgba(255,255,255,.08)}
+  .btn.primary{background:linear-gradient(90deg, rgba(124,247,255,.18), rgba(180,140,255,.16), rgba(255,122,229,.14)); border-color:rgba(255,255,255,.24)}
+
+  .list{max-width:980px; margin:0 auto}
+  .item{padding:12px; border-radius:16px; background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.12); margin-bottom:10px; cursor:pointer; transition:transform .12s ease, border-color .12s ease, background .12s ease}
+  .item:hover{transform:translateY(-1px); border-color:rgba(255,255,255,.22); background:rgba(0,0,0,.22)}
+  .item .top{display:flex; justify-content:space-between; gap:10px; align-items:baseline}
+  .item .title{font-weight:650; font-size:13px}
+  .item .meta{color:var(--muted2); font-size:12px; white-space:nowrap}
+  .item .desc{margin-top:6px; color:var(--muted); font-size:13px; line-height:1.45}
+  .tagbar{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px}
+  .tag{padding:7px 10px; border-radius:999px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12); color:rgba(255,255,255,.82); font-size:12px; user-select:none}
+
+  /* Passions: nebula bubble cloud */
+  .passionCloud{
+    max-width:980px;
+    margin:0 auto;
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(190px, 1fr));
+    gap:14px;
+    align-items:stretch;
+  }
+  .passionBubble{
+    position:relative;
+    display:grid;
+    place-items:center;
+    min-height:108px;
+    padding:14px 14px;
+    border:1px solid rgba(255,255,255,.18);
+    border-radius:24px;
+    overflow:hidden;
+    isolation:isolate;
+    color:rgba(255,255,255,.94);
+    background:
+      radial-gradient(120% 160% at 16% 14%, rgba(124,247,255,.24), rgba(124,247,255,0) 54%),
+      radial-gradient(120% 140% at 88% 90%, rgba(255,122,229,.20), rgba(255,122,229,0) 56%),
+      linear-gradient(140deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+    box-shadow:0 18px 30px rgba(0,0,0,.36), inset 0 0 0 1px rgba(255,255,255,.05);
+    backdrop-filter:blur(10px) saturate(130%);
+    transform:translateY(var(--lift, 0px)) rotate(var(--tilt, 0deg));
+    transition:transform .16s ease, border-color .16s ease, box-shadow .16s ease, background .16s ease;
+  }
+  .passionBubble:before,
+  .passionBubble:after{
+    content:"";
+    position:absolute;
+    border-radius:999px;
+    pointer-events:none;
+    z-index:-1;
+  }
+  .passionBubble:before{
+    width:140px;
+    height:140px;
+    top:-58px;
+    left:-34px;
+    background:radial-gradient(circle, rgba(124,255,154,.22), rgba(124,255,154,0) 70%);
+    filter:blur(8px);
+  }
+  .passionBubble:after{
+    width:130px;
+    height:130px;
+    right:-44px;
+    bottom:-52px;
+    background:radial-gradient(circle, rgba(180,140,255,.25), rgba(180,140,255,0) 72%);
+    filter:blur(10px);
+  }
+  .passionBubble:hover{
+    transform:translateY(calc(var(--lift, 0px) - 2px)) rotate(var(--tilt, 0deg)) scale(1.01);
+    border-color:rgba(255,255,255,.34);
+    box-shadow:0 22px 36px rgba(0,0,0,.42), inset 0 0 0 1px rgba(255,255,255,.12);
+  }
+  .passionBubble p{
+    margin:0;
+    font-size:13px;
+    line-height:1.55;
+    text-wrap:balance;
+    text-align:center;
+  }
+  .passionBubble.v2{
+    border-radius:30px 24px 26px 32px;
+    --tilt:-.45deg;
+    --lift:2px;
+    background:
+      radial-gradient(130% 170% at 85% 12%, rgba(255,228,122,.18), rgba(255,228,122,0) 56%),
+      radial-gradient(120% 130% at 10% 92%, rgba(124,247,255,.18), rgba(124,247,255,0) 56%),
+      linear-gradient(156deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+  }
+  .passionBubble.v3{
+    border-radius:22px 34px 26px 30px;
+    --tilt:.35deg;
+    --lift:1px;
+    background:
+      radial-gradient(120% 160% at 15% 12%, rgba(180,140,255,.25), rgba(180,140,255,0) 58%),
+      radial-gradient(120% 140% at 88% 88%, rgba(124,255,154,.20), rgba(124,255,154,0) 58%),
+      linear-gradient(138deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+  }
+  .passionBubble.v4{
+    border-radius:32px 26px 30px 24px;
+    --tilt:-.25deg;
+    --lift:3px;
+    background:
+      radial-gradient(125% 155% at 14% 18%, rgba(255,122,229,.24), rgba(255,122,229,0) 58%),
+      radial-gradient(120% 140% at 86% 92%, rgba(124,247,255,.18), rgba(124,247,255,0) 56%),
+      linear-gradient(142deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+  }
+  @media(max-width:760px){
+    .passionCloud{
+      grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));
+      gap:10px;
+    }
+    .passionBubble{
+      min-height:92px;
+      padding:12px 12px;
+      border-radius:20px;
+      --tilt:0deg;
+      --lift:0px;
+    }
+    .passionBubble p{font-size:12px}
+  }
+
+  /* Skills: spacing fixed to avoid summary/body collisions */
+  .skillNode{
+    border-radius:16px;
+    background:rgba(0,0,0,.18);
+    border:1px solid rgba(255,255,255,.12);
+    margin:10px 0;
+    overflow:hidden;
+  }
+  .skillNode summary{
+    cursor:pointer;
+    list-style:none;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    font-weight:650;
+    font-size:13px;
+    user-select:none;
+    line-height:1.35;
+    padding:12px 14px;
+    background:rgba(255,255,255,.02);
+  }
+  .skillNode summary::-webkit-details-marker{display:none}
+  .caret{
+    flex:0 0 auto;
+    width:10px;
+    height:10px;
+    margin-top:2px;
+    border-right:2px solid rgba(255,255,255,.60);
+    border-bottom:2px solid rgba(255,255,255,.60);
+    transform:rotate(-45deg);
+    transition:transform .12s ease;
+  }
+  .skillNode[open] .caret{transform:rotate(45deg)}
+  .skillBody{
+    padding:12px 14px 14px;
+    border-top:1px solid rgba(255,255,255,.10);
+  }
+  .skillBody p{
+    margin:0 0 10px;
+    color:var(--muted);
+    font-size:13px;
+    line-height:1.55;
+  }
+  .skillBody p:last-child{margin-bottom:0}
+  .bullets{margin:10px 0 0; padding-left:18px; color:var(--muted); font-size:13px; line-height:1.55}
+  .bullets li{margin:4px 0}
+  .skillLevel1{margin-top:12px}
+  .skillLevel2{margin-left:12px}
+  .skillLevel3{margin-left:20px}
+  @media(max-width:760px){
+    .skillLevel2,.skillLevel3{margin-left:8px}
+  }
+
+  /* Timeline horizontal: rainbow axis + zoomable track */
+  .zoomControls{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+    justify-content:center;
+  }
+  .zoomControls input[type="range"]{
+    width:140px;
+    accent-color:rgba(124,247,255,.95);
+  }
+  .zoomValue{
+    min-width:48px;
+    text-align:center;
+    font-size:12px;
+    color:var(--muted2);
+  }
+  .timelineWrap{
+    max-width:980px;
+    margin:0 auto;
+    overflow-x:auto;
+    overflow-y:hidden;
+    padding:10px 6px 6px;
+    scrollbar-width:thin;
+  }
+  .timelineWrap::-webkit-scrollbar{height:10px}
+  .timelineWrap::-webkit-scrollbar-thumb{
+    background:rgba(255,255,255,.22);
+    border-radius:999px;
+  }
+  .timelineWrap::-webkit-scrollbar-track{
+    background:rgba(255,255,255,.06);
+    border-radius:999px;
+  }
+  .timelineTrack{
+    --tl-zoom:1;
+    --tl-base-card:280px;
+    --tl-base-gap:28px;
+    --tl-card-width:calc(var(--tl-base-card) * var(--tl-zoom));
+    --tl-gap:calc(var(--tl-base-gap) * var(--tl-zoom));
+    --tl-dot-size:max(8px, min(18px, calc(14px * var(--tl-zoom))));
+    min-width:100%;
+    width:max-content;
+    display:flex;
+    align-items:flex-start;
+    gap:var(--tl-gap);
+    padding:12px 0 16px;
+    position:relative;
+  }
+  .timelineTrack:before{
+    content:"";
+    position:absolute;
+    left:0;
+    right:0;
+    top:40px;
+    height:6px;
+    border-radius:999px;
+    background:linear-gradient(90deg, rgba(124,247,255,.95), rgba(124,255,154,.9), rgba(255,228,122,.9), rgba(255,122,229,.88), rgba(180,140,255,.9));
+    box-shadow:var(--lineGlow);
+  }
+  .tRow{
+    width:var(--tl-card-width);
+    min-width:var(--tl-card-width);
+    position:relative;
+    padding-top:0;
+  }
+  .tDate{
+    color:rgba(255,255,255,.80);
+    font-size:12px;
+    text-align:center;
+    white-space:nowrap;
+    margin-bottom:6px;
+  }
+  .tRail{
+    position:relative;
+    height:28px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    margin-bottom:10px;
+  }
+  .tRail:before{
+    content:"";
+    position:absolute;
+    top:50%;
+    left:50%;
+    width:2px;
+    height:18px;
+    transform:translate(-50%, -6px);
+    background:rgba(255,255,255,.35);
+    border-radius:999px;
+  }
+  .tDot{
+    width:var(--tl-dot-size);
+    height:var(--tl-dot-size);
+    border-radius:999px;
+    background:radial-gradient(circle at 30% 30%, rgba(255,255,255,.98), rgba(255,255,255,.16) 55%, rgba(0,0,0,0));
+    box-shadow:0 0 0 5px rgba(255,255,255,.08), 0 10px 24px rgba(0,0,0,.5);
+    position:relative;
+    z-index:2;
+  }
+  .tCard{border-radius:16px; background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.12); overflow:hidden; min-height:84px}
+  .tCard details{margin:0; border:none; background:transparent; padding:0}
+  .tCard summary{padding:12px 12px; font-weight:650; line-height:1.35}
+  .tCard summary:hover{background:rgba(255,255,255,.04)}
+  .tBody{padding:0 12px 12px}
+  .tMeta{display:flex; gap:8px; flex-wrap:wrap; margin:0 12px 10px}
+  .pillMini{font-size:11px; color:rgba(255,255,255,.84); padding:4px 8px; border-radius:999px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.05)}
+  mark.searchHit{
+    background:rgba(255,228,122,.30);
+    color:#fff;
+    border-radius:6px;
+    padding:0 2px;
+    box-shadow:0 0 0 1px rgba(255,255,255,.12) inset;
+  }
+  .mediaGrid{display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px; margin-top:10px}
+  .mediaCard{display:block; padding:10px 10px; border-radius:14px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); text-decoration:none; color:rgba(255,255,255,.88)}
+  .mediaCard small{color:var(--muted2)}
+  .mediaImg{width:100%; border-radius:12px; border:1px solid rgba(255,255,255,.12); display:block}
+
+  /* Dialog */
+  dialog{width:min(980px, calc(100vw - 24px)); border:0; padding:0; border-radius:22px; background:rgba(15,18,30,.93); color:var(--text); box-shadow:var(--shadow); backdrop-filter:blur(16px) saturate(150%)}
+  dialog::backdrop{background:rgba(0,0,0,.55); backdrop-filter:blur(2px)}
+  .modalHead{padding:14px 16px 12px; border-bottom:1px solid rgba(255,255,255,.10); display:flex; justify-content:space-between; align-items:center; gap:12px}
+  .modalHead .t{font-weight:760; letter-spacing:.2px}
+  .x{
+    width:42px;
+    height:42px;
+    border-radius:999px;
+    display:grid;
+    place-items:center;
+    background:rgba(255,255,255,.18);
+    border:1px solid rgba(255,255,255,.36);
+    cursor:pointer;
+    color:#fff;
+    font-size:18px;
+    font-weight:700;
+  }
+  .x:hover{background:rgba(255,255,255,.24); border-color:rgba(255,255,255,.48)}
+  .modalBody{padding:16px 18px 20px; display:grid; gap:14px}
+  .settingsSection{
+    border:1px solid rgba(255,255,255,.10);
+    border-radius:16px;
+    padding:14px;
+    background:rgba(255,255,255,.03);
+  }
+  .settingsTitle{
+    margin:0 0 10px;
+    font-size:13px;
+    letter-spacing:.2px;
+    color:rgba(255,255,255,.92);
+    font-weight:700;
+  }
+  .settingsHint{
+    margin:0 0 8px;
+    color:var(--muted2);
+    font-size:12px;
+    line-height:1.45;
+  }
+  .settingsActions{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top:10px;
+  }
+  .settingsCollapsible{
+    border:1px solid rgba(255,255,255,.10);
+    border-radius:14px;
+    overflow:hidden;
+    background:rgba(0,0,0,.12);
+  }
+  .settingsCollapsible > summary{
+    cursor:pointer;
+    list-style:none;
+    padding:11px 12px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    font-size:13px;
+    font-weight:650;
+    user-select:none;
+    background:rgba(255,255,255,.03);
+  }
+  .settingsCollapsible > summary::-webkit-details-marker{display:none}
+  .settingsCollapsible > summary:after{
+    content:"▾";
+    color:var(--muted2);
+    transition:transform .12s ease;
+  }
+  .settingsCollapsible[open] > summary:after{transform:rotate(180deg)}
+  .settingsCollapsibleBody{padding:12px 14px 14px}
+  .cols2{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  @media(max-width:740px){.cols2{grid-template-columns:1fr}}
+  .field{display:grid; gap:6px}
+  .field label{font-size:12px; color:var(--muted2)}
+  .field input,.field textarea{
+    border-radius:14px;
+    border:1px solid rgba(255,255,255,.14);
+    background:rgba(0,0,0,.22);
+    color:rgba(255,255,255,.92);
+    padding:10px 12px;
+    font-size:13px;
+    outline:none;
+  }
+  .field textarea{min-height:120px; resize:vertical}
+  .sep{height:1px; background:rgba(255,255,255,.10); margin:6px 0}
+  .status{
+    max-width:980px;
+    margin:10px auto 0;
+    padding:10px 12px;
+    border-radius:14px;
+    background:rgba(0,0,0,.25);
+    border:1px solid rgba(255,255,255,.14);
+    color:rgba(255,255,255,.86);
+    font-size:12px;
+    line-height:1.45;
+  }
+  .status.error{
+    border-color:rgba(255,122,160,.45);
+    background:rgba(60,10,24,.35);
+    color:rgba(255,220,230,.95);
+  }
+</style>
+</head>
+<body>
+<div class="stars"></div>
+
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">
+      <div class="orb" aria-hidden="true"></div>
+      <div>
+        <h1 id="name"></h1>
+        <div class="sub" id="headline"></div>
+      </div>
+    </div>
+    <div class="actions">
+      <a class="pill" id="siteLink" target="_blank" rel="noopener"><span class="dot"></span><span>spacecadetslighting.com</span></a>
+      <a class="pill" id="phoneLink"><span class="dot"></span><span id="phoneText"></span></a>
+      <a class="pill" id="emailLink"><span class="dot"></span><span id="emailText"></span></a>
+      <button class="pill gear" id="settingsBtn" title="Settings / Import / Export" aria-label="Open settings">⚙︎</button>
+    </div>
+  </div>
+
+  <div class="hero">
+    <div class="card heroMain">
+      <h2>Interactive Resume</h2>
+      <p id="summary"></p>
+      <div class="chips" id="chips"></div>
+    </div>
+    <div class="card heroSide">
+      <div class="kpi"><div class="label">Primary domains</div><div class="value" id="primaryDomains"></div></div>
+      <div class="kpi"><div class="label">Focus</div><div class="value" id="focusText"></div></div>
+      <div class="kpi"><div class="label">Style</div><div class="value" id="styleText"></div></div>
+    </div>
+    <div class="card mvv">
+      <h3>Mission • Vision • Values</h3>
+      <div class="blk">
+        <div class="t">Mission</div>
+        <div class="b" id="mMission"></div>
+      </div>
+      <div class="blk">
+        <div class="t">Vision</div>
+        <div class="b" id="mVision"></div>
+      </div>
+      <div class="blk" style="margin-bottom:0">
+        <div class="t">Values</div>
+        <div class="b" id="mValues"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav" role="tablist" aria-label="Resume sections">
+    <button class="tab" role="tab" aria-selected="true" data-tab="jobs"><span class="spark"></span>Job Experience</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="education"><span class="spark"></span>Education</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="skills"><span class="spark"></span>Skills Map</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="timeline"><span class="spark"></span>Timeline</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="passions"><span class="spark"></span>Passions</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="capabilities"><span class="spark"></span>Manufacturing Capabilities</button>
+  </div>
+
+  <section id="panel-jobs" class="panel active">
+    <div class="card cardSection">
+      <h3>Job Experience</h3>
+      <div class="toolbar compactSearchToolbar">
+        <div class="input"><span style="opacity:.7;">⌕</span><input id="searchJobs" placeholder="Search job experience"/></div>
+        <div class="sortWrap">
+          <label for="sortJobs">Sort</label>
+          <select id="sortJobs" aria-label="Sort job experience">
+            <option value="recent_desc" selected>Most recent</option>
+            <option value="recent_asc">Oldest first</option>
+            <option value="title_asc">Title A-Z</option>
+            <option value="title_desc">Title Z-A</option>
+          </select>
+        </div>
+        <button class="btn" id="clearJobs">Clear</button>
+      </div>
+      <div class="list" id="jobsList"></div>
+    </div>
+  </section>
+
+  <section id="panel-education" class="panel">
+    <div class="card cardSection">
+      <h3>Education</h3>
+      <div class="toolbar compactSearchToolbar">
+        <div class="input"><span style="opacity:.7;">⌕</span><input id="searchEdu" placeholder="Search education"/></div>
+        <div class="sortWrap">
+          <label for="sortEdu">Sort</label>
+          <select id="sortEdu" aria-label="Sort education">
+            <option value="recent_desc" selected>Most recent</option>
+            <option value="recent_asc">Oldest first</option>
+            <option value="title_asc">Title A-Z</option>
+            <option value="title_desc">Title Z-A</option>
+          </select>
+        </div>
+        <button class="btn" id="clearEdu">Clear</button>
+      </div>
+      <div class="list" id="educationList"></div>
+    </div>
+  </section>
+
+  <section id="panel-skills" class="panel">
+    <div class="card cardSection">
+      <h3>Skills Map (Complete Master Library)</h3>
+      <div class="toolbar">
+        <div class="input"><span style="opacity:.7;">⌕</span><input id="searchSkills" placeholder="Search full skills map"/></div>
+        <button class="btn" id="expandAll">Expand all</button>
+        <button class="btn" id="collapseAll">Collapse deeper</button>
+      </div>
+      <div class="list" id="skillsTree"></div>
+    </div>
+  </section>
+
+  <section id="panel-timeline" class="panel">
+    <div class="card cardSection">
+      <h3>Timeline</h3>
+      <div class="toolbar">
+        <div class="input"><span style="opacity:.7;">⌕</span><input id="searchTL" placeholder="Search timeline"/></div>
+        <div class="zoomControls" aria-label="Timeline zoom controls">
+          <button class="btn" id="tlZoomOut" type="button" aria-label="Zoom out timeline">-</button>
+          <input id="tlZoomRange" type="range" min="60" max="180" step="5" value="100" aria-label="Timeline zoom level"/>
+          <button class="btn" id="tlZoomIn" type="button" aria-label="Zoom in timeline">+</button>
+          <button class="btn" id="tlZoomReset" type="button">Reset zoom</button>
+          <span class="zoomValue" id="tlZoomLabel">100%</span>
+        </div>
+        <button class="btn" id="clearTL">Clear</button>
+      </div>
+      <div class="timelineWrap" id="timelineList"></div>
+      <div class="status" id="timelineHint">Scroll horizontally to explore the timeline. Use zoom controls (or Ctrl/Cmd + wheel) to zoom in/out.</div>
+    </div>
+  </section>
+
+  <section id="panel-passions" class="panel">
+    <div class="card cardSection">
+      <h3>Passions</h3>
+      <div class="toolbar">
+        <div class="input"><span style="opacity:.7;">⌕</span><input id="searchPassions" placeholder="Search passions"/></div>
+        <button class="btn" id="clearPassions">Clear</button>
+      </div>
+      <div class="list" id="passionsList"></div>
+    </div>
+  </section>
+
+  <section id="panel-capabilities" class="panel">
+    <div class="card cardSection">
+      <h3>Manufacturing Capabilities</h3>
+      <div class="toolbar">
+        <div class="input"><span style="opacity:.7;">⌕</span><input id="searchCaps" placeholder="Search manufacturing/tooling capabilities"/></div>
+        <button class="btn" id="clearCaps">Clear</button>
+      </div>
+      <div class="list" id="capabilitiesList"></div>
+    </div>
+  </section>
+
+  <div id="status" class="status" aria-live="polite"></div>
+</div>
+
+<!-- Settings dialog -->
+<dialog id="settings">
+  <div class="modalHead">
+    <div class="t">Settings • Import / Export • Timeline</div>
+    <button class="x" id="closeSettings" aria-label="Close">✕</button>
+  </div>
+  <div class="modalBody">
+    <section class="settingsSection">
+      <h4 class="settingsTitle">Unified Profile Package (Recommended)</h4>
+      <p class="settingsHint">One file controls all sections: profile/contact, hero text, mission/vision/values, jobs, education, skills map, passions, capabilities, and timeline media.</p>
+      <div class="field">
+        <label>Unified Resume Package (JSON)</label>
+        <textarea id="profilePackJson" placeholder='{"version":1,"resume":{...},"timeline":[...],"skills_markdown":"# ..."}'></textarea>
+      </div>
+      <div class="settingsActions">
+        <input id="profilePackFile" type="file" accept=".json,application/json" style="display:none"/>
+        <button class="btn primary" id="applyProfilePack">Apply Package JSON</button>
+        <button class="btn" id="importProfilePackFile">Import Package File</button>
+        <button class="btn" id="exportProfilePack">Export Package JSON</button>
+        <button class="btn" id="copyPackagePrompt">Copy AI Package Prompt</button>
+        <button class="btn" id="exportPortableHtml">Export Portable HTML</button>
+        <button class="btn" id="resetAll">Reset to Seed</button>
+      </div>
+    </section>
+
+    <section class="settingsSection">
+      <h4 class="settingsTitle">Legacy Import/Export Tools</h4>
+      <div class="cols2">
+        <div class="field">
+          <label>Resume Import (Markdown)</label>
+          <textarea id="resumeMd" placeholder="# Isaac Norris ..."></textarea>
+        </div>
+        <div class="field">
+          <label>Timeline Import / Export (JSON)</label>
+          <textarea id="timelineJson" placeholder='[{"date":"2020-03","title":"Space Cadets Lighting — Founder","type":"Venture","tags":["LED","ESP32"],"details":"...","media":[...]}]'></textarea>
+        </div>
+      </div>
+      <div class="settingsActions">
+        <button class="btn primary" id="applyResume">Apply Resume Markdown</button>
+        <button class="btn" id="exportResume">Export Resume JSON (legacy)</button>
+        <button class="btn" id="importTimeline">Import Timeline JSON</button>
+        <button class="btn" id="exportTimeline">Export Timeline JSON</button>
+      </div>
+    </section>
+
+    <section class="settingsSection">
+      <details class="settingsCollapsible" id="timelineEntryEditor">
+        <summary>Add Timeline Entry</summary>
+        <div class="settingsCollapsibleBody">
+          <p class="settingsHint">Supports links and optional embedded image data.</p>
+          <div class="cols2">
+            <div class="field"><label>Date (YYYY-MM or YYYY-MM-DD)</label><input id="tDate" placeholder="2026-02"/></div>
+            <div class="field"><label>Type</label><input id="tType" placeholder="Project"/></div>
+            <div class="field" style="grid-column:1/-1;"><label>Title</label><input id="tTitle" placeholder="LightDrive Pro — USB-C Quick Connect ecosystem"/></div>
+            <div class="field" style="grid-column:1/-1;"><label>Tags (comma-separated)</label><input id="tTags" placeholder="ESP32, WS2815, Manufacturing, UX"/></div>
+            <div class="field" style="grid-column:1/-1;"><label>Details</label><textarea id="tDetails" placeholder="What you built, what mattered, outcomes, notes..."></textarea></div>
+            <div class="field" style="grid-column:1/-1;"><label>Links (one per line)</label><textarea id="tLinks" placeholder="https://...&#10;https://..."></textarea></div>
+            <div class="field" style="grid-column:1/-1;"><label>Embed Image (optional)</label><input id="tImage" type="file" accept="image/*"/></div>
+          </div>
+          <div class="settingsActions">
+            <button class="btn primary" id="addTimeline">Add Entry</button>
+            <span style="color:var(--muted2); font-size:12px;">Embedded images are stored locally and exported with timeline JSON and profile package.</span>
+          </div>
+        </div>
+      </details>
+    </section>
+  </div>
+</dialog>
+
+<script type="text/plain" id="skillsMD"># Isaac Norris --- Comprehensive Master Skill & Capability Map
+
+*Last Updated: 2026*
+
+Purpose: This document serves as a complete, genre-neutral inventory of
+Isaac Norris's technical, creative, leadership, and entrepreneurial
+skill sets. It is structured hierarchically for portability into
+mind-mapping tools (XMind), resume drafting, portfolio construction,
+investor briefs, or career strategy analysis.
+
+------------------------------------------------------------------------
+
+# 1. CORE ENGINEERING DOMAINS
+
+## 1.1 Mechanical Engineering & Product Design
+
+### CAD & Digital Design
+
+-   13+ years CAD experience (Autodesk Inventor + Fusion 360)
+-   Complex mechanical assemblies
+-   Motion systems & linear rail architecture
+-   Structural framing & load-aware design
+-   Lightweight optimization strategies
+-   Sheet metal design
+-   CNC-manufacturable part design
+-   Additive-manufacturing-optimized geometry
+-   Product enclosure architecture
+-   Organic / biomimetic structural modeling
+-   CAM workflow familiarity
+
+### Machine Design & Mechatronics
+
+-   CNC plasma cutting machine design & redesign
+-   Multi-function fabrication systems (3D print + CNC + laser)
+-   Gantry systems & mechanical motion design
+-   Mechanical-electrical integration
+-   Manufacturable architecture planning
+-   Real-world tolerance & assembly awareness
+
+### Manual & CNC Machining
+
+-   CNC mills, plasma cutters, lathes, laser cutters
+-   Manual milling & turning
+-   Mechanical assembly construction
+-   Fabrication process optimization
+
+### Woodworking & Structural Construction
+
+-   Cabinetry & furniture
+-   Speaker enclosures
+-   Structural object construction
+-   Practical field installation builds
+
+------------------------------------------------------------------------
+
+## 1.2 Additive Manufacturing (Advanced Specialization)
+
+-   Advanced 3D printer tuning & diagnostics
+-   Custom printer building & modification
+-   Large-format printer understanding
+-   Production repeatability optimization
+-   Structural print optimization
+-   Surface finish & aesthetic refinement strategies
+-   Slicer parameter optimization
+-   Failure mode diagnosis & repair
+-   Print-for-manufacture design thinking
+
+------------------------------------------------------------------------
+
+## 1.3 Electrical Engineering & Circuit Design
+
+### Circuit Design & PCB Architecture
+
+-   Schematic capture
+-   Production PCB layout
+-   Circuit design in EasyEDA (primary tool)
+-   Exposure to Altium Designer (limited)
+-   Exposure to KiCad (limited)
+-   Motor driver systems
+-   LED driver systems
+-   Modular electronics ecosystems
+-   Power regulation systems
+-   Prototype → production transition strategy
+-   Connector & harness planning
+-   High-current system planning
+
+### Electrical Prototyping
+
+-   Concept-to-hardware implementation
+-   Integrated electronics prototyping (core pillar)
+-   Robotics & RC aircraft systems
+-   CNC control electronics
+-   Embedded controller boards
+-   Distributed electronics integration
+
+### Power Systems
+
+-   Solar + battery backup installations
+-   Power distribution architecture
+-   Real-world wiring reliability
+-   Fuse & safety planning
+-   Installation-grade power management
+
+------------------------------------------------------------------------
+
+## 1.4 Embedded Systems & Firmware
+
+### Programming Ecosystems
+
+-   Embedded C++
+-   Arduino ecosystem
+-   ESP32 / ESP8266 platforms
+-   Atmel microcontrollers
+
+### Control Systems
+
+-   Motor control firmware
+-   ESC tuning concepts
+-   Real-time control loops
+-   Multi-microcontroller coordination
+-   Sensor integration
+-   Distributed embedded architecture
+
+### Wireless & Networking
+
+-   WiFi-connected hardware systems
+-   Wireless LED mesh systems
+-   Network topology reasoning (embedded context)
+-   OTA & modular ecosystem thinking
+
+### User Interface Exposure
+
+-   CAM interface software development
+-   Embedded system interface design reasoning
+-   Hardware-facing UI thinking
+
+------------------------------------------------------------------------
+
+# 2. MOTION & PROPULSION SYSTEM EXPERIENCE
+
+## 2.1 Flight & Drone Systems (Technical Origin)
+
+-   Quadcopter frame design
+-   3D printed drone components
+-   ArduPilot & Pixhawk integration
+-   ESC tuning
+-   Autonomous flight system setup
+-   Motor control integration
+-   Real-time control logic understanding
+
+## 2.2 CNC & Motor Systems
+
+-   Stepper motor drivers
+-   Motion control board design
+-   CNC motion architecture
+-   Gantry performance tuning
+-   Control electronics integration
+-   Production-scale machine deployment (\~100--150 units)
+
+## 2.3 Electromechanical System Architecture
+
+-   Mechanical + electrical + firmware integration
+-   System-level motion reasoning
+-   Hardware reliability planning
+-   Platform-level modular thinking
+
+------------------------------------------------------------------------
+
+# 3. INTERACTIVE & LIGHTING SYSTEMS ENGINEERING
+
+## 3.1 LED Architecture
+
+-   Addressable LED ecosystems
+-   Modular lighting platforms
+-   Wearable electronics
+-   Sculptural integration
+-   Installation-scale deployments
+
+## 3.2 Control & Interaction
+
+-   Sound-reactive lighting systems
+-   WiFi controller ecosystems
+-   Capacitive touch interfaces
+-   Multi-node synchronization
+-   Distributed control systems
+
+## 3.3 Platform Vision
+
+-   LightDrive ecosystem architecture
+-   Modular hardware systems
+-   Upgradeable design philosophy
+-   Licensing-ready hardware concepts
+
+------------------------------------------------------------------------
+
+# 4. SYSTEMS ENGINEERING & ARCHITECTURE
+
+-   Cross-domain integration (mechanical + electrical + firmware)
+-   Modular platform architecture design
+-   Manufacturing-aware engineering
+-   Field reliability systems
+-   Maintainability planning
+-   Real-world deployment logistics
+-   Production scaling awareness
+-   Iterative product evolution cycles
+-   Founder-level system ownership
+
+------------------------------------------------------------------------
+
+# 5. CREATIVE & ARTISTIC CAPABILITIES
+
+## 5.1 Material & Craft Literacy
+
+-   Glassblowing exposure
+-   Ceramics & pottery wheel operation
+-   Sculptural fabrication
+-   Multi-medium art fluency
+
+## 5.2 Aesthetic Integration
+
+-   Organic geometry design
+-   Emotion-driven lighting systems
+-   Art-technology fusion
+-   Nature-inspired structural thinking
+
+## 5.3 Audio & Form Exploration
+
+-   Speaker resonance design
+-   Nautilus-inspired acoustic forms
+-   Sound system wiring experience
+
+------------------------------------------------------------------------
+
+# 6. COMMUNICATION, LEADERSHIP & EDUCATION
+
+## 6.1 Teaching & Mentorship
+
+-   Head of 3D Print Lab
+-   Community education programs
+-   Weekly technical classes
+-   Technical knowledge translation
+
+## 6.2 Team Leadership
+
+-   Lead Engineer & Design Manager roles
+-   Manufacturing oversight
+-   Engineering redesign leadership
+-   Co-running operations in startup environment
+
+## 6.3 Technical Communication
+
+-   Explaining complex engineering concepts clearly
+-   Documentation & instructional materials
+-   Cross-disciplinary translation (engineering ↔ creative)
+
+------------------------------------------------------------------------
+
+# 7. BUSINESS, BRAND & OPERATIONS
+
+## 7.1 Entrepreneurial Experience
+
+-   Founded hardware startups
+-   Attempted 3D printer company launch
+-   Built Space Cadets Lighting ecosystem
+-   Product + brand integration
+-   Small-scale production management
+
+## 7.2 Marketing & Digital Presence
+
+-   Website development (WIX + HTML/CSS familiarity)
+-   User Interface (UI) design
+-   Web system architecture (single-file apps, embedded systems, responsive layouts)
+-   Graphic design (Photoshop)
+-   Instruction manual design
+-   Targeted web advertising (Facebook & Google Ads)
+-   Product photography & presentation
+
+## 7.3 Commercial Fabrication & Installation
+
+-   Commercial signage fabrication & permitting
+-   Metal fabrication
+-   Field installation logistics
+
+------------------------------------------------------------------------
+
+# 8. BROADER TECHNICAL & HANDS-ON SKILLS
+
+-   Sublimation printing systems
+-   UV printing systems (Eufy Make E1 – incoming capability)
+-   Automotive repair & engine replacement
+-   Gas-to-electric vehicle conversion
+-   Suspension, brake, and drivetrain repair
+-   Computer assembly & optimization
+-   Hardware selection for performance systems
+-   Tiny home solar installs
+
+------------------------------------------------------------------------
+
+# 9. EDUCATION & SELF-DIRECTED DEVELOPMENT
+
+-   Asheville High School (CTE Honors; machining student teacher)
+-   Asheville-Buncombe Technical Community College (Electrical
+    Engineering -- 1 semester)
+-   Dedicated self-guided engineering education (Electrical, Mechanical,
+    Physics, Product Design)
+-   Continuous online coursework & independent R&D
+
+------------------------------------------------------------------------
+
+# 10. STRATEGIC STRENGTH SUMMARY
+
+Isaac Norris demonstrates strength in:
+
+-   Designing complete hardware systems from zero
+-   Integrating mechanical + electrical + firmware layers
+-   Creating modular, upgradeable architectures
+-   Leading small hardware teams
+-   Shipping real-world physical products
+-   Bridging engineering with aesthetic design
+-   Translating complexity into clarity
+-   Building mission-driven, interdisciplinary systems
+
+------------------------------------------------------------------------
+
+End of Master Map
+</script>
+<script type="application/json" id="profilePackSeed">{}</script>
+
+<script>
+/** =========================
+ *  DATA MODEL
+ *  ========================= */
+const DATA_SEED = {
+  profile: {
+    name: "Isaac E. Norris",
+    phone: "828-808-8679",
+    email: "connect@spacecadetslighting.com",
+    site: "https://spacecadetslighting.com",
+    headline: "Electrical & Mechanical Engineer • Prototype Engineer • Interactive Lighting Systems • Product + Manufacturing",
+    summary: "Multidisciplinary electromechanical builder who designs and manufactures interactive LED systems, embedded controllers, and physical products from concept to deployment."
+  },
+  hero: {
+    primary_domains: "EE • ME • Embedded • Manufacturing",
+    focus: "Prototyping + interactive systems",
+    style: "Space-age • tactile • human",
+    chips: ["Prototype Engineer","Embedded (ESP32)","PCB + Wiring","CAD (Fusion/Inventor)","CNC + Laser","Interactive LEDs"]
+  },
+  mvv: {
+    mission: "Build beautiful, reliable, human-centered interactive systems that turn technology into emotional connection.",
+    vision: "Create modular, repairable, creator-first ecosystems where engineering and art can scale together.",
+    values: [
+      "Craft + rigor",
+      "Kindness + community",
+      "Curiosity + learning",
+      "Clarity + usability",
+      "Responsibility + durability"
+    ]
+  },
+  passions: [
+    "Interactive light + sound experiences that move people emotionally",
+    "Embedded systems and modular hardware ecosystems",
+    "Product design blending sculpture, nature-inspired form, and engineering",
+    "Rapid prototyping and manufacturing workflows",
+    "Community education and maker culture",
+    "Robotics / motion systems and multidisciplinary machines",
+    "Immersive media and experiential installations"
+  ],
+  capabilities: [
+    { group: "Digital Fabrication Infrastructure", items: [
+      "RatRig V-Core 3.1 (500mm3)",
+      "RatRig V-Core 3.1 (400mm3)",
+      "Bambu Lab X1 Carbon",
+      "Artillery Sidewinder (x2)",
+      "Large-format Elegoo resin printers (x2)",
+      "Anycubic large-format resin printer",
+      "Inventables X-Carve CNC router",
+      "CNC plasma systems",
+      "xTool P2 55W CO2 laser cutter",
+      "Sublimation printers",
+      "UV printer (Eufy Make E1 - incoming)"
+    ]},
+    { group: "Electronics + Prototyping Lab", items: [
+      "Circuit design (EasyEDA - primary)",
+      "Limited exposure: Altium, KiCad",
+      "PCB prototyping + assembly",
+      "High-current LED systems",
+      "Embedded controller development",
+      "Airbrushing + finishing systems",
+      "Sandblasting + surface treatment"
+    ]}
+  ],
+  jobs: [
+    {
+      title: "Head of 3D Print Lab — Mojo Coworking",
+      dates: "Jan 2014 - Jun 2015",
+      details: [
+        "Operated, repaired, and managed 3D printers for a public-facing lab.",
+        "Taught weekly community classes on 3D printing and design workflows.",
+        "Delivered prints and supported members’ projects end-to-end."
+      ],
+      tags: ["3D Printing","Community","Operations","Teaching"]
+    },
+    {
+      title: "Metal Fabricator — Linamar NC",
+      dates: "Jul 2015 - Mar 2016",
+      details: [
+        "Assisted maintenance fabrication projects to improve assembly line efficiency.",
+        "Welding, machining, and CAD-supported production improvements."
+      ],
+      tags: ["Fabrication","Welding","Machining","CAD"]
+    },
+    {
+      title: "Machinist & Assembler — MicroTech Knives",
+      dates: "Mar 2016 - Dec 2016",
+      details: [
+        "Thermoformed custom knife sheaths.",
+        "Sandblasted and prepared knives for electroplating and finishing."
+      ],
+      tags: ["Manufacturing","Finishing","Sandblasting"]
+    },
+    {
+      title: "Electrical & Mechanical Engineer — Dimension 3 Fabrication",
+      dates: "Dec 2016 - Mar 2017",
+      details: [
+        "Designed a multi-function machine combining 3D printing, CNC engraving, and laser engraving.",
+        "Owned 3D modeling, electrical design, software development, and manufacturing integration."
+      ],
+      tags: ["EE","ME","Product Design","CNC","3D Printing"]
+    },
+    {
+      title: "Lead Engineer & Design Manager — Gorilla Machines Inc",
+      dates: "Mar 2017 - Mar 2020",
+      details: [
+        "Designed and manufactured CNC plasma cutting machines end-to-end.",
+        "Led redesign and manufacturing improvements for flagship platform."
+      ],
+      tags: ["CNC","Motion Systems","CAD","Controls","Manufacturing"]
+    },
+    {
+      title: "Owner / Electrical & Mechanical Engineer / Lighting Designer — Space Cadets Lighting",
+      dates: "Mar 2020 - Current",
+      details: [
+        "Designs and manufactures sound-reactive, Wi-Fi connected, full-color LED fixtures and installations.",
+        "Handles product development across electronics, firmware, CAD, additive manufacturing, assembly, and testing."
+      ],
+      tags: ["LED","ESP32","Product","Manufacturing","Interactive"]
+    }
+  ],
+  education: [
+    {
+      title: "Dedicated Self-Guided Education",
+      dates: "Ongoing",
+      details: [
+        "Primary education pillar: continuous self-guided learning across electrical/mechanical engineering, embedded systems, product design, manufacturing, and business operations."
+      ],
+      tags: ["Continuous Learning","Mentors","Applied R&D"]
+    },
+    {
+      title: "Asheville-Buncombe Technical Community College (AB Tech)",
+      dates: "1 semester (Electrical Engineering track)",
+      details: [
+        "Completed one semester toward Electrical Engineering.",
+        "Left formal coursework to build CNC and robotics systems after already surpassing covered material."
+      ],
+      tags: ["Electrical Engineering","Self-direction"]
+    },
+    {
+      title: "Asheville High School (CTE Honors)",
+      dates: "2013 - 2016",
+      details: [
+        "Student-teacher in machining / metalworking track.",
+        "Early fabrication mentorship and hands-on engineering foundation."
+      ],
+      tags: ["CTE","Machining","Mentorship"]
+    }
+  ],
+  timeline_seed: [
+    { date:"2014-01", title:"Head of 3D Print Lab — Mojo Coworking", type:"Role", tags:["3D Printing","Teaching"], details:"Ran the Mojo 3D Print Lab: operations, repair, management, and community education.", media:[] },
+    { date:"2017-03", title:"Gorilla Machines — CNC Plasma Systems", type:"Role", tags:["CNC","Controls","Manufacturing"], details:"Designed and manufactured CNC plasma cutting machines with strong motion/control integration.", media:[] },
+    { date:"2020-03", title:"Space Cadets Lighting — Founder", type:"Venture", tags:["LED","ESP32","Product"], details:"Founded Space Cadets Lighting: interactive LED products and installations.", media:[] }
+  ]
+};
+
+const LS_RESUME = "sc_resume_v6_single";
+const LS_TIMELINE = "sc_timeline_v6_single";
+const LS_PROFILE_PACK = "sc_profile_pack_v1";
+
+const $ = (s, el=document) => el.querySelector(s);
+const $$ = (s, el=document) => Array.from(el.querySelectorAll(s));
+const norm = (s) => (s || "").toString().toLowerCase().trim();
+const uniq = (arr) => Array.from(new Set(arr));
+
+function escapeHtml(str){
+  return (str || "").toString()
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+function deepClone(obj){ return JSON.parse(JSON.stringify(obj)); }
+function escapeRegex(str){ return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+function normalizeForSearch(s){
+  return norm(s)
+    .replace(/[^a-z0-9+]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+function stemToken(token){
+  let t = (token || "").trim();
+  if (!t) return "";
+  if (t.length > 5 && t.endsWith("ing")) t = t.slice(0, -3);
+  else if (t.length > 4 && t.endsWith("ers")) t = t.slice(0, -3);
+  else if (t.length > 4 && t.endsWith("ies")) t = t.slice(0, -3) + "y";
+  else if (t.length > 4 && t.endsWith("ed")) t = t.slice(0, -2);
+  else if (t.length > 3 && t.endsWith("es")) t = t.slice(0, -2);
+  else if (t.length > 3 && t.endsWith("s")) t = t.slice(0, -1);
+  return t;
+}
+function tokenizeSearch(s){
+  return normalizeForSearch(s).split(" ").filter(Boolean).map(stemToken);
+}
+function fuzzyMatchText(text, query){
+  const qTokens = tokenizeSearch(query);
+  if (!qTokens.length) return true;
+  const hayTokens = tokenizeSearch(text);
+  if (!hayTokens.length) return false;
+  return qTokens.every((qTok)=>hayTokens.some((hTok)=>hTok === qTok || hTok.includes(qTok) || qTok.includes(hTok)));
+}
+function dateRecencyScore(dateText){
+  const raw = norm(dateText);
+  if (!raw) return Number.NEGATIVE_INFINITY;
+  if (/\b(current|present|now)\b/.test(raw)) return 999912;
+  const hits = [];
+  const rx = /(\d{4})(?:[-/.](\d{1,2}))?/g;
+  let m = rx.exec(raw);
+  while (m){
+    const year = Number(m[1]);
+    const month = Number(m[2] || "12");
+    const safeMonth = Number.isFinite(month) ? Math.min(12, Math.max(1, month)) : 12;
+    hits.push(year * 100 + safeMonth);
+    m = rx.exec(raw);
+  }
+  if (!hits.length) return Number.NEGATIVE_INFINITY;
+  return Math.max(...hits);
+}
+function sortTimeCards(items, mode){
+  const rows = items.map((it, idx)=>({ it, idx, score:dateRecencyScore(it.dates || "") }));
+  rows.sort((a, b)=>{
+    if (mode === "recent_asc"){
+      if (a.score !== b.score) return a.score - b.score;
+      return a.idx - b.idx;
+    }
+    if (mode === "title_asc"){
+      const byTitle = norm(a.it.title).localeCompare(norm(b.it.title));
+      return byTitle || (a.idx - b.idx);
+    }
+    if (mode === "title_desc"){
+      const byTitle = norm(b.it.title).localeCompare(norm(a.it.title));
+      return byTitle || (a.idx - b.idx);
+    }
+    // Default: most recent first
+    if (a.score !== b.score) return b.score - a.score;
+    return a.idx - b.idx;
+  });
+  return rows.map((r)=>r.it);
+}
+function clearSearchHighlights(host){
+  $$("mark.searchHit", host).forEach((mark)=>{
+    const parent = mark.parentNode;
+    if (!parent) return;
+    parent.replaceChild(document.createTextNode(mark.textContent || ""), mark);
+    parent.normalize();
+  });
+}
+function highlightSearchTerms(host, query){
+  const roots = uniq(tokenizeSearch(query).filter((t)=>t.length >= 2));
+  if (!roots.length) return;
+  const rx = new RegExp(`\\b(${roots.map(escapeRegex).join("|")})\\w*`, "gi");
+  const walker = document.createTreeWalker(host, NodeFilter.SHOW_TEXT);
+  const textNodes = [];
+  let node = walker.nextNode();
+  while (node){
+    const value = node.nodeValue || "";
+    const parent = node.parentElement;
+    if (parent && !parent.closest("mark.searchHit") && value.trim()) textNodes.push(node);
+    node = walker.nextNode();
+  }
+  textNodes.forEach((textNode)=>{
+    const text = textNode.nodeValue || "";
+    rx.lastIndex = 0;
+    if (!rx.test(text)) return;
+    rx.lastIndex = 0;
+    const frag = document.createDocumentFragment();
+    let lastIdx = 0;
+    let m = rx.exec(text);
+    while (m){
+      const idx = m.index;
+      if (idx > lastIdx) frag.appendChild(document.createTextNode(text.slice(lastIdx, idx)));
+      const mark = document.createElement("mark");
+      mark.className = "searchHit";
+      mark.textContent = text.slice(idx, idx + m[0].length);
+      frag.appendChild(mark);
+      lastIdx = idx + m[0].length;
+      m = rx.exec(text);
+    }
+    if (lastIdx < text.length) frag.appendChild(document.createTextNode(text.slice(lastIdx)));
+    textNode.parentNode.replaceChild(frag, textNode);
+  });
+}
+function debounce(fn, wait=140){
+  let timer = null;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), wait);
+  };
+}
+function dl(filename, content, type="application/json"){
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+function setStatus(message, isError=false){
+  const el = $("#status");
+  el.textContent = message;
+  el.classList.toggle("error", isError);
+}
+
+/** =========================
+ *  IMPORT PARSERS
+ *  ========================= */
+function parseHeadingLine(line){
+  const m = line.match(/^(#{1,6})\s+(.+?)\s*$/);
+  if(!m) return null;
+  return { level:m[1].length, text:m[2].trim() };
+}
+
+function normalizeSectionName(title){
+  const t = norm(title).replace(/[^a-z0-9\s]/g, " ");
+  if (/(job|work|professional).*(experience|history)|experience/.test(t)) return "jobs";
+  if (/education|learning|school/.test(t)) return "education";
+  if (/passion|interest/.test(t)) return "passions";
+  if (/manufacturing|tooling|capabilit/.test(t)) return "capabilities";
+  if (/mission/.test(t) && /vision/.test(t)) return "mvv";
+  if (/headline/.test(t)) return "headline";
+  if (/summary|about/.test(t)) return "summary";
+  return "";
+}
+
+function parseJobOrEduHeading(raw){
+  const noBold = raw.replace(/\*\*/g, "").trim();
+  let title = noBold;
+  let dates = "";
+  const paren = noBold.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
+  if (paren){
+    title = paren[1].trim();
+    dates = paren[2].trim();
+  } else {
+    const dash = noBold.match(/^(.*?)\s+[—-]\s+((?:\d{4}|current|present).*)$/i);
+    if (dash){
+      title = dash[1].trim();
+      dates = dash[2].trim();
+    }
+  }
+  return { title, dates };
+}
+
+function parseResumeMarkdown(md){
+  const out = deepClone(DATA_SEED);
+  const warnings = [];
+  const lines = (md || "").replace(/\t/g, "  ").split(/\r?\n/);
+
+  let currentSection = "";
+  let activeJob = null;
+  let activeEdu = null;
+  let activeCapGroup = null;
+
+  out.jobs = [];
+  out.education = [];
+  out.passions = [];
+  out.capabilities = [];
+
+  // Extract profile name from first H1 if present.
+  for (const line of lines){
+    const h = parseHeadingLine(line);
+    if (h && h.level === 1){
+      out.profile.name = h.text;
+      break;
+    }
+  }
+
+  function pushJobLine(txt){
+    if (!activeJob || !txt) return;
+    activeJob.details.push(txt);
+  }
+  function pushEduLine(txt){
+    if (!activeEdu || !txt) return;
+    activeEdu.details.push(txt);
+  }
+
+  for (let i = 0; i < lines.length; i++){
+    const raw = lines[i];
+    const line = raw.trimRight();
+    const heading = parseHeadingLine(line.trim());
+    const bullet = line.match(/^\s*[-*]\s+(.*)$/);
+
+    if (heading){
+      const sec = normalizeSectionName(heading.text);
+      if (heading.level === 2 && sec){
+        currentSection = sec;
+        activeJob = null;
+        activeEdu = null;
+        activeCapGroup = null;
+        continue;
+      }
+      if (currentSection === "jobs" && heading.level >= 3){
+        const parsed = parseJobOrEduHeading(heading.text);
+        activeJob = { title:parsed.title, dates:parsed.dates, details:[], tags:[] };
+        out.jobs.push(activeJob);
+        continue;
+      }
+      if (currentSection === "education" && heading.level >= 3){
+        const parsed = parseJobOrEduHeading(heading.text);
+        activeEdu = { title:parsed.title, dates:parsed.dates, details:[], tags:[] };
+        out.education.push(activeEdu);
+        continue;
+      }
+      if (currentSection === "capabilities" && heading.level >= 3){
+        activeCapGroup = { group:heading.text, items:[] };
+        out.capabilities.push(activeCapGroup);
+        continue;
+      }
+      if (currentSection === "headline"){
+        out.profile.headline = heading.text;
+      }
+      continue;
+    }
+
+    if (currentSection === "summary" && line.trim()){
+      out.profile.summary = (out.profile.summary ? `${out.profile.summary} ` : "") + line.trim();
+      continue;
+    }
+
+    if (currentSection === "mvv"){
+      // Keep simple and robust.
+      if (/^###?\s*mission/i.test(line)){ continue; }
+      if (/^###?\s*vision/i.test(line)){ continue; }
+      if (/^###?\s*values/i.test(line)){ continue; }
+      if (bullet){
+        out.mvv.values.push(bullet[1].trim());
+      } else if (line.trim()){
+        if (!out.mvv.mission || out.mvv.mission === DATA_SEED.mvv.mission) out.mvv.mission = line.trim();
+        else if (!out.mvv.vision || out.mvv.vision === DATA_SEED.mvv.vision) out.mvv.vision = line.trim();
+      }
+      continue;
+    }
+
+    if (currentSection === "jobs"){
+      if (bullet){
+        if (!activeJob){
+          const parsed = parseJobOrEduHeading(bullet[1]);
+          activeJob = { title:parsed.title, dates:parsed.dates, details:[], tags:[] };
+          out.jobs.push(activeJob);
+        } else {
+          pushJobLine(bullet[1].trim());
+        }
+      } else if (line.trim()){
+        // Date line or paragraph detail
+        if (activeJob && !activeJob.dates && /(\d{4}|\bcurrent\b|\bpresent\b)/i.test(line)){
+          activeJob.dates = line.trim();
+        } else {
+          pushJobLine(line.trim());
+        }
+      }
+      continue;
+    }
+
+    if (currentSection === "education"){
+      if (bullet){
+        if (!activeEdu){
+          const parsed = parseJobOrEduHeading(bullet[1]);
+          activeEdu = { title:parsed.title, dates:parsed.dates, details:[], tags:[] };
+          out.education.push(activeEdu);
+        } else {
+          pushEduLine(bullet[1].trim());
+        }
+      } else if (line.trim()){
+        if (activeEdu && !activeEdu.dates && /(\d{4}|semester|current|present)/i.test(line)){
+          activeEdu.dates = line.trim();
+        } else {
+          pushEduLine(line.trim());
+        }
+      }
+      continue;
+    }
+
+    if (currentSection === "passions"){
+      if (bullet && bullet[1].trim()) out.passions.push(bullet[1].trim());
+      continue;
+    }
+
+    if (currentSection === "capabilities"){
+      if (bullet && bullet[1].trim()){
+        if (!activeCapGroup){
+          activeCapGroup = { group:"Capabilities", items:[] };
+          out.capabilities.push(activeCapGroup);
+        }
+        activeCapGroup.items.push(bullet[1].trim());
+      }
+      continue;
+    }
+  }
+
+  if (!out.jobs.length){
+    out.jobs = deepClone(DATA_SEED.jobs);
+    warnings.push("No valid Job Experience section found; kept existing seeded jobs.");
+  }
+  if (!out.education.length){
+    out.education = deepClone(DATA_SEED.education);
+    warnings.push("No valid Education section found; kept existing seeded education.");
+  }
+  if (!out.passions.length){
+    out.passions = deepClone(DATA_SEED.passions);
+    warnings.push("No valid Passions bullet list found; kept existing seeded passions.");
+  }
+  if (!out.capabilities.length){
+    out.capabilities = deepClone(DATA_SEED.capabilities);
+    warnings.push("No valid Manufacturing/Tooling Capabilities section found; kept existing seeded capabilities.");
+  }
+
+  // Derive tags lightly from text.
+  out.jobs = out.jobs.map((j) => ({ ...j, tags: uniq(guessTagsFromText(`${j.title} ${(j.details || []).join(" ")}`)).slice(0,10) }));
+  out.education = out.education.map((e) => ({ ...e, tags: uniq(guessTagsFromText(`${e.title} ${(e.details || []).join(" ")}`)).slice(0,10) }));
+  out.mvv.values = uniq(out.mvv.values.filter(Boolean)).slice(0,10);
+
+  return { data:out, warnings };
+}
+
+function parseSkillsMarkdownToTree(md){
+  const lines = (md || "").replace(/\t/g, "  ").split(/\r?\n/);
+  const root = { title:"Root", level:0, paragraphs:[], bullets:[], children:[] };
+  const stack = [root];
+
+  // Intro bucket before first heading.
+  let introNode = { title:"Overview", level:1, paragraphs:[], bullets:[], children:[] };
+  root.children.push(introNode);
+  stack.push(introNode);
+
+  function current(){ return stack[stack.length - 1]; }
+  function cleanBullet(text){ return text.replace(/\s+/g, " ").trim(); }
+
+  for (let i = 0; i < lines.length; i++){
+    const raw = lines[i];
+    const line = raw.replace(/\s+$/,"");
+    const h = parseHeadingLine(line.trim());
+    const b = line.match(/^\s*[-*]\s+(.*)$/);
+
+    if (h && h.level <= 3){
+      while (stack.length > h.level) stack.pop();
+      const node = { title:h.text, level:h.level, paragraphs:[], bullets:[], children:[] };
+      stack[stack.length - 1].children.push(node);
+      stack.push(node);
+      continue;
+    }
+
+    if (b){
+      let bulletText = b[1].trim();
+      // Handle wrapped list continuation lines.
+      while (i + 1 < lines.length && /^\s{2,}\S/.test(lines[i + 1]) && !parseHeadingLine(lines[i + 1].trim()) && !/^\s*[-*]\s+/.test(lines[i + 1])){
+        i += 1;
+        bulletText += " " + lines[i].trim();
+      }
+      current().bullets.push(cleanBullet(bulletText));
+      continue;
+    }
+
+    if (line.trim()){
+      current().paragraphs.push(line.trim());
+    }
+  }
+
+  // Remove empty intro node if not needed.
+  if (!introNode.paragraphs.length && !introNode.bullets.length && !introNode.children.length){
+    root.children.shift();
+  }
+  return root.children;
+}
+
+function guessTagsFromText(text){
+  const keyTags = [
+    ["esp32","ESP32"],["esp8266","ESP8266"],["c++","C/C++"],["pcb","PCB"],["circuit","Circuit Design"],
+    ["firmware","Firmware"],["embedded","Embedded"],["cad","CAD"],["fusion","Fusion 360"],["inventor","Inventor"],
+    ["cnc","CNC"],["laser","Laser"],["3d","3D Printing"],["resin","Resin"],["manufact","Manufacturing"],
+    ["weld","Welding"],["motion","Motion Systems"],["plasma","Plasma"],["led","LED"],["wifi","Wi-Fi"],
+    ["teaching","Teaching"],["community","Community"],["prototype","Prototyping"],["airbrush","Airbrush"],
+    ["sandblast","Sandblasting"],["robot","Robotics"],["machin","Machining"]
+  ];
+  const t = norm(text);
+  return uniq(keyTags.filter(([k]) => t.includes(k)).map(([,v]) => v));
+}
+
+/** =========================
+ *  STATE
+ *  ========================= */
+const DEFAULT_SKILLS_MD = ($("#skillsMD") ? $("#skillsMD").textContent : "").toString();
+function buildDefaultProfilePack(){
+  return {
+    version: 1,
+    resume: deepClone(DATA_SEED),
+    timeline: deepClone(DATA_SEED.timeline_seed),
+    skills_markdown: DEFAULT_SKILLS_MD
+  };
+}
+function normalizeProfilePack(raw){
+  const base = buildDefaultProfilePack();
+  const src = (raw && typeof raw === "object") ? raw : {};
+  const resume = { ...base.resume, ...(src.resume || {}) };
+  delete resume.timeline_seed;
+  resume.profile = { ...base.resume.profile, ...(resume.profile || {}) };
+  resume.hero = { ...base.resume.hero, ...(resume.hero || {}) };
+  resume.mvv = { ...base.resume.mvv, ...(resume.mvv || {}) };
+  resume.mvv.values = Array.isArray(resume.mvv.values) ? resume.mvv.values.map(String) : base.resume.mvv.values.slice();
+  resume.passions = Array.isArray(resume.passions) ? resume.passions.map(String) : base.resume.passions.slice();
+  resume.capabilities = Array.isArray(resume.capabilities) ? resume.capabilities : deepClone(base.resume.capabilities);
+  resume.jobs = Array.isArray(resume.jobs) ? resume.jobs : deepClone(base.resume.jobs);
+  resume.education = Array.isArray(resume.education) ? resume.education : deepClone(base.resume.education);
+  const timeline = Array.isArray(src.timeline) ? src.timeline : deepClone(base.timeline);
+  const skills_markdown = (src.skills_markdown || base.skills_markdown || "").toString();
+  return { version: 1, resume, timeline, skills_markdown };
+}
+function saveProfilePack(pack){
+  const normalized = normalizeProfilePack(pack);
+  localStorage.setItem(LS_PROFILE_PACK, JSON.stringify(normalized));
+  // Backward compatibility with existing keys used by older builds.
+  localStorage.setItem(LS_RESUME, JSON.stringify(normalized.resume));
+  localStorage.setItem(LS_TIMELINE, JSON.stringify(normalized.timeline));
+}
+function loadProfilePack(){
+  try{
+    const packed = localStorage.getItem(LS_PROFILE_PACK);
+    if (packed) return normalizeProfilePack(JSON.parse(packed));
+  }catch{}
+
+  // Backward-compat migration path.
+  try{
+    const resumeRaw = localStorage.getItem(LS_RESUME);
+    const timelineRaw = localStorage.getItem(LS_TIMELINE);
+    if (resumeRaw || timelineRaw){
+      const resume = resumeRaw ? JSON.parse(resumeRaw) : deepClone(DATA_SEED);
+      const timeline = timelineRaw ? JSON.parse(timelineRaw) : deepClone(DATA_SEED.timeline_seed);
+      const migrated = normalizeProfilePack({ resume, timeline, skills_markdown: DEFAULT_SKILLS_MD });
+      saveProfilePack(migrated);
+      return migrated;
+    }
+  }catch{}
+
+  const embedded = ($("#profilePackSeed") ? $("#profilePackSeed").textContent : "").trim();
+  if (embedded){
+    try{
+      return normalizeProfilePack(JSON.parse(embedded));
+    }catch{}
+  }
+  return normalizeProfilePack(buildDefaultProfilePack());
+}
+
+let RESUME = deepClone(DATA_SEED);
+let TIMELINE = deepClone(DATA_SEED.timeline_seed);
+let SKILLS_MD = DEFAULT_SKILLS_MD;
+let SKILLS_TREE = parseSkillsMarkdownToTree(SKILLS_MD);
+function applyProfilePack(pack, { persist=true } = {}){
+  const normalized = normalizeProfilePack(pack);
+  RESUME = normalized.resume;
+  TIMELINE = normalized.timeline;
+  SKILLS_MD = normalized.skills_markdown;
+  SKILLS_TREE = parseSkillsMarkdownToTree(SKILLS_MD);
+  if (persist) saveProfilePack(normalized);
+  return normalized;
+}
+applyProfilePack(loadProfilePack(), { persist:false });
+
+/** =========================
+ *  RENDERERS
+ *  ========================= */
+function renderHeader(){
+  $("#name").textContent = RESUME.profile.name;
+  $("#headline").textContent = RESUME.profile.headline;
+  $("#summary").textContent = RESUME.profile.summary;
+  $("#emailText").textContent = RESUME.profile.email;
+  $("#phoneText").textContent = RESUME.profile.phone;
+  $("#emailLink").setAttribute("href", `mailto:${RESUME.profile.email}`);
+  $("#phoneLink").setAttribute("href", `tel:${RESUME.profile.phone.replace(/[^0-9+]/g,"")}`);
+  $("#siteLink").setAttribute("href", RESUME.profile.site);
+
+  $("#mMission").textContent = RESUME.mvv.mission;
+  $("#mVision").textContent = RESUME.mvv.vision;
+  $("#mValues").textContent = RESUME.mvv.values.map(v => "• " + v).join("\n");
+
+  $("#primaryDomains").textContent = (RESUME.hero && RESUME.hero.primary_domains) || "";
+  $("#focusText").textContent = (RESUME.hero && RESUME.hero.focus) || "";
+  $("#styleText").textContent = (RESUME.hero && RESUME.hero.style) || "";
+
+  const chips = (RESUME.hero && Array.isArray(RESUME.hero.chips)) ? RESUME.hero.chips : [];
+  $("#chips").innerHTML = chips.map((t) => `<span class="chip">${escapeHtml(t)}</span>`).join("");
+}
+
+function renderJobs(q=""){
+  const mode = $("#sortJobs") ? $("#sortJobs").value : "recent_desc";
+  const items = sortTimeCards(RESUME.jobs.filter((j)=>{
+    const hay = norm(j.title + " " + (j.dates || "") + " " + (j.details || []).join(" ") + " " + (j.tags || []).join(" "));
+    return fuzzyMatchText(hay, q);
+  }), mode);
+  const list = $("#jobsList");
+  list.innerHTML = items.map((j)=>`
+    <div class="item" tabindex="0" role="button" data-title="${encodeURIComponent(j.title)}">
+      <div class="top"><div class="title">${escapeHtml(j.title)}</div><div class="meta">${escapeHtml(j.dates || "")}</div></div>
+      <div class="desc">${escapeHtml((j.details || []).slice(0,2).join(" • "))}${(j.details || []).length > 2 ? " …" : ""}</div>
+      <div class="tagbar">${(j.tags || []).slice(0,10).map((t)=>`<span class="tag">${escapeHtml(t)}</span>`).join("")}</div>
+    </div>
+  `).join("");
+  $$(".item", list).forEach((el)=>{
+    const title = decodeURIComponent(el.dataset.title);
+    const job = RESUME.jobs.find((x)=>x.title === title);
+    const open = () => openDetail({
+      title: job.title,
+      meta: job.dates || "Job Experience",
+      body: (job.details || []).map((x)=>"• " + x).join("\n")
+    });
+    el.addEventListener("click", open);
+    el.addEventListener("keydown", (ev)=>{ if(ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); open(); } });
+  });
+}
+
+function renderEducation(q=""){
+  const mode = $("#sortEdu") ? $("#sortEdu").value : "recent_desc";
+  const items = sortTimeCards(RESUME.education.filter((e)=>{
+    const hay = norm(e.title + " " + (e.dates || "") + " " + (e.details || []).join(" ") + " " + (e.tags || []).join(" "));
+    return fuzzyMatchText(hay, q);
+  }), mode);
+  const list = $("#educationList");
+  list.innerHTML = items.map((e)=>`
+    <div class="item" tabindex="0" role="button" data-title="${encodeURIComponent(e.title)}">
+      <div class="top"><div class="title">${escapeHtml(e.title)}</div><div class="meta">${escapeHtml(e.dates || "")}</div></div>
+      <div class="desc">${escapeHtml((e.details || []).slice(0,2).join(" • "))}${(e.details || []).length > 2 ? " …" : ""}</div>
+      <div class="tagbar">${(e.tags || []).slice(0,10).map((t)=>`<span class="tag">${escapeHtml(t)}</span>`).join("")}</div>
+    </div>
+  `).join("");
+  $$(".item", list).forEach((el)=>{
+    const title = decodeURIComponent(el.dataset.title);
+    const edu = RESUME.education.find((x)=>x.title === title);
+    const open = () => openDetail({
+      title: edu.title,
+      meta: edu.dates || "Education",
+      body: (edu.details || []).map((x)=>"• " + x).join("\n")
+    });
+    el.addEventListener("click", open);
+    el.addEventListener("keydown", (ev)=>{ if(ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); open(); } });
+  });
+}
+
+function renderSkillNode(node){
+  const levelClass = node.level === 1 ? "skillLevel1" : (node.level === 2 ? "skillLevel2" : "skillLevel3");
+  const isTop = node.level === 1;
+  const shouldOpen = isTop ? " open" : "";
+  const paragraphs = node.paragraphs.map((p)=>`<p>${escapeHtml(p)}</p>`).join("");
+  const bullets = node.bullets.length ? `<ul class="bullets">${node.bullets.map((x)=>`<li>${escapeHtml(x)}</li>`).join("")}</ul>` : "";
+  const children = node.children.map((ch)=>renderSkillNode(ch)).join("");
+  return `
+    <details class="skillNode ${levelClass}"${shouldOpen}>
+      <summary><span>${escapeHtml(node.title)}</span><span class="caret" aria-hidden="true"></span></summary>
+      <div class="skillBody">${paragraphs}${bullets}${children}</div>
+    </details>
+  `;
+}
+
+function renderSkills(q=""){
+  const host = $("#skillsTree");
+  host.innerHTML = SKILLS_TREE.map((n)=>renderSkillNode(n)).join("");
+  filterSkills(q);
+}
+
+function filterSkills(q){
+  const query = norm(q);
+  const host = $("#skillsTree");
+  const allDetails = $$("#skillsTree details");
+  clearSearchHighlights(host);
+  if (!query){
+    allDetails.forEach((d)=>{ d.style.display = ""; });
+    return;
+  }
+  allDetails.forEach((d)=>{ d.style.display = "none"; d.open = false; });
+  const matched = allDetails.filter((d)=>fuzzyMatchText(d.textContent || "", query));
+  matched.forEach((d)=>{
+    d.style.display = "";
+    d.open = true;
+    // Ensure parents are visible + expanded.
+    let p = d.parentElement;
+    while (p && p.id !== "skillsTree"){
+      if (p.tagName === "DETAILS"){
+        p.style.display = "";
+        p.open = true;
+      }
+      p = p.parentElement;
+    }
+  });
+  highlightSearchTerms(host, query);
+}
+
+function renderPassions(q=""){
+  const list = $("#passionsList");
+  const items = RESUME.passions.filter((p)=>fuzzyMatchText(p, q));
+  if (!items.length){
+    list.innerHTML = `<div class="status" style="margin:0;">No passions match this search.</div>`;
+    return;
+  }
+  list.innerHTML = `
+    <div class="passionCloud">
+      ${items.map((p, idx)=>{
+        const variant = (idx % 4) + 1;
+        return `<article class="passionBubble v${variant}"><p>${escapeHtml(p)}</p></article>`;
+      }).join("")}
+    </div>
+  `;
+}
+
+function bucketCapabilitiesByProcess(items){
+  const buckets = [
+    { title:"FDM 3D Printing", match:(t)=>/\b(v-core|ratrig|bambu|sidewinder|fdm|fused|filament|3d print(?!er company)|printer)\b/.test(t), items:[] },
+    { title:"Resin 3D Printing", match:(t)=>/\b(resin|elegoo|anycubic|sla|msla)\b/.test(t), items:[] },
+    { title:"CNC", match:(t)=>/\bcnc|x-carve|router|plasma\b/.test(t), items:[] },
+    { title:"Laser", match:(t)=>/\blaser|co2\b/.test(t), items:[] },
+    { title:"Electronics & PCB Prototyping", match:(t)=>/\b(circuit|easyeda|altium|kicad|pcb|embedded|controller|led)\b/.test(t), items:[] },
+    { title:"Finishing & Surface Prep", match:(t)=>/\b(airbrush|airbrushing|sandblast|sandblasting|surface|finishing)\b/.test(t), items:[] },
+    { title:"Print & Transfer Systems", match:(t)=>/\b(sublimation|uv printer|eufy)\b/.test(t), items:[] },
+    { title:"Other Capabilities", match:()=>true, items:[] }
+  ];
+
+  items.forEach((raw)=>{
+    const txt = norm(raw);
+    const bucket = buckets.find((b)=>b.match(txt)) || buckets[buckets.length - 1];
+    bucket.items.push(raw);
+  });
+  return buckets.filter((b)=>b.items.length > 0);
+}
+
+function renderCapabilities(q=""){
+  const list = $("#capabilitiesList");
+  const query = norm(q);
+  const allItems = (RESUME.capabilities || []).flatMap((g)=>g.items || []);
+  const filtered = allItems.filter((it)=>fuzzyMatchText(it, query));
+  if (!filtered.length){
+    list.innerHTML = `<div class="status" style="margin:0;">No capabilities match this search.</div>`;
+    return;
+  }
+
+  const grouped = bucketCapabilitiesByProcess(filtered);
+  list.innerHTML = grouped.map((g)=>`
+    <details class="skillNode skillLevel1" open>
+      <summary><span>${escapeHtml(g.title)} <span style="color:var(--muted2); font-weight:500;">(${g.items.length})</span></span><span class="caret" aria-hidden="true"></span></summary>
+      <div class="skillBody">
+        <ul class="bullets">${g.items.map((x)=>`<li>${escapeHtml(x)}</li>`).join("")}</ul>
+      </div>
+    </details>
+  `).join("");
+}
+
+const TL_BASE_CARD_PX = 280;
+const TL_BASE_GAP_PX = 28;
+const TL_ZOOM_MAX_CAP = 6;
+const TL_TARGET_VISIBLE_AT_MAX = 2;
+let timelineZoom = 1;
+let timelineZoomBounds = { min:0.2, max:2.5 };
+
+function clampNum(v, min, max){ return Math.min(max, Math.max(min, v)); }
+function sortByDateAsc(a, b){ return norm(a.date).localeCompare(norm(b.date)); }
+function computeTimelineZoomBounds(itemCount){
+  const wrap = $("#timelineList");
+  const viewWidth = Math.max(320, (wrap ? wrap.clientWidth : 980) - 10);
+  const count = Math.max(1, itemCount);
+
+  const widthAtScale1 = (count * TL_BASE_CARD_PX) + (Math.max(0, count - 1) * TL_BASE_GAP_PX);
+  const minZoom = Math.min(1, viewWidth / Math.max(1, widthAtScale1));
+
+  const targetVisible = Math.max(1, Math.min(TL_TARGET_VISIBLE_AT_MAX, count));
+  const targetWidthAtScale1 = (targetVisible * TL_BASE_CARD_PX) + (Math.max(0, targetVisible - 1) * TL_BASE_GAP_PX);
+  const maxZoom = Math.min(TL_ZOOM_MAX_CAP, Math.max(minZoom, viewWidth / Math.max(1, targetWidthAtScale1)));
+
+  return { min:minZoom, max:maxZoom };
+}
+function timelineZoomStep(){
+  const span = timelineZoomBounds.max - timelineZoomBounds.min;
+  return Math.max(0.02, span / 18);
+}
+function normalizeMediaLinks(lines){
+  return (lines || [])
+    .filter(Boolean)
+    .map((url)=>({ type:"link", url, label:url.replace(/^https?:\/\//, "") }));
+}
+
+function renderTimeline(q=""){
+  const query = norm(q);
+  const items = TIMELINE.slice().sort(sortByDateAsc).filter((t)=>{
+    const hay = norm(`${t.date} ${t.title} ${t.type} ${t.details || ""} ${(t.tags || []).join(" ")}`);
+    return fuzzyMatchText(hay, query);
+  });
+  if (!items.length){
+    timelineZoomBounds = computeTimelineZoomBounds(1);
+    timelineZoom = clampNum(timelineZoom, timelineZoomBounds.min, timelineZoomBounds.max);
+    syncTimelineZoomUI();
+    $("#timelineList").innerHTML = `<div class="status" style="margin:0;">No timeline items match this search.</div>`;
+    return;
+  }
+  timelineZoomBounds = computeTimelineZoomBounds(items.length);
+  timelineZoom = clampNum(timelineZoom, timelineZoomBounds.min, timelineZoomBounds.max);
+  syncTimelineZoomUI();
+
+  $("#timelineList").innerHTML = `
+    <div class="timelineTrack" style="--tl-zoom:${timelineZoom.toFixed(4)}; --tl-base-card:${TL_BASE_CARD_PX}px; --tl-base-gap:${TL_BASE_GAP_PX}px;">
+      ${items.map((t)=>`
+        <article class="tRow">
+          <div class="tDate">${escapeHtml(t.date || "")}</div>
+          <div class="tRail"><div class="tDot" aria-hidden="true"></div></div>
+          <div class="tCard">
+            <details>
+              <summary>${escapeHtml(t.title || "Untitled")}</summary>
+              <div class="tMeta">
+                <span class="pillMini">${escapeHtml(t.type || "Milestone")}</span>
+                ${(t.tags || []).slice(0,8).map((x)=>`<span class="pillMini">${escapeHtml(x)}</span>`).join("")}
+              </div>
+              <div class="tBody">
+                ${t.details ? `<div style="color:var(--muted); font-size:13px; line-height:1.55">${escapeHtml(t.details).replace(/\n/g,"<br/>")}</div>` : ""}
+                ${(t.media || []).length ? `<div class="mediaGrid">${(t.media || []).map((m)=>{
+                  if (m.type === "image" && m.data && /^data:image\//.test(m.data)){
+                    return `<div class="mediaCard" style="cursor:default"><img class="mediaImg" src="${m.data}" alt="${escapeHtml(m.name || "embedded image")}"/><small>${escapeHtml(m.name || "Embedded image")}</small></div>`;
+                  }
+                  const url = (m.url || "").trim();
+                  if (!url) return "";
+                  return `<a class="mediaCard" href="${url}" target="_blank" rel="noopener">${escapeHtml(m.label || url)}<br/><small>link</small></a>`;
+                }).join("")}</div>` : ""}
+              </div>
+            </details>
+          </div>
+        </article>
+      `).join("")}
+    </div>
+  `;
+}
+
+function syncTimelineZoomUI(){
+  const minPct = Math.max(1, Math.round(timelineZoomBounds.min * 100));
+  const maxPct = Math.max(minPct + 1, Math.round(timelineZoomBounds.max * 100));
+  const pct = Math.round(timelineZoom * 100);
+  $("#tlZoomRange").min = String(minPct);
+  $("#tlZoomRange").max = String(maxPct);
+  $("#tlZoomRange").step = "1";
+  $("#tlZoomRange").value = String(clampNum(pct, minPct, maxPct));
+  $("#tlZoomLabel").textContent = pct + "%";
+}
+
+function setTimelineZoom(next){
+  timelineZoom = clampNum(next, timelineZoomBounds.min, timelineZoomBounds.max);
+  syncTimelineZoomUI();
+  renderTimeline($("#searchTL").value || "");
+}
+
+/** =========================
+ *  DETAIL MODAL
+ *  ========================= */
+const detail = document.createElement("dialog");
+detail.id = "detail";
+detail.innerHTML = `
+  <div class="modalHead">
+    <div>
+      <div class="t" id="dTitle"></div>
+      <div style="color:var(--muted2); font-size:12px; margin-top:4px" id="dMeta"></div>
+    </div>
+    <button class="x" id="closeDetail" aria-label="Close">✕</button>
+  </div>
+  <div class="modalBody">
+    <div style="white-space:pre-wrap; color:var(--muted); line-height:1.55" id="dBody"></div>
+  </div>
+`;
+document.body.appendChild(detail);
+function openDetail({ title, meta, body }){
+  $("#dTitle", detail).textContent = title || "";
+  $("#dMeta", detail).textContent = meta || "";
+  $("#dBody", detail).textContent = body || "";
+  detail.showModal();
+}
+$("#closeDetail", detail).addEventListener("click", ()=>detail.close());
+detail.addEventListener("click", (e)=>{
+  const r = detail.getBoundingClientRect();
+  const inside = r.top <= e.clientY && e.clientY <= r.bottom && r.left <= e.clientX && e.clientX <= r.right;
+  if (!inside) detail.close();
+});
+
+/** =========================
+ *  UI EVENTS
+ *  ========================= */
+function setupTabs(){
+  $$(".tab").forEach((btn)=>{
+    const activate = () => {
+      $$(".tab").forEach((b)=>b.setAttribute("aria-selected","false"));
+      btn.setAttribute("aria-selected","true");
+      $$(".panel").forEach((p)=>p.classList.remove("active"));
+      $("#panel-" + btn.dataset.tab).classList.add("active");
+    };
+    btn.addEventListener("click", activate);
+    btn.addEventListener("keydown", (e)=>{
+      if (e.key === "Enter" || e.key === " "){
+        e.preventDefault();
+        activate();
+      }
+    });
+  });
+}
+
+function bindSearch(){
+  $("#searchJobs").addEventListener("input", (e)=>renderJobs(e.target.value));
+  $("#clearJobs").addEventListener("click", ()=>{ $("#searchJobs").value = ""; renderJobs(""); });
+  $("#sortJobs").addEventListener("change", ()=>renderJobs($("#searchJobs").value || ""));
+
+  $("#searchEdu").addEventListener("input", (e)=>renderEducation(e.target.value));
+  $("#clearEdu").addEventListener("click", ()=>{ $("#searchEdu").value = ""; renderEducation(""); });
+  $("#sortEdu").addEventListener("change", ()=>renderEducation($("#searchEdu").value || ""));
+
+  const debouncedSkills = debounce((q)=>filterSkills(q), 160);
+  $("#searchSkills").addEventListener("input", (e)=>debouncedSkills(e.target.value));
+  $("#expandAll").addEventListener("click", ()=>{ $$("#skillsTree details").forEach((d)=>{ d.open = true; d.style.display = ""; }); });
+  $("#collapseAll").addEventListener("click", ()=>{ $$("#skillsTree details").forEach((d)=>{ if(!d.classList.contains("skillLevel1")) d.open = false; d.style.display = ""; }); });
+
+  $("#searchTL").addEventListener("input", (e)=>renderTimeline(e.target.value));
+  $("#clearTL").addEventListener("click", ()=>{ $("#searchTL").value = ""; renderTimeline(""); });
+
+  $("#searchPassions").addEventListener("input", (e)=>renderPassions(e.target.value));
+  $("#clearPassions").addEventListener("click", ()=>{ $("#searchPassions").value = ""; renderPassions(""); });
+
+  $("#searchCaps").addEventListener("input", (e)=>renderCapabilities(e.target.value));
+  $("#clearCaps").addEventListener("click", ()=>{ $("#searchCaps").value = ""; renderCapabilities(""); });
+}
+
+function bindTimelineControls(){
+  syncTimelineZoomUI();
+  $("#tlZoomOut").addEventListener("click", ()=>setTimelineZoom(timelineZoom - timelineZoomStep()));
+  $("#tlZoomIn").addEventListener("click", ()=>setTimelineZoom(timelineZoom + timelineZoomStep()));
+  $("#tlZoomReset").addEventListener("click", ()=>setTimelineZoom(1));
+  $("#tlZoomRange").addEventListener("input", (e)=>setTimelineZoom(Number(e.target.value) / 100));
+
+  // Keep horizontal scroll as default, but allow ctrl/cmd + wheel zoom for dense timelines.
+  $("#timelineList").addEventListener("wheel", (e)=>{
+    if (!(e.ctrlKey || e.metaKey)) return;
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -timelineZoomStep() : timelineZoomStep();
+    setTimelineZoom(timelineZoom + delta);
+  }, { passive:false });
+
+  window.addEventListener("resize", debounce(()=>renderTimeline($("#searchTL").value || ""), 140));
+}
+
+const settings = $("#settings");
+function currentProfilePack(){
+  return normalizeProfilePack({
+    version: 1,
+    resume: RESUME,
+    timeline: TIMELINE,
+    skills_markdown: SKILLS_MD
+  });
+}
+function buildAIPackagePrompt(){
+  return [
+    "You are editing a JSON file used by a single-file interactive resume web app.",
+    "Your task: update this JSON package for a new person or requested profile changes.",
+    "",
+    "CRITICAL OUTPUT RULES:",
+    "- Return ONLY valid JSON (no markdown fences, no commentary).",
+    "- Preserve the same top-level schema: { version, resume, timeline, skills_markdown }.",
+    "- Keep array/object types intact even when fields are empty.",
+    "- Do not remove required keys unless explicitly asked.",
+    "",
+    "PACKAGE SCHEMA (high-level):",
+    "- version: number",
+    "- resume.profile: { name, phone, email, site, headline, summary }",
+    "- resume.hero: { primary_domains, focus, style, chips[] }",
+    "- resume.mvv: { mission, vision, values[] }",
+    "- resume.jobs[]: { title, dates, details[], tags[] }",
+    "- resume.education[]: { title, dates, details[], tags[] }",
+    "- resume.passions[]: string",
+    "- resume.capabilities[]: { group, items[] }",
+    "- timeline[]: { date, title, type, tags[], details, media[] }",
+    "- timeline[].media[]: either link item ({ type:'link', url, label }) OR embedded image ({ type:'image', name, data:'data:image/...base64,...' })",
+    "- skills_markdown: markdown string for the skills map hierarchy",
+    "",
+    "TRANSFORMATION GUIDELINES:",
+    "- Adapt all person-specific fields (name, contact, summary, jobs, education, skills, passions, capabilities, timeline).",
+    "- Ensure timeline entries are coherent and chronological by date.",
+    "- Keep text concise and professional unless user asks otherwise.",
+    "- If input data is incomplete, keep placeholders but maintain valid schema.",
+    "",
+    "Return the fully updated JSON package only."
+  ].join("\\n");
+}
+async function copyTextToClipboard(text){
+  if (navigator.clipboard && window.isSecureContext){
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.setAttribute("readonly", "true");
+  ta.style.position = "fixed";
+  ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand("copy");
+  ta.remove();
+}
+function persistCurrentProfilePack(){
+  saveProfilePack(currentProfilePack());
+}
+function exportPortableHtmlFile(){
+  const seedNode = $("#profilePackSeed");
+  if (!seedNode){
+    setStatus("Portable HTML export failed: profile seed node is missing.", true);
+    return;
+  }
+  const packed = JSON.stringify(currentProfilePack(), null, 2).replace(/</g, "\\u003c");
+  const replacement = `<script type="application/json" id="profilePackSeed">\n${packed}\n` + "</" + "script>";
+  const html = "<!DOCTYPE html>\n" + document.documentElement.outerHTML.replace(
+    /<script\s+type="application\/json"\s+id="profilePackSeed">[\s\S]*?<\/script>/,
+    replacement
+  );
+  dl("interactive_resume_portable.html", html, "text/html");
+  setStatus("Exported interactive_resume_portable.html with embedded package data.");
+}
+
+$("#settingsBtn").addEventListener("click", ()=>{
+  $("#resumeMd").value = "";
+  $("#timelineJson").value = "";
+  $("#profilePackJson").value = JSON.stringify(currentProfilePack(), null, 2);
+  $("#profilePackFile").value = "";
+  settings.showModal();
+});
+$("#closeSettings").addEventListener("click", ()=>settings.close());
+settings.addEventListener("click", (e)=>{
+  const r = settings.getBoundingClientRect();
+  const inside = r.top <= e.clientY && e.clientY <= r.bottom && r.left <= e.clientX && e.clientX <= r.right;
+  if (!inside) settings.close();
+});
+
+$("#applyResume").addEventListener("click", ()=>{
+  const md = $("#resumeMd").value.trim();
+  if (!md){
+    setStatus("Paste resume markdown first, then try Apply Resume Markdown.", true);
+    return;
+  }
+  try{
+    const parsed = parseResumeMarkdown(md);
+    const nextResume = { ...parsed.data, hero: deepClone((RESUME && RESUME.hero) ? RESUME.hero : DATA_SEED.hero) };
+    applyProfilePack({ resume:nextResume, timeline:TIMELINE, skills_markdown:SKILLS_MD });
+    rerenderAll();
+    const msg = parsed.warnings.length
+      ? `Resume imported with warnings: ${parsed.warnings.join(" ")}`
+      : "Resume imported successfully and saved locally.";
+    setStatus(msg, parsed.warnings.length > 0);
+  }catch(err){
+    setStatus("Resume import failed: " + err.message, true);
+  }
+});
+
+$("#exportResume").addEventListener("click", ()=>{
+  dl("resume_v6.json", JSON.stringify(RESUME, null, 2));
+  setStatus("Exported resume_v6.json.");
+});
+
+$("#applyProfilePack").addEventListener("click", ()=>{
+  const raw = $("#profilePackJson").value.trim();
+  if (!raw){
+    setStatus("Paste package JSON first, then click Apply Package JSON.", true);
+    return;
+  }
+  try{
+    const parsed = JSON.parse(raw);
+    applyProfilePack(parsed);
+    rerenderAll();
+    $("#profilePackJson").value = JSON.stringify(currentProfilePack(), null, 2);
+    setStatus("Unified profile package applied and saved locally.");
+  }catch(err){
+    setStatus("Package import failed: " + err.message, true);
+  }
+});
+
+$("#importProfilePackFile").addEventListener("click", ()=>$("#profilePackFile").click());
+$("#profilePackFile").addEventListener("change", async (e)=>{
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  try{
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    applyProfilePack(parsed);
+    rerenderAll();
+    $("#profilePackJson").value = JSON.stringify(currentProfilePack(), null, 2);
+    setStatus(`Imported package file: ${file.name}`);
+  }catch(err){
+    setStatus("Package file import failed: " + err.message, true);
+  }finally{
+    e.target.value = "";
+  }
+});
+
+$("#exportProfilePack").addEventListener("click", ()=>{
+  dl("resume_profile_pack_v1.json", JSON.stringify(currentProfilePack(), null, 2));
+  setStatus("Exported resume_profile_pack_v1.json.");
+});
+$("#copyPackagePrompt").addEventListener("click", async ()=>{
+  try{
+    await copyTextToClipboard(buildAIPackagePrompt());
+    setStatus("Copied AI package prompt to clipboard.");
+  }catch(err){
+    setStatus("Could not copy prompt to clipboard: " + err.message, true);
+  }
+});
+$("#exportPortableHtml").addEventListener("click", exportPortableHtmlFile);
+
+$("#importTimeline").addEventListener("click", ()=>{
+  const raw = $("#timelineJson").value.trim();
+  if (!raw){
+    setStatus("Paste timeline JSON first, then import.", true);
+    return;
+  }
+  try{
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) throw new Error("Timeline JSON must be an array.");
+    TIMELINE = arr.map((x)=>({
+      date:(x.date || "").toString(),
+      title:(x.title || "").toString(),
+      type:(x.type || "Milestone").toString(),
+      tags:Array.isArray(x.tags) ? x.tags.map(String) : [],
+      details:(x.details || "").toString(),
+      media:Array.isArray(x.media) ? x.media : []
+    })).filter((x)=>x.title);
+    persistCurrentProfilePack();
+    renderTimeline($("#searchTL").value || "");
+    setStatus("Timeline imported and saved locally.");
+  }catch(err){
+    setStatus("Timeline import failed: " + err.message, true);
+  }
+});
+
+$("#exportTimeline").addEventListener("click", ()=>{
+  dl("timeline_v6.json", JSON.stringify(TIMELINE, null, 2));
+  setStatus("Exported timeline_v6.json.");
+});
+
+$("#resetAll").addEventListener("click", ()=>{
+  if (!confirm("Reset all data (resume + skills map + timeline) to seed defaults?")) return;
+  applyProfilePack(buildDefaultProfilePack());
+  rerenderAll();
+  setStatus("Reset complete.");
+});
+
+$("#addTimeline").addEventListener("click", async ()=>{
+  const date = $("#tDate").value.trim();
+  const type = $("#tType").value.trim() || "Project";
+  const title = $("#tTitle").value.trim();
+  const tags = $("#tTags").value.split(",").map((s)=>s.trim()).filter(Boolean);
+  const details = $("#tDetails").value.trim();
+  const links = $("#tLinks").value.split(/\r?\n/).map((s)=>s.trim()).filter(Boolean);
+  const media = normalizeMediaLinks(links);
+
+  if (!title){
+    setStatus("Timeline title is required.", true);
+    return;
+  }
+
+  const file = $("#tImage").files && $("#tImage").files[0];
+  if (file){
+    try{
+      const dataUrl = await new Promise((resolve, reject)=>{
+        const reader = new FileReader();
+        reader.onload = ()=>resolve(reader.result);
+        reader.onerror = ()=>reject(new Error("Failed to read image file."));
+        reader.readAsDataURL(file);
+      });
+      if (typeof dataUrl === "string" && dataUrl.startsWith("data:image/")){
+        media.unshift({ type:"image", name:file.name, data:dataUrl });
+      } else {
+        setStatus("Selected file is not a valid image data URL.", true);
+        return;
+      }
+    }catch(err){
+      setStatus("Image embed failed: " + err.message, true);
+      return;
+    }
+  }
+
+  TIMELINE.push({ date, type, title, tags, details, media });
+  persistCurrentProfilePack();
+  renderTimeline($("#searchTL").value || "");
+
+  ["#tDate","#tType","#tTitle","#tTags","#tDetails","#tLinks"].forEach((id)=>{ $(id).value = ""; });
+  $("#tImage").value = "";
+  setStatus("Timeline entry added.");
+});
+
+function rerenderAll(){
+  renderHeader();
+  renderJobs($("#searchJobs").value || "");
+  renderEducation($("#searchEdu").value || "");
+  renderSkills($("#searchSkills").value || "");
+  renderTimeline($("#searchTL").value || "");
+  renderPassions($("#searchPassions").value || "");
+  renderCapabilities($("#searchCaps").value || "");
+}
+
+setupTabs();
+bindSearch();
+bindTimelineControls();
+rerenderAll();
+setStatus("Loaded v6 single-file resume. Use Settings to import/export one unified package file.");
+</script>
+</body>
+</html>
