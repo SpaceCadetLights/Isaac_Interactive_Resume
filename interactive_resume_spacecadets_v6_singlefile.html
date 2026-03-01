@@ -135,7 +135,25 @@
   }
   .pill:hover{transform:translateY(-1px); border-color:rgba(255,255,255,.22); background:rgba(255,255,255,.08)}
   .dot{width:8px; height:8px; border-radius:999px; background:linear-gradient(90deg,var(--a),var(--b),var(--c)); box-shadow:0 0 0 4px rgba(124,247,255,.10)}
-  .gear{width:40px; height:40px; border-radius:999px; display:grid; place-items:center; font-size:18px; color:rgba(255,255,255,.95)}
+  .gear{
+    width:40px;
+    height:40px;
+    border-radius:999px;
+    display:grid;
+    place-items:center;
+    font-size:18px;
+    color:rgba(255,255,255,.95);
+  }
+  #settingsBtn.gear{
+    position:fixed;
+    left:50%;
+    bottom:14px;
+    transform:translateX(-50%);
+    z-index:50;
+  }
+  #settingsBtn.gear:hover{
+    transform:translateX(-50%) translateY(-1px);
+  }
 
   .hero{display:grid; grid-template-columns:.95fr 1.05fr; gap:14px; align-items:stretch; margin:10px 0 14px;}
   @media(max-width:1040px){.hero{grid-template-columns:1fr;}}
@@ -321,6 +339,46 @@
       transform:none !important;
       filter:none !important;
     }
+  }
+
+  /* Compact density for narrow phone screens */
+  @media(max-width:520px){
+    .wrap{padding:14px 12px 52px}
+    .cardSection{padding:10px}
+    .card{border-radius:20px}
+    .orb{display:none}
+    .brand h1{font-size:14px}
+    .brand .sub{font-size:11px}
+
+    .pill{padding:7px 10px; font-size:12px}
+    .tab{padding:8px 10px; font-size:12px; min-height:38px}
+    .btn{padding:8px 10px; font-size:12px}
+    .input{padding:8px 10px}
+    .input input{font-size:12px}
+
+    .kpi{padding:8px 10px}
+    .kpi .label{font-size:11px}
+    .kpi .value{font-size:12px; gap:6px}
+    .kpiChip{font-size:11px; min-height:26px; padding:5px 8px}
+
+    .mvv{padding:10px; gap:8px}
+    .mvv .blk{padding:9px 10px}
+    .mvv .blk .t{font-size:11px}
+    .mvv .blk .b{font-size:12px; line-height:1.4}
+
+    .item{padding:10px; margin-bottom:8px}
+    .item .title{font-size:12px}
+    .item .meta{font-size:11px}
+    .item .desc{font-size:12px}
+    .tag{font-size:11px; padding:6px 8px}
+    .pillMini{font-size:10px; padding:3px 7px}
+
+    .skillNode summary{font-size:12px; padding:10px 12px}
+    .skillBody p,.bullets{font-size:12px; line-height:1.45}
+
+    .timelineWrap{padding:8px 2px 4px}
+    .status{font-size:11px; padding:8px 10px}
+    .modalBody{padding:12px}
   }
 
   .cardSection{padding:14px}
