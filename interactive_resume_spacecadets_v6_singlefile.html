@@ -104,6 +104,18 @@
   .brand h1{font-size:16px; margin:0; letter-spacing:.2px}
   .brand .sub{font-size:12px; color:var(--muted2); margin-top:2px}
   .actions{display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end}
+  @media(max-width:760px){
+    .topbar{align-items:center}
+    .brand{
+      width:100%;
+      justify-content:center;
+      text-align:center;
+    }
+    .actions{
+      width:100%;
+      justify-content:center;
+    }
+  }
   .pill{
     display:inline-flex;
     align-items:center;
@@ -225,28 +237,36 @@
 
   .nav{
     display:flex;
-    gap:8px;
+    gap:10px;
     flex-wrap:wrap;
-    margin:10px 0 12px;
+    margin:12px 0 14px;
+    padding:4px 2px;
     justify-content:center;
   }
   @media(max-width:760px){
     .nav{
-      justify-content:flex-start;
-      overflow-x:auto;
-      flex-wrap:nowrap;
-      padding-bottom:2px;
-      -webkit-overflow-scrolling:touch;
-      scrollbar-width:thin;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:8px;
+      justify-content:stretch;
+      overflow:visible;
+      padding:6px 2px 2px;
     }
-    .nav .tab{flex:0 0 auto}
+    .nav .tab{
+      width:100%;
+      justify-content:center;
+      text-align:center;
+      min-height:42px;
+      padding:10px 10px;
+      line-height:1.2;
+    }
   }
   .tab{
     appearance:none;
     border:1px solid rgba(255,255,255,.14);
     background:rgba(255,255,255,.06);
     color:rgba(255,255,255,.86);
-    padding:10px 12px;
+    padding:10px 14px;
     border-radius:999px;
     cursor:pointer;
     font-size:13px;
@@ -810,6 +830,75 @@
     background:rgba(60,10,24,.35);
     color:rgba(255,220,230,.95);
   }
+
+  /* Light mode */
+  body[data-theme="light"]{
+    --bg0:#edf3ff;
+    --text:rgba(20,32,56,.94);
+    --muted:rgba(30,46,76,.78);
+    --muted2:rgba(42,62,98,.62);
+    --shadow:0 14px 34px rgba(35,58,95,.14);
+    --shadow2:0 8px 20px rgba(35,58,95,.12);
+    --lineGlow:0 0 18px rgba(68,150,255,.28);
+  }
+  body[data-theme="light"] .bgFlow{
+    background:
+      radial-gradient(1100px 720px at 10% 8%, rgba(114,199,255,.28), transparent 58%),
+      radial-gradient(960px 740px at 88% 12%, rgba(163,133,255,.22), transparent 56%),
+      radial-gradient(820px 720px at 84% 84%, rgba(255,124,211,.18), transparent 58%),
+      radial-gradient(860px 880px at 12% 86%, rgba(118,235,170,.16), transparent 58%),
+      radial-gradient(640px 480px at 52% 42%, rgba(120,175,255,.10), transparent 62%),
+      linear-gradient(180deg, #f3f7ff, #e9f0ff 50%, #f4f8ff);
+  }
+  body[data-theme="light"] .jwstBg{opacity:calc(var(--jwst-opacity) * .65)}
+  body[data-theme="light"] .stars{opacity:.34}
+
+  body[data-theme="light"] .pill,
+  body[data-theme="light"] .tab,
+  body[data-theme="light"] .btn,
+  body[data-theme="light"] .input,
+  body[data-theme="light"] .item,
+  body[data-theme="light"] .skillNode,
+  body[data-theme="light"] .tCard,
+  body[data-theme="light"] .mvv .blk,
+  body[data-theme="light"] .kpi,
+  body[data-theme="light"] .status,
+  body[data-theme="light"] .mediaCard,
+  body[data-theme="light"] .settingsSection,
+  body[data-theme="light"] .settingsCollapsible,
+  body[data-theme="light"] .settingsCollapsible > summary,
+  body[data-theme="light"] .field input,
+  body[data-theme="light"] .field textarea{
+    background:rgba(255,255,255,.72);
+    border-color:rgba(62,94,140,.20);
+    color:rgba(24,38,64,.92);
+  }
+  body[data-theme="light"] .card{
+    background:rgba(255,255,255,.68);
+    border-color:rgba(62,94,140,.22);
+  }
+  body[data-theme="light"] .kpiChip,
+  body[data-theme="light"] .pillMini,
+  body[data-theme="light"] .tag{
+    background:rgba(238,245,255,.86);
+    border-color:rgba(68,98,146,.22);
+    color:rgba(25,38,64,.88);
+  }
+  body[data-theme="light"] .tab[aria-selected="true"]{
+    background:linear-gradient(90deg, rgba(124,247,255,.38), rgba(180,140,255,.34), rgba(255,122,229,.28));
+    border-color:rgba(56,86,132,.28);
+  }
+  body[data-theme="light"] .btn:hover,
+  body[data-theme="light"] .pill:hover,
+  body[data-theme="light"] .tab:hover{
+    background:rgba(255,255,255,.88);
+    border-color:rgba(56,86,132,.30);
+  }
+  body[data-theme="light"] .input input{color:rgba(24,38,64,.92)}
+  body[data-theme="light"] dialog{
+    background:rgba(243,247,255,.95);
+    color:rgba(24,38,64,.92);
+  }
 </style>
 </head>
 <body>
@@ -857,15 +946,15 @@
   </div>
 
   <div class="nav" role="tablist" aria-label="Resume sections">
-    <button class="tab" role="tab" aria-selected="true" data-tab="jobs"><span class="spark"></span>Job Experience</button>
+    <button class="tab" role="tab" aria-selected="true" data-tab="skills"><span class="spark"></span>Skills Map</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="jobs"><span class="spark"></span>Job Experience</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="education"><span class="spark"></span>Education</button>
-    <button class="tab" role="tab" aria-selected="false" data-tab="skills"><span class="spark"></span>Skills Map</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="timeline"><span class="spark"></span>Timeline</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="passions"><span class="spark"></span>Passions</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="capabilities"><span class="spark"></span>Manufacturing Capabilities</button>
   </div>
 
-  <section id="panel-jobs" class="panel active">
+  <section id="panel-jobs" class="panel">
     <div class="card cardSection">
       <h3>Job Experience</h3>
       <div class="toolbar compactSearchToolbar">
@@ -905,7 +994,7 @@
     </div>
   </section>
 
-  <section id="panel-skills" class="panel">
+  <section id="panel-skills" class="panel active">
     <div class="card cardSection">
       <h3>Skills Map (Complete Master Library)</h3>
       <div class="toolbar">
@@ -980,6 +1069,7 @@
         <button class="btn primary" id="applyProfilePack">Apply Package JSON</button>
         <button class="btn" id="importProfilePackFile">Import Package File</button>
         <button class="btn" id="exportProfilePack">Export Package JSON</button>
+        <button class="btn" id="toggleTheme">Switch to Light Mode</button>
         <button class="btn" id="copyPackagePrompt">Copy AI Package Prompt</button>
         <button class="btn" id="exportPortableHtml">Export Portable HTML</button>
         <button class="btn" id="resetAll">Reset to Seed</button>
@@ -1517,6 +1607,7 @@ const DATA_SEED = {
 const LS_RESUME = "sc_resume_v6_single";
 const LS_TIMELINE = "sc_timeline_v6_single";
 const LS_PROFILE_PACK = "sc_profile_pack_v1";
+const LS_THEME = "sc_theme_v1";
 const LEGACY_HEADLINE_V6 = "Electrical & Mechanical Engineer • Prototype Engineer • Interactive Lighting Systems • Product + Manufacturing";
 const LEGACY_SUMMARY_V6 = "Multidisciplinary electromechanical builder who designs and manufactures interactive LED systems, embedded controllers, and physical products from concept to deployment.";
 const LEGACY_MISSION_V6 = "Build beautiful, reliable, human-centered interactive systems that turn technology into emotional connection.";
@@ -1672,6 +1763,17 @@ function setStatus(message, isError=false){
   const el = $("#status");
   el.textContent = message;
   el.classList.toggle("error", isError);
+}
+function loadTheme(){
+  const saved = (localStorage.getItem(LS_THEME) || "").trim();
+  return saved === "light" ? "light" : "dark";
+}
+function applyTheme(theme, persist=false){
+  const next = theme === "light" ? "light" : "dark";
+  document.body.dataset.theme = next;
+  if (persist) localStorage.setItem(LS_THEME, next);
+  const btn = $("#toggleTheme");
+  if (btn) btn.textContent = next === "light" ? "Switch to Dark Mode" : "Switch to Light Mode";
 }
 
 /** =========================
@@ -2603,6 +2705,11 @@ $("#exportProfilePack").addEventListener("click", ()=>{
   dl("resume_profile_pack_v1.json", JSON.stringify(currentProfilePack(), null, 2));
   setStatus("Exported resume_profile_pack_v1.json.");
 });
+$("#toggleTheme").addEventListener("click", ()=>{
+  const next = document.body.dataset.theme === "light" ? "dark" : "light";
+  applyTheme(next, true);
+  setStatus(`Theme switched to ${next} mode.`);
+});
 $("#copyPackagePrompt").addEventListener("click", async ()=>{
   try{
     await copyTextToClipboard(buildAIPackagePrompt());
@@ -2707,6 +2814,7 @@ function rerenderAll(){
 setupTabs();
 bindSearch();
 bindTimelineControls();
+applyTheme(loadTheme(), false);
 rerenderAll();
 setStatus("Loaded v6 single-file resume. Use Settings to import/export one unified package file.");
 </script>
