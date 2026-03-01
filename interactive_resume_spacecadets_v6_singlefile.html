@@ -20,6 +20,8 @@
     --d:#7CFF9A;
     --lineGlow:0 0 22px rgba(124,247,255,.35);
     --font:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    --jwst-image:url("https://upload.wikimedia.org/wikipedia/commons/5/56/JWST_First_Deep_Field.jpg");
+    --jwst-opacity:.05;
   }
   *{box-sizing:border-box}
   html,body{height:100%}
@@ -27,19 +29,31 @@
     margin:0;
     font-family:var(--font);
     color:var(--text);
-    background:
-      radial-gradient(1200px 800px at 15% 15%, rgba(124,247,255,.18), transparent 60%),
-      radial-gradient(900px 700px at 85% 25%, rgba(180,140,255,.16), transparent 58%),
-      radial-gradient(700px 900px at 65% 85%, rgba(255,122,229,.14), transparent 62%),
-      radial-gradient(900px 900px at 25% 85%, rgba(124,255,154,.10), transparent 60%),
-      linear-gradient(180deg, #050611, #070A12 50%, #050611);
+    background:var(--bg0);
     overflow-x:hidden;
+  }
+  .bgFlow{
+    position:fixed;
+    inset:0;
+    z-index:-3;
+    pointer-events:none;
+    background:
+      radial-gradient(1200px 800px at 10% 8%, rgba(124,247,255,.34), transparent 58%),
+      radial-gradient(980px 760px at 88% 12%, rgba(180,140,255,.30), transparent 56%),
+      radial-gradient(860px 760px at 86% 86%, rgba(255,122,229,.24), transparent 58%),
+      radial-gradient(900px 920px at 12% 86%, rgba(124,255,154,.22), transparent 58%),
+      radial-gradient(700px 520px at 52% 42%, rgba(120,175,255,.11), transparent 62%),
+      linear-gradient(180deg, #050611, #070A12 50%, #050611);
+    background-repeat:no-repeat;
+    background-size:cover;
+    background-position:center top;
   }
   .stars{
     position:fixed;
     inset:0;
+    z-index:-1;
     pointer-events:none;
-    opacity:.45;
+    opacity:.62;
     background:
       radial-gradient(1px 1px at 20px 30px, rgba(255,255,255,.9), transparent 60%),
       radial-gradient(1px 1px at 120px 180px, rgba(255,255,255,.65), transparent 60%),
@@ -47,13 +61,25 @@
       radial-gradient(1px 1px at 320px 260px, rgba(255,255,255,.5), transparent 60%),
       radial-gradient(1px 1px at 520px 120px, rgba(255,255,255,.75), transparent 60%),
       radial-gradient(1px 1px at 720px 220px, rgba(255,255,255,.6), transparent 60%);
-    background-size:1100px 520px;
-    background-repeat:no-repeat;
-    background-position:center;
-    animation:drift 26s linear infinite;
+    background-size:560px 280px;
+    background-repeat:repeat;
+    background-position:center top;
+    animation:twinkle 8s ease-in-out infinite alternate;
     filter:blur(.25px);
   }
-  @keyframes drift{from{transform:translate3d(0,0,0)}to{transform:translate3d(-120px,80px,0)}}
+  .jwstBg{
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    z-index:-2;
+    opacity:var(--jwst-opacity);
+    background-image:var(--jwst-image);
+    background-size:cover;
+    background-position:center top;
+    background-repeat:no-repeat;
+    filter:saturate(108%) contrast(102%);
+  }
+  @keyframes twinkle{from{opacity:.56}to{opacity:.68}}
   .wrap{max-width:1180px; margin:0 auto; padding:20px clamp(14px,3vw,28px) 70px;}
   .topbar{display:flex; flex-direction:column; align-items:center; justify-content:space-between; gap:14px; margin:10px 0 14px; flex-wrap:nowrap;}
   .brand{display:flex; align-items:center; gap:12px; min-width:220px;}
@@ -99,14 +125,19 @@
   .dot{width:8px; height:8px; border-radius:999px; background:linear-gradient(90deg,var(--a),var(--b),var(--c)); box-shadow:0 0 0 4px rgba(124,247,255,.10)}
   .gear{width:40px; height:40px; border-radius:999px; display:grid; place-items:center; font-size:18px; color:rgba(255,255,255,.95)}
 
-  .hero{display:grid; grid-template-columns:1.15fr .85fr 1fr; gap:14px; align-items:stretch; margin:10px 0 14px;}
-  @media(max-width:1040px){.hero{grid-template-columns:1fr 1fr;}}
+  .hero{display:grid; grid-template-columns:.95fr 1.05fr; gap:14px; align-items:stretch; margin:10px 0 14px;}
+  @media(max-width:1040px){.hero{grid-template-columns:1fr;}}
   @media(max-width:820px){.hero{grid-template-columns:1fr;}}
   .card{
-    background:rgba(255,255,255,.07);
+    background:rgba(255,255,255,.06);
     border:1px solid rgba(255,255,255,.14);
     border-radius:var(--r);
-    box-shadow:var(--shadow);
+    box-shadow:
+      0 2px 5px rgba(40,210,255,.18),
+      0 2px 6px rgba(183,110,255,.16),
+      0 3px 7px rgba(255,74,205,.14),
+      0 3px 8px rgba(120,255,190,.12),
+      0 20px 60px rgba(0,0,0,.55);
     backdrop-filter:var(--glass);
     overflow:hidden;
     position:relative;
@@ -121,21 +152,76 @@
       radial-gradient(520px 260px at 60% 110%, rgba(255,122,229,.10), transparent 58%);
     pointer-events:none;
   }
+  .card:after{
+    content:"";
+    position:absolute;
+    inset:-1px;
+    border-radius:inherit;
+    pointer-events:none;
+    padding:1.5px;
+    background:conic-gradient(
+      from 210deg,
+      rgba(40,210,255,.95),
+      rgba(112,236,255,.85) 15%,
+      rgba(120,255,190,.85) 30%,
+      rgba(255,230,110,.82) 45%,
+      rgba(255,95,95,.88) 60%,
+      rgba(255,74,205,.92) 76%,
+      rgba(183,110,255,.92) 88%,
+      rgba(40,210,255,.95)
+    );
+    filter:saturate(130%) blur(.65px);
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite:xor;
+    mask-composite:exclude;
+    opacity:.95;
+  }
   .card>*{position:relative}
-  .heroMain{padding:16px 16px 14px}
-  .heroMain h2{margin:0 0 6px; font-size:20px; letter-spacing:.2px}
-  .heroMain p{margin:0 0 10px; color:var(--muted); line-height:1.5; font-size:14px}
-  .chips{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px}
-  .chip{padding:6px 10px; border-radius:999px; background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.12); color:rgba(255,255,255,.82); font-size:12px; user-select:none}
   .heroSide{padding:14px; display:grid; gap:10px}
-  .kpi{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; border-radius:16px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12)}
-  .kpi .label{color:var(--muted2); font-size:12px}
-  .kpi .value{font-weight:650; letter-spacing:.2px; font-size:13px}
-  .mvv{padding:14px}
-  .mvv h3{margin:0 0 8px; font-size:14px; letter-spacing:.25px}
-  .mvv .blk{margin-bottom:10px; padding:10px 12px; border-radius:16px; background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.12)}
+  .kpi{display:grid; gap:8px; padding:10px 12px; border-radius:16px; background:rgba(0,0,0,.26); border:1px solid rgba(255,255,255,.14); text-align:center}
+  .kpi .label{color:var(--muted2); font-size:12px; font-weight:700; letter-spacing:.2px; text-transform:none}
+  .kpi .value{font-weight:700; letter-spacing:.2px; font-size:13px; display:flex; flex-wrap:wrap; gap:8px; justify-content:center; align-items:center}
+  .kpiChip{
+    padding:6px 10px;
+    border-radius:999px;
+    background:rgba(0,0,0,.24);
+    border:1px solid rgba(255,255,255,.12);
+    color:rgba(255,255,255,.90);
+    font-size:12px;
+    font-weight:700;
+    user-select:none;
+    white-space:nowrap;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:30px;
+  }
+  .mvv{
+    padding:14px;
+    display:grid;
+    grid-template-rows:repeat(3, minmax(0, 1fr));
+    gap:10px;
+    align-items:stretch;
+  }
+  .mvv .blk{
+    margin:0;
+    min-height:0;
+    padding:12px 12px;
+    border-radius:16px;
+    background:rgba(0,0,0,.26);
+    border:1px solid rgba(255,255,255,.14);
+    text-align:center;
+    display:grid;
+    place-items:center;
+    align-content:center;
+  }
   .mvv .blk .t{font-weight:700; font-size:12px; letter-spacing:.2px}
-  .mvv .blk .b{color:var(--muted); font-size:13px; line-height:1.5; margin-top:6px}
+  .mvv .blk .b{color:var(--muted); font-size:13px; line-height:1.5; margin-top:6px; text-align:center}
 
   .nav{
     display:flex;
@@ -178,10 +264,44 @@
     border-color:rgba(255,255,255,.24);
     color:rgba(255,255,255,.94);
   }
-  .spark{width:10px; height:10px; border-radius:999px; background:radial-gradient(circle at 30% 30%, rgba(255,255,255,.9), rgba(255,255,255,.15) 55%, rgba(255,255,255,0)); box-shadow:0 0 0 3px rgba(255,255,255,.08)}
+  .spark{
+    width:10px;
+    height:10px;
+    border-radius:999px;
+    background:linear-gradient(90deg,var(--a),var(--b),var(--c));
+    box-shadow:0 0 0 3px rgba(124,247,255,.14);
+  }
   .panel{display:none}
-  .panel.active{display:block; animation:fadeIn .18s ease-out}
-  @keyframes fadeIn{from{opacity:0; transform:translateY(4px)}to{opacity:1; transform:translateY(0)}}
+  .panel.active{display:block}
+  .panel.transition-out{
+    display:block;
+    pointer-events:none;
+    animation:panelDefocusOut .14s ease forwards;
+    transform-origin:center center;
+    will-change:opacity, transform, filter;
+  }
+  .panel.transition-in{
+    display:block;
+    animation:panelFocusIn .16s ease forwards;
+    transform-origin:center center;
+    will-change:opacity, transform, filter;
+  }
+  @keyframes panelDefocusOut{
+    from{opacity:1; transform:scale(1); filter:blur(0)}
+    to{opacity:.02; transform:scale(.988); filter:blur(2.4px)}
+  }
+  @keyframes panelFocusIn{
+    from{opacity:.02; transform:scale(1.012); filter:blur(2.4px)}
+    to{opacity:1; transform:scale(1); filter:blur(0)}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .panel.transition-out,
+    .panel.transition-in{
+      animation:none !important;
+      transform:none !important;
+      filter:none !important;
+    }
+  }
 
   .cardSection{padding:14px}
   .cardSection h3{margin:0 0 10px; font-size:14px; letter-spacing:.25px; text-align:center}
@@ -693,6 +813,8 @@
 </style>
 </head>
 <body>
+<div class="bgFlow" aria-hidden="true"></div>
+<div class="jwstBg" aria-hidden="true"></div>
 <div class="stars"></div>
 
 <div class="wrap">
@@ -713,18 +835,12 @@
   </div>
 
   <div class="hero">
-    <div class="card heroMain">
-      <h2>Interactive Resume</h2>
-      <p id="summary"></p>
-      <div class="chips" id="chips"></div>
-    </div>
     <div class="card heroSide">
       <div class="kpi"><div class="label">Primary domains</div><div class="value" id="primaryDomains"></div></div>
       <div class="kpi"><div class="label">Focus</div><div class="value" id="focusText"></div></div>
       <div class="kpi"><div class="label">Style</div><div class="value" id="styleText"></div></div>
     </div>
     <div class="card mvv">
-      <h3>Mission • Vision • Values</h3>
       <div class="blk">
         <div class="t">Mission</div>
         <div class="b" id="mMission"></div>
@@ -1252,24 +1368,25 @@ const DATA_SEED = {
     phone: "828-808-8679",
     email: "connect@spacecadetslighting.com",
     site: "https://spacecadetslighting.com",
-    headline: "Electrical & Mechanical Engineer • Prototype Engineer • Interactive Lighting Systems • Product + Manufacturing",
-    summary: "Multidisciplinary electromechanical builder who designs and manufactures interactive LED systems, embedded controllers, and physical products from concept to deployment."
+    headline: "Designer • Full-spectrum systemic perspective • Artisan craft transmuted through futuristic technology",
+    summary: "Mechanically inclined, artistically driven designer-engineer building interactive systems that turn technology into spaces of connection."
   },
   hero: {
-    primary_domains: "EE • ME • Embedded • Manufacturing",
-    focus: "Prototyping + interactive systems",
-    style: "Space-age • tactile • human",
+    primary_domains: "Design Systems • Electrical Engineering • Mechanical Engineering • Embedded Systems • Artisanal Fabrication",
+    focus: "Full-spectrum growth • Concept evolution • Artisan direction • Systems zoom-out + detail zoom-in",
+    style: "Organic • Biomimicry • Futuristic • Adaptive • Multi-language design",
     chips: ["Prototype Engineer","Embedded (ESP32)","PCB + Wiring","CAD (Fusion/Inventor)","CNC + Laser","Interactive LEDs"]
   },
   mvv: {
-    mission: "Build beautiful, reliable, human-centered interactive systems that turn technology into emotional connection.",
-    vision: "Create modular, repairable, creator-first ecosystems where engineering and art can scale together.",
+    mission: "Design and build human-centered interactive systems that blend artisanship, engineering, and community care to create shared moments of connection.",
+    vision: "Unify people through interactive technology, lighting, and physical products that invite participation, wonder, and belonging rather than division.",
     values: [
-      "Craft + rigor",
-      "Kindness + community",
+      "Craft + artisanship",
+      "Community + inclusion",
       "Curiosity + learning",
       "Clarity + usability",
-      "Responsibility + durability"
+      "Responsibility + durability",
+      "Unify, not divide"
     ]
   },
   passions: [
@@ -1400,6 +1517,15 @@ const DATA_SEED = {
 const LS_RESUME = "sc_resume_v6_single";
 const LS_TIMELINE = "sc_timeline_v6_single";
 const LS_PROFILE_PACK = "sc_profile_pack_v1";
+const LEGACY_HEADLINE_V6 = "Electrical & Mechanical Engineer • Prototype Engineer • Interactive Lighting Systems • Product + Manufacturing";
+const LEGACY_SUMMARY_V6 = "Multidisciplinary electromechanical builder who designs and manufactures interactive LED systems, embedded controllers, and physical products from concept to deployment.";
+const LEGACY_MISSION_V6 = "Build beautiful, reliable, human-centered interactive systems that turn technology into emotional connection.";
+const LEGACY_VISION_V6 = "Create modular, repairable, creator-first ecosystems where engineering and art can scale together.";
+const LEGACY_VALUES_V6 = ["Craft + rigor","Kindness + community","Curiosity + learning","Clarity + usability","Responsibility + durability"];
+const LEGACY_PRIMARY_DOMAINS_V6 = "EE • ME • Embedded • Manufacturing";
+const LEGACY_PRIMARY_DOMAINS_V7 = "Electrical Engineering • Mechanical Engineering • Embedded Systems • Manufacturing";
+const LEGACY_FOCUS_V6 = "Prototyping + interactive systems";
+const LEGACY_STYLE_V6 = "Space-age • tactile • human";
 
 const $ = (s, el=document) => el.querySelector(s);
 const $$ = (s, el=document) => Array.from(el.querySelectorAll(s));
@@ -1841,7 +1967,18 @@ function normalizeProfilePack(raw){
   resume.profile = { ...base.resume.profile, ...(resume.profile || {}) };
   resume.hero = { ...base.resume.hero, ...(resume.hero || {}) };
   resume.mvv = { ...base.resume.mvv, ...(resume.mvv || {}) };
+  if ((resume.profile.headline || "").trim() === LEGACY_HEADLINE_V6) resume.profile.headline = base.resume.profile.headline;
+  if ((resume.profile.summary || "").trim() === LEGACY_SUMMARY_V6) resume.profile.summary = base.resume.profile.summary;
+  if ((resume.mvv.mission || "").trim() === LEGACY_MISSION_V6) resume.mvv.mission = base.resume.mvv.mission;
+  if ((resume.mvv.vision || "").trim() === LEGACY_VISION_V6) resume.mvv.vision = base.resume.mvv.vision;
+  const heroDomains = (resume.hero.primary_domains || "").trim();
+  if (heroDomains === LEGACY_PRIMARY_DOMAINS_V6 || heroDomains === LEGACY_PRIMARY_DOMAINS_V7){
+    resume.hero.primary_domains = base.resume.hero.primary_domains;
+  }
+  if ((resume.hero.focus || "").trim() === LEGACY_FOCUS_V6) resume.hero.focus = base.resume.hero.focus;
+  if ((resume.hero.style || "").trim() === LEGACY_STYLE_V6) resume.hero.style = base.resume.hero.style;
   resume.mvv.values = Array.isArray(resume.mvv.values) ? resume.mvv.values.map(String) : base.resume.mvv.values.slice();
+  if (JSON.stringify(resume.mvv.values) === JSON.stringify(LEGACY_VALUES_V6)) resume.mvv.values = base.resume.mvv.values.slice();
   resume.passions = Array.isArray(resume.passions) ? resume.passions.map(String) : base.resume.passions.slice();
   resume.capabilities = Array.isArray(resume.capabilities) ? resume.capabilities : deepClone(base.resume.capabilities);
   resume.jobs = Array.isArray(resume.jobs) ? resume.jobs : deepClone(base.resume.jobs);
@@ -1903,10 +2040,24 @@ applyProfilePack(loadProfilePack(), { persist:false });
 /** =========================
  *  RENDERERS
  *  ========================= */
+function tokenizeChips(text){
+  const raw = (text || "").toString().trim();
+  if (!raw) return [];
+  const tokens = raw
+    .split(/\s*[•|,\/]\s*|\s+\+\s+/)
+    .map((x)=>x.trim())
+    .filter(Boolean);
+  return tokens.length ? tokens : [raw];
+}
+function renderChipsTo(target, text){
+  const el = $(target);
+  if (!el) return;
+  const chips = tokenizeChips(text);
+  el.innerHTML = chips.map((t)=>`<span class="kpiChip">${escapeHtml(t)}</span>`).join("");
+}
 function renderHeader(){
   $("#name").textContent = RESUME.profile.name;
   $("#headline").textContent = RESUME.profile.headline;
-  $("#summary").textContent = RESUME.profile.summary;
   $("#emailText").textContent = RESUME.profile.email;
   $("#phoneText").textContent = RESUME.profile.phone;
   $("#emailLink").setAttribute("href", `mailto:${RESUME.profile.email}`);
@@ -1917,12 +2068,9 @@ function renderHeader(){
   $("#mVision").textContent = RESUME.mvv.vision;
   $("#mValues").textContent = RESUME.mvv.values.map(v => "• " + v).join("\n");
 
-  $("#primaryDomains").textContent = (RESUME.hero && RESUME.hero.primary_domains) || "";
-  $("#focusText").textContent = (RESUME.hero && RESUME.hero.focus) || "";
-  $("#styleText").textContent = (RESUME.hero && RESUME.hero.style) || "";
-
-  const chips = (RESUME.hero && Array.isArray(RESUME.hero.chips)) ? RESUME.hero.chips : [];
-  $("#chips").innerHTML = chips.map((t) => `<span class="chip">${escapeHtml(t)}</span>`).join("");
+  renderChipsTo("#primaryDomains", (RESUME.hero && RESUME.hero.primary_domains) || "");
+  renderChipsTo("#focusText", (RESUME.hero && RESUME.hero.focus) || "");
+  renderChipsTo("#styleText", (RESUME.hero && RESUME.hero.style) || "");
 }
 
 function renderJobs(q=""){
@@ -2219,12 +2367,35 @@ detail.addEventListener("click", (e)=>{
  *  UI EVENTS
  *  ========================= */
 function setupTabs(){
+  const OUT_MS = 140;
+  let transitioning = false;
   $$(".tab").forEach((btn)=>{
     const activate = () => {
+      if (transitioning) return;
+      if (btn.getAttribute("aria-selected") === "true") return;
+      const nextPanel = $("#panel-" + btn.dataset.tab);
+      if (!nextPanel) return;
+      const currentPanel = $(".panel.active");
+
       $$(".tab").forEach((b)=>b.setAttribute("aria-selected","false"));
       btn.setAttribute("aria-selected","true");
-      $$(".panel").forEach((p)=>p.classList.remove("active"));
-      $("#panel-" + btn.dataset.tab).classList.add("active");
+
+      if (!currentPanel){
+        nextPanel.classList.add("active", "transition-in");
+        nextPanel.addEventListener("animationend", ()=>nextPanel.classList.remove("transition-in"), { once:true });
+        return;
+      }
+      transitioning = true;
+      currentPanel.classList.remove("transition-in");
+      currentPanel.classList.add("transition-out");
+      window.setTimeout(()=>{
+        currentPanel.classList.remove("active", "transition-out");
+        nextPanel.classList.add("active", "transition-in");
+        nextPanel.addEventListener("animationend", ()=>{
+          nextPanel.classList.remove("transition-in");
+          transitioning = false;
+        }, { once:true });
+      }, OUT_MS);
     };
     btn.addEventListener("click", activate);
     btn.addEventListener("keydown", (e)=>{
