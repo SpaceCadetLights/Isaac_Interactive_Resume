@@ -2304,7 +2304,15 @@ function renderSkillNode(node){
 
 function renderSkills(q=""){
   const host = $("#skillsTree");
-  host.innerHTML = SKILLS_TREE.map((n)=>renderSkillNode(n)).join("");
+  host.innerHTML = SKILLS_TREE
+    .filter((n)=>{
+      const t = norm(n.title);
+      if (t === "overview") return false;
+      if (/comprehensive master skill|capability map/.test(t)) return false;
+      return true;
+    })
+    .map((n)=>renderSkillNode(n))
+    .join("");
   filterSkills(q);
 }
 
