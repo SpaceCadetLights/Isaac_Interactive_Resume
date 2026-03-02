@@ -434,26 +434,33 @@
   }
   .panel{display:none}
   .panel.active{display:block}
+  .panel.transition-prep{
+    display:block;
+    opacity:0;
+    transform:translateY(-2px) scale(1.004);
+    filter:blur(2px);
+    pointer-events:none;
+  }
   .panel.transition-out{
     display:block;
     pointer-events:none;
-    animation:panelDefocusOut .14s ease forwards;
+    animation:panelDefocusOut .22s cubic-bezier(.22,.61,.36,1) forwards;
     transform-origin:center center;
     will-change:opacity, transform, filter;
   }
   .panel.transition-in{
     display:block;
-    animation:panelFocusIn .16s ease forwards;
+    animation:panelFocusIn .24s cubic-bezier(.22,.61,.36,1) forwards;
     transform-origin:center center;
     will-change:opacity, transform, filter;
   }
   @keyframes panelDefocusOut{
-    from{opacity:1; transform:scale(1); filter:blur(0)}
-    to{opacity:.02; transform:scale(.988); filter:blur(2.4px)}
+    from{opacity:1; transform:translateY(0) scale(1); filter:blur(0)}
+    to{opacity:0; transform:translateY(3px) scale(.996); filter:blur(2px)}
   }
   @keyframes panelFocusIn{
-    from{opacity:.02; transform:scale(1.012); filter:blur(2.4px)}
-    to{opacity:1; transform:scale(1); filter:blur(0)}
+    from{opacity:0; transform:translateY(-2px) scale(1.004); filter:blur(2px)}
+    to{opacity:1; transform:translateY(0) scale(1); filter:blur(0)}
   }
   @media (prefers-reduced-motion: reduce){
     .panel.transition-out,
@@ -2692,8 +2699,8 @@ detail.addEventListener("click", (e)=>{
  *  UI EVENTS
  *  ========================= */
 function setupTabs(){
-  const OUT_MS = 140;
   let transitioning = false;
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   $$(".tab").forEach((btn)=>{
     const activate = () => {
       if (transitioning) return;
@@ -2706,21 +2713,41 @@ function setupTabs(){
       btn.setAttribute("aria-selected","true");
 
       if (!currentPanel){
-        nextPanel.classList.add("active", "transition-in");
-        nextPanel.addEventListener("animationend", ()=>nextPanel.classList.remove("transition-in"), { once:true });
+        if (prefersReducedMotion){
+          nextPanel.classList.add("active");
+        }else{
+          nextPanel.classList.add("active", "transition-prep");
+          requestAnimationFrame(()=>{
+            nextPanel.classList.remove("transition-prep");
+            nextPanel.classList.add("transition-in");
+          });
+          nextPanel.addEventListener("animationend", ()=>nextPanel.classList.remove("transition-in"), { once:true });
+        }
+        return;
+      }
+      if (prefersReducedMotion){
+        currentPanel.classList.remove("active", "transition-out", "transition-in", "transition-prep");
+        nextPanel.classList.add("active");
         return;
       }
       transitioning = true;
       currentPanel.classList.remove("transition-in");
       currentPanel.classList.add("transition-out");
-      window.setTimeout(()=>{
+      const onOutEnd = ()=>{
         currentPanel.classList.remove("active", "transition-out");
-        nextPanel.classList.add("active", "transition-in");
-        nextPanel.addEventListener("animationend", ()=>{
+        nextPanel.classList.remove("transition-in", "transition-out", "transition-prep");
+        nextPanel.classList.add("active", "transition-prep");
+        requestAnimationFrame(()=>{
+          nextPanel.classList.remove("transition-prep");
+          nextPanel.classList.add("transition-in");
+        });
+        const onInEnd = ()=>{
           nextPanel.classList.remove("transition-in");
           transitioning = false;
-        }, { once:true });
-      }, OUT_MS);
+        };
+        nextPanel.addEventListener("animationend", onInEnd, { once:true });
+      };
+      currentPanel.addEventListener("animationend", onOutEnd, { once:true });
     };
     btn.addEventListener("click", activate);
     btn.addEventListener("keydown", (e)=>{
