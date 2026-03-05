@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!--
+  Run locally: python3 -m http.server 8000
+  Then open: http://localhost:8000/3d-resume/
+-->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Isaac Norris &bull; 3D Interactive Resume</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js"
+  }
+}
+</script>
+</head>
+<body>
+
+<canvas id="bg-canvas" aria-hidden="true"></canvas>
+<div id="nebula-bg" aria-hidden="true"></div>
+
+<!-- WebGL fallback -->
+<div id="fallback">
+  <div class="fallback-inner">
+    <div class="fallback-orb"></div>
+    <h1 class="fallback-title">Isaac E. Norris</h1>
+    <p class="fallback-subtitle">Designer &bull; Engineer &bull; Builder</p>
+    <p class="fallback-msg">Your browser doesn&rsquo;t support the 3D version of this resume.</p>
+    <a href="../interactive_resume_spacecadets_v6_singlefile.html" class="glass-btn fallback-btn">View Standard Resume</a>
+  </div>
+</div>
+
+<!-- Scrollable content overlay -->
+<main id="content">
+
+  <!-- Ch 0: Hero -->
+  <section class="chapter" id="ch-hero">
+    <div class="chapter-inner hero-inner">
+      <div class="hero-orb" aria-hidden="true"></div>
+      <h1 class="hero-name" id="hero-name"></h1>
+      <p class="hero-headline" id="hero-headline"></p>
+      <p class="hero-summary" id="hero-summary"></p>
+      <div class="hero-chips" id="hero-chips"></div>
+      <div class="scroll-hint" aria-hidden="true">
+        <span>Scroll to explore</span>
+        <div class="scroll-arrow"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Ch 1: Summary + MVV + Domains -->
+  <section class="chapter" id="ch-summary">
+    <div class="chapter-inner">
+      <div class="glass-panel summary-panel">
+        <div class="summary-grid">
+          <div class="summary-card" id="summary-mvv"></div>
+          <div class="summary-card" id="summary-kpis"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Ch 2: Jobs + Education -->
+  <section class="chapter" id="ch-jobs">
+    <div class="chapter-inner">
+      <div class="glass-panel jobs-panel">
+        <h2 class="section-title">Experience</h2>
+        <div id="jobs-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Ch 3: Skills Map -->
+  <section class="chapter" id="ch-skills">
+    <div class="chapter-inner">
+      <div class="glass-panel skills-panel">
+        <h2 class="section-title">Skills Map</h2>
+        <p class="section-subtitle">Complete Master Library &mdash; click categories to expand</p>
+        <div class="search-bar">
+          <span class="search-icon" aria-hidden="true">&#8981;</span>
+          <input type="text" id="skills-search" placeholder="Search skills..." autocomplete="off" aria-label="Search skills">
+        </div>
+        <div id="skills-tree"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Ch 4: Timeline -->
+  <section class="chapter" id="ch-timeline">
+    <div class="chapter-inner">
+      <div class="glass-panel">
+        <h2 class="section-title">Timeline</h2>
+        <div id="timeline-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Ch 5: Passions + Capabilities -->
+  <section class="chapter" id="ch-passions">
+    <div class="chapter-inner passions-inner">
+      <div class="glass-panel half-panel">
+        <h2 class="section-title">Passions</h2>
+        <div id="passions-list"></div>
+      </div>
+      <div class="glass-panel half-panel">
+        <h2 class="section-title">Manufacturing Capabilities</h2>
+        <div id="caps-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="chapter" id="ch-footer">
+    <div class="chapter-inner footer-inner">
+      <div class="footer-links">
+        <a href="../interactive_resume_spacecadets_v6_singlefile.html" class="glass-btn">View Standard Resume</a>
+        <a id="footer-site" class="glass-btn" target="_blank" rel="noopener"></a>
+        <a id="footer-email" class="glass-btn"></a>
+      </div>
+      <p class="footer-copy">Built with Three.js + GSAP</p>
+    </div>
+  </footer>
+</main>
+
+<!-- Controls cluster -->
+<div id="controls">
+  <button id="btn-motion" class="ctrl-btn" title="Toggle Reduced Motion" aria-label="Toggle reduced motion">
+    <span id="motion-icon">&#x29BF;</span>
+  </button>
+  <button id="btn-quality" class="ctrl-btn" title="Quality: Auto" aria-label="Change quality">
+    <span id="quality-icon">&#x25C6;</span>
+  </button>
+  <a href="../interactive_resume_spacecadets_v6_singlefile.html" class="ctrl-btn" title="Standard Resume" aria-label="View standard resume">
+    <span>&#9776;</span>
+  </a>
+</div>
+
+<!-- Detail modal -->
+<dialog id="detail-modal">
+  <div class="modal-head">
+    <div>
+      <div class="modal-title" id="modal-title"></div>
+      <div class="modal-meta" id="modal-meta"></div>
+    </div>
+    <button class="modal-close" id="modal-close" aria-label="Close">&#x2715;</button>
+  </div>
+  <div class="modal-body" id="modal-body"></div>
+</dialog>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
