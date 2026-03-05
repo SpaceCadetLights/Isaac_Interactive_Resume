@@ -23,14 +23,14 @@ const TUNING = {
   ambientCount:   { high: 500,  medium: 250,  low: 0   },
   nebulaLayers:   { high: 3,    medium: 2,    low: 0   },
   nebulaSize: 65,
-  nebulaOpacity: 0.065,
+  nebulaOpacity: 0.09,
   bloomStrength: 0.3,
   bloomRadius: 0.45,
   bloomThreshold: 0.65,
   cameraLerp: 0.045,
   breathAmp:  { x: 0.10, y: 0.07 },
   breathFreq: { x: 0.28, y: 0.19 },
-  phaseShift: 1.6,
+  phaseShift: 0.7,
   constellationMaxLines: 120,
   constellationDist: 4.8,
   constellationInterval: 14,
@@ -78,38 +78,39 @@ attribute vec3 aColor;
 attribute float aPhase;
 varying vec3 vColor;
 varying float vAlpha;
-varying float vPhase;
+vec3 hsv2rgb(vec3 c){
+  vec4 K = vec4(1.0,2.0/3.0,1.0/3.0,3.0);
+  vec3 p = abs(fract(c.xxx+K.xyz)*6.0-K.www);
+  return c.z * mix(K.xxx, clamp(p-K.xxx,0.0,1.0), c.y);
+}
 void main(){
-  vColor = aColor;
-  vPhase = aPhase;
   vec4 mv = modelViewMatrix * vec4(position,1.0);
   float dist = -mv.z;
+  vec4 proj = projectionMatrix * mv;
+  gl_Position = proj;
+  vec2 sUV = proj.xy / proj.w * 0.5 + 0.5;
+  float hue = sUV.x*0.45 + sUV.y*0.35 + uTime*0.018;
+  vColor = hsv2rgb(vec3(hue, 0.45, 0.97)) * aColor;
   vAlpha  = smoothstep(110.0,5.0,dist)*0.85;
   vAlpha *= smoothstep(0.5,5.0,dist);
   float twinkle = sin(uTime*1.3 + aPhase*6.283)*0.12 + 0.88;
   vAlpha *= twinkle;
   gl_PointSize = aSize * (280.0/max(dist,1.0));
   gl_PointSize = clamp(gl_PointSize, 0.5, 48.0);
-  gl_Position = projectionMatrix * mv;
 }`;
 
 const PARTICLE_FS = /* glsl */ `
-uniform float uTime;
 varying vec3 vColor;
 varying float vAlpha;
-varying float vPhase;
 void main(){
   vec2 uv = gl_PointCoord - 0.5;
   float d = length(uv);
   if(d>0.5) discard;
-  float glow = smoothstep(0.5,0.0,d);
-  float core = smoothstep(0.10,0.0,d)*0.35;
-  float alpha = (glow*0.52 + core) * vAlpha;
-  vec3 col = vColor;
-  float shift = sin(vPhase*6.283 + uTime*0.3)*0.09;
-  col += vec3(shift, -shift*0.55, shift*0.75);
-  col = clamp(col, 0.0, 1.0);
-  gl_FragColor = vec4(col, alpha);
+  float core = smoothstep(0.06, 0.0, d) * 0.75;
+  float mid  = smoothstep(0.20, 0.02, d) * 0.25;
+  float halo = smoothstep(0.5, 0.18, d) * 0.08;
+  float alpha = (core + mid + halo) * vAlpha;
+  gl_FragColor = vec4(vColor, alpha);
 }`;
 
 const NEBULA_VS = /* glsl */ `
@@ -247,86 +248,109 @@ function updateStarfield(t, vel) {
    ========================================================== */
 function genSphereCloud(count) {
   const p = new Float32Array(count * 3);
+  const rings = 8, R = 18;
   for (let i = 0; i < count; i++) {
-    const phi = Math.acos(2 * Math.random() - 1);
-    const theta = Math.random() * Math.PI * 2;
-    const r = 8 + Math.random() * 18;
-    p[i * 3] = r * Math.sin(phi) * Math.cos(theta);
-    p[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
-    p[i * 3 + 2] = r * Math.cos(phi);
+    const ring = i % rings;
+    const idx = Math.floor(i / rings);
+    const total = Math.floor(count / rings);
+    const t = (idx / total) * Math.PI * 2;
+    const inclination = (ring / rings) * Math.PI;
+    const offset = ring * 0.55;
+    const x = R * Math.cos(t + offset);
+    const yz = R * Math.sin(t + offset);
+    p[i * 3]     = x + (Math.random() - 0.5) * 0.25;
+    p[i * 3 + 1] = yz * Math.cos(inclination) + (Math.random() - 0.5) * 0.25;
+    p[i * 3 + 2] = yz * Math.sin(inclination) + (Math.random() - 0.5) * 0.25;
   }
   return p;
 }
-function genRectGrid(count) {
+function genFlowerOfLife(count) {
   const p = new Float32Array(count * 3);
+  const R = 11;
+  const centers = [[0, 0]];
+  for (let k = 0; k < 6; k++) {
+    centers.push([R * Math.cos(k * Math.PI / 3), R * Math.sin(k * Math.PI / 3)]);
+  }
+  const nC = centers.length;
   for (let i = 0; i < count; i++) {
-    p[i * 3] = (Math.random() - 0.5) * 16;
-    p[i * 3 + 1] = (Math.random() - 0.5) * 10 + 2;
-    p[i * 3 + 2] = (Math.random() - 0.5) * 3;
+    const ci = i % nC;
+    const idx = Math.floor(i / nC);
+    const total = Math.floor(count / nC);
+    const t = (idx / total) * Math.PI * 2;
+    p[i * 3]     = centers[ci][0] + R * Math.cos(t) + (Math.random() - 0.5) * 0.2;
+    p[i * 3 + 1] = centers[ci][1] + R * Math.sin(t) + (Math.random() - 0.5) * 0.2;
+    p[i * 3 + 2] = (ci - 3) * 1.8 + Math.sin(t * 3) * 0.6;
   }
   return p;
 }
-function genCascade(count) {
+function genTorusKnot(count) {
   const p = new Float32Array(count * 3);
+  const P = 2, Q = 3, R = 14, r = 5;
   for (let i = 0; i < count; i++) {
-    const t = i / count;
-    p[i * 3] = (Math.random() - 0.5) * 12 + 4;
-    p[i * 3 + 1] = (t - 0.5) * 16 + (Math.random() - 0.5) * 2;
-    p[i * 3 + 2] = (Math.random() - 0.5) * 4;
+    const t = (i / count) * Math.PI * 2 * P;
+    const cv = Math.cos(Q * t / P), sv = Math.sin(Q * t / P);
+    p[i * 3]     = (R + r * cv) * Math.cos(t) + (Math.random() - 0.5) * 0.2;
+    p[i * 3 + 1] = (R + r * cv) * Math.sin(t) + (Math.random() - 0.5) * 0.2;
+    p[i * 3 + 2] = r * sv + (Math.random() - 0.5) * 0.2;
   }
   return p;
 }
-function genConstellation(count) {
-  const cats = 10, golden = 2.399963;
+function genReticello(count) {
   const p = new Float32Array(count * 3);
+  const strands = 8, amp = 10, len = 40;
+  const half = strands / 2;
   for (let i = 0; i < count; i++) {
-    const cat = i % cats;
-    const phi = Math.acos(1 - 2 * (cat + 0.5) / cats);
-    const theta = cat * golden;
-    const cx = 15 * Math.sin(phi) * Math.cos(theta) - 2;
-    const cy = 15 * Math.cos(phi) + 2;
-    const cz = 15 * Math.sin(phi) * Math.sin(theta);
-    p[i * 3] = cx + (Math.random() - 0.5) * 5;
-    p[i * 3 + 1] = cy + (Math.random() - 0.5) * 5;
-    p[i * 3 + 2] = cz + (Math.random() - 0.5) * 5;
+    const strand = i % strands;
+    const t = (i / count) * Math.PI * 2 * 3;
+    const progress = (i / count - 0.5) * len;
+    const phase = ((strand % half) / half) * Math.PI * 2;
+    const dir = strand < half ? 1 : -1;
+    p[i * 3]     = progress + (Math.random() - 0.5) * 0.15;
+    p[i * 3 + 1] = amp * Math.sin(dir * t + phase) + (Math.random() - 0.5) * 0.15;
+    p[i * 3 + 2] = amp * Math.cos(dir * t + phase) + (Math.random() - 0.5) * 0.15;
   }
   return p;
 }
-function genFlowPath(count) {
+function genLissajous(count) {
   const p = new Float32Array(count * 3);
+  const A = 16, B = 16, C = 10;
+  const a = 3, b = 4, c = 5;
+  const d1 = Math.PI / 4, d2 = Math.PI / 3;
   for (let i = 0; i < count; i++) {
-    const t = i / count;
-    p[i * 3] = (t - 0.5) * 35 + 6;
-    p[i * 3 + 1] = Math.sin(t * Math.PI * 3) * 5 + (Math.random() - 0.5) * 1.5 - 1;
-    p[i * 3 + 2] = Math.cos(t * Math.PI * 2) * 3 + (Math.random() - 0.5) * 1.5;
+    const t = (i / count) * Math.PI * 2;
+    p[i * 3]     = A * Math.sin(a * t + d1) + (Math.random() - 0.5) * 0.2;
+    p[i * 3 + 1] = B * Math.sin(b * t + d2) + (Math.random() - 0.5) * 0.2;
+    p[i * 3 + 2] = C * Math.sin(c * t)      + (Math.random() - 0.5) * 0.2;
   }
   return p;
 }
-function genTwinIslands(count) {
+function genNautilus(count) {
   const p = new Float32Array(count * 3);
+  const arms = 5, growth = 0.18;
   for (let i = 0; i < count; i++) {
-    const second = i >= count / 2;
-    const cx = second ? 10 : -10;
-    const r = 4 + Math.random() * 4;
-    const phi = Math.random() * Math.PI * 2;
-    const theta = Math.random() * Math.PI;
-    p[i * 3] = cx + r * Math.sin(theta) * Math.cos(phi);
-    p[i * 3 + 1] = r * Math.sin(theta) * Math.sin(phi);
-    p[i * 3 + 2] = r * Math.cos(theta);
+    const arm = i % arms;
+    const idx = Math.floor(i / arms);
+    const total = Math.floor(count / arms);
+    const t = (idx / total) * Math.PI * 6;
+    const phase = arm * Math.PI * 2 / arms;
+    const r = Math.min(2.0 * Math.exp(growth * t), 20);
+    p[i * 3]     = r * Math.cos(t + phase) + (Math.random() - 0.5) * 0.25;
+    p[i * 3 + 1] = r * Math.sin(t + phase) + (Math.random() - 0.5) * 0.25;
+    p[i * 3 + 2] = Math.sin(t * 0.5 + phase) * r * 0.25 + (Math.random() - 0.5) * 0.25;
   }
   return p;
 }
-const FORMATION_FNS = [genSphereCloud, genRectGrid, genCascade, genConstellation, genFlowPath, genTwinIslands];
+const FORMATION_FNS = [genSphereCloud, genFlowerOfLife, genTorusKnot, genReticello, genLissajous, genNautilus];
 
 /* ==========================================================
    MAIN PARTICLE SYSTEM (custom shader)
    ========================================================== */
 const PALETTE = [
-  new THREE.Color('#7CF7FF'),
-  new THREE.Color('#B48CFF'),
-  new THREE.Color('#FF7AE5'),
-  new THREE.Color('#7CFF9A'),
-  new THREE.Color('#A8CCFF'),
+  new THREE.Color('#d8f0ff'),
+  new THREE.Color('#e0d8ff'),
+  new THREE.Color('#ffd8f0'),
+  new THREE.Color('#d8ffe8'),
+  new THREE.Color('#d8e4ff'),
 ];
 
 function createParticles(count) {
@@ -341,11 +365,10 @@ function createParticles(count) {
   particlePositions.set(formationTargets[0]);
 
   for (let i = 0; i < count; i++) {
-    const c = PALETTE[i % PALETTE.length];
-    particleBaseColors[i * 3]     = c.r;
-    particleBaseColors[i * 3 + 1] = c.g;
-    particleBaseColors[i * 3 + 2] = c.b;
-    sizes[i] = (IS_MOBILE ? 4.0 : 5.5) * (0.6 + Math.random() * 0.8);
+    particleBaseColors[i * 3] = 1;
+    particleBaseColors[i * 3 + 1] = 1;
+    particleBaseColors[i * 3 + 2] = 1;
+    sizes[i] = (IS_MOBILE ? 3.0 : 4.2) * (0.5 + Math.random() * 0.7);
     phases[i] = Math.random();
   }
   colors.set(particleBaseColors);
@@ -381,8 +404,7 @@ function createAmbientParticles(count) {
     pos[i * 3]     = (Math.random() - 0.5) * 90;
     pos[i * 3 + 1] = (Math.random() - 0.5) * 90;
     pos[i * 3 + 2] = (Math.random() - 0.5) * 90;
-    const c = PALETTE[Math.floor(Math.random() * PALETTE.length)];
-    cols[i * 3] = c.r * 0.45; cols[i * 3 + 1] = c.g * 0.45; cols[i * 3 + 2] = c.b * 0.45;
+    cols[i * 3] = 0.4; cols[i * 3 + 1] = 0.4; cols[i * 3 + 2] = 0.4;
     sizes[i] = 3.0 + Math.random() * 4.0;
     phases[i] = Math.random();
   }
@@ -406,9 +428,9 @@ function createAmbientParticles(count) {
    NEBULA VOLUME PLANES (FBM noise shaders)
    ========================================================== */
 const NEBULA_COLORS = [
-  [new THREE.Color('#0f2a4a'), new THREE.Color('#2a1250')],
-  [new THREE.Color('#0a2838'), new THREE.Color('#351848')],
-  [new THREE.Color('#1a1040'), new THREE.Color('#0a3038')],
+  [new THREE.Color('#1a3868'), new THREE.Color('#3a1a6a')],
+  [new THREE.Color('#142e5c'), new THREE.Color('#4a2070')],
+  [new THREE.Color('#281858'), new THREE.Color('#143860')],
 ];
 
 function createNebulaPlanes() {
@@ -523,29 +545,28 @@ function updateParticles(t, dt) {
 
   const fa = formationTargets[from];
   const ta = formationTargets[to];
-  const lerpSpeed = Math.min(1, 2.8 * dt);
+  const lerpSpeed = Math.min(1, 2.2 * dt);
   const expansion = Math.sin(blend * Math.PI) * TUNING.phaseShift;
 
   for (let i = 0; i < count; i++) {
     const i3 = i * 3;
-    const tx = fa[i3]     + (ta[i3]     - fa[i3])     * blend;
-    const ty = fa[i3 + 1] + (ta[i3 + 1] - fa[i3 + 1]) * blend;
-    const tz = fa[i3 + 2] + (ta[i3 + 2] - fa[i3 + 2]) * blend;
+    let tx = fa[i3]     + (ta[i3]     - fa[i3])     * blend;
+    let ty = fa[i3 + 1] + (ta[i3 + 1] - fa[i3 + 1]) * blend;
+    let tz = fa[i3 + 2] + (ta[i3 + 2] - fa[i3 + 2]) * blend;
+
+    if (expansion > 0.02) {
+      const dist = Math.sqrt(tx * tx + ty * ty + tz * tz) + 1.5;
+      const e = expansion * 0.1;
+      tx += (tx / dist) * e;
+      ty += (ty / dist) * e;
+      tz += (tz / dist) * e;
+    }
 
     particlePositions[i3]     += (tx - particlePositions[i3])     * lerpSpeed;
     particlePositions[i3 + 1] += (ty - particlePositions[i3 + 1]) * lerpSpeed;
     particlePositions[i3 + 2] += (tz - particlePositions[i3 + 2]) * lerpSpeed;
 
-    if (expansion > 0.02) {
-      const dx = particlePositions[i3], dy = particlePositions[i3 + 1], dz = particlePositions[i3 + 2];
-      const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) + 0.01;
-      const e = expansion / dist;
-      particlePositions[i3]     += dx * e * 0.15;
-      particlePositions[i3 + 1] += dy * e * 0.15;
-      particlePositions[i3 + 2] += dz * e * 0.15;
-    }
-
-    const ns = 0.055;
+    const ns = 0.03;
     particlePositions[i3]     += Math.sin(t * 0.5 + i * 0.037) * ns;
     particlePositions[i3 + 1] += Math.cos(t * 0.4 + i * 0.029) * ns;
     particlePositions[i3 + 2] += Math.sin(t * 0.3 + i * 0.043) * ns;
@@ -773,10 +794,8 @@ function highlightParticles(active) {
   const colors = particleGeo.attributes.aColor.array;
   const count = colors.length / 3;
   for (let i = 0; i < count; i++) {
-    const factor = active ? (Math.random() > 0.65 ? 1.4 : 0.25) : 1;
-    colors[i * 3]     = Math.min(1, particleBaseColors[i * 3]     * factor);
-    colors[i * 3 + 1] = Math.min(1, particleBaseColors[i * 3 + 1] * factor);
-    colors[i * 3 + 2] = Math.min(1, particleBaseColors[i * 3 + 2] * factor);
+    const v = active ? (Math.random() > 0.65 ? 1.5 : 0.2) : 1.0;
+    colors[i * 3] = v; colors[i * 3 + 1] = v; colors[i * 3 + 2] = v;
   }
   particleGeo.attributes.aColor.needsUpdate = true;
 }
