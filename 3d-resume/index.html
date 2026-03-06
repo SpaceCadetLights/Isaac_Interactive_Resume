@@ -47,61 +47,67 @@
       <p class="hero-headline" id="hero-headline"></p>
       <p class="hero-summary" id="hero-summary"></p>
       <div class="hero-chips" id="hero-chips"></div>
-      <div class="scroll-hint" aria-hidden="true">
-        <span>Scroll to explore</span>
-        <div class="scroll-arrow"></div>
-      </div>
     </div>
   </section>
 
-  <!-- Ch 1: Summary + MVV + Domains -->
+  <!-- Ch 1: Mission/Vision/Values + Primary Domains/Focus/Style — two side-by-side panels -->
   <section class="chapter" id="ch-summary">
-    <div class="chapter-inner">
-      <div class="glass-panel summary-panel">
-        <div class="summary-grid">
-          <div class="summary-card" id="summary-mvv"></div>
-          <div class="summary-card" id="summary-kpis"></div>
-        </div>
+    <div class="chapter-inner summary-row">
+      <div class="glass-panel summary-panel-mvv">
+        <h2 class="section-title">Mission &middot; Vision &middot; Values</h2>
+        <div id="summary-mvv"></div>
+      </div>
+      <div class="glass-panel summary-panel-domains">
+        <h2 class="section-title">Domains &middot; Focus &middot; Style</h2>
+        <div id="summary-kpis"></div>
       </div>
     </div>
   </section>
 
-  <!-- Ch 2: Jobs + Education -->
+  <!-- Ch 2: Work History + Education — scrollable body, fixed border ring on outer shell -->
   <section class="chapter" id="ch-jobs">
     <div class="chapter-inner">
-      <div class="glass-panel jobs-panel">
+      <div class="glass-panel">
         <h2 class="section-title">Experience</h2>
-        <div id="jobs-list"></div>
+        <div class="panel-body" id="jobs-list"></div>
       </div>
     </div>
   </section>
 
-  <!-- Ch 3: Skills Map -->
+  <!-- Ch 3: Skills Map — search bar centered, scrollable body -->
   <section class="chapter" id="ch-skills">
     <div class="chapter-inner">
-      <div class="glass-panel skills-panel">
+      <div class="glass-panel">
         <h2 class="section-title">Skills Map</h2>
         <p class="section-subtitle">Complete Master Library &mdash; click categories to expand</p>
-        <div class="search-bar">
-          <span class="search-icon" aria-hidden="true">&#8981;</span>
-          <input type="text" id="skills-search" placeholder="Search skills..." autocomplete="off" aria-label="Search skills">
+        <div class="search-bar-wrap">
+          <div class="search-bar">
+            <span class="search-icon" aria-hidden="true">&#8981;</span>
+            <input type="text" id="skills-search" placeholder="Search skills..." autocomplete="off" aria-label="Search skills">
+          </div>
         </div>
-        <div id="skills-tree"></div>
+        <div class="panel-body" id="skills-tree"></div>
       </div>
     </div>
   </section>
 
-  <!-- Ch 4: Timeline -->
+  <!-- Ch 4: Timeline — search bar centered, scrollable body -->
   <section class="chapter" id="ch-timeline">
     <div class="chapter-inner">
       <div class="glass-panel">
         <h2 class="section-title">Timeline</h2>
-        <div id="timeline-list"></div>
+        <div class="search-bar-wrap">
+          <div class="search-bar">
+            <span class="search-icon" aria-hidden="true">&#8981;</span>
+            <input type="text" id="timeline-search" placeholder="Search timeline..." autocomplete="off" aria-label="Search timeline">
+          </div>
+        </div>
+        <div class="panel-body" id="timeline-list"></div>
       </div>
     </div>
   </section>
 
-  <!-- Ch 5: Passions + Capabilities -->
+  <!-- Ch 5: Passions + Manufacturing Capabilities -->
   <section class="chapter" id="ch-passions">
     <div class="chapter-inner passions-inner">
       <div class="glass-panel half-panel">
@@ -111,6 +117,19 @@
       <div class="glass-panel half-panel">
         <h2 class="section-title">Manufacturing Capabilities</h2>
         <div id="caps-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Ch 6: Ending Statement -->
+  <section class="chapter" id="ch-ending">
+    <div class="chapter-inner">
+      <div class="glass-panel ending-panel">
+        <p class="ending-eyebrow">Built with intention.</p>
+        <h2 class="ending-headline">Engineering Is an Act of Care</h2>
+        <p class="ending-body">Every system I design begins with a question: can this feel alive? Can it invite participation? Can it make people pause, and lean in?</p>
+        <p class="ending-body">Thirteen years of circuits, machines, and light installations later &mdash; the answer is still yes. Technology in service of human connection is the only kind worth building.</p>
+        <p class="ending-cta">I&rsquo;m looking for the next project worth getting absorbed in. Let&rsquo;s see what we can make together.</p>
       </div>
     </div>
   </section>
@@ -136,6 +155,9 @@
   <button id="btn-quality" class="ctrl-btn" title="Quality: Auto" aria-label="Change quality">
     <span id="quality-icon">&#x25C6;</span>
   </button>
+  <button id="btn-import" class="ctrl-btn" title="Import / Export Data" aria-label="Open import settings">
+    <span>&#x2699;&#xFE0E;</span>
+  </button>
   <a href="../interactive_resume_spacecadets_v6_singlefile.html" class="ctrl-btn" title="Standard Resume" aria-label="View standard resume">
     <span>&#9776;</span>
   </a>
@@ -152,6 +174,38 @@
   </div>
   <div class="modal-body" id="modal-body"></div>
 </dialog>
+
+<!-- Settings / Import modal -->
+<dialog id="settings-modal">
+  <div class="modal-head">
+    <div>
+      <div class="modal-title">Import &amp; Export Resume Data</div>
+      <div class="modal-meta">Both 3D and standard resume pages share the same data store</div>
+    </div>
+    <button class="modal-close" id="settings-close" aria-label="Close">&#x2715;</button>
+  </div>
+  <div class="modal-body settings-body">
+    <p class="settings-hint">
+      Paste a <strong>Unified Profile Package</strong> JSON to update all resume content.<br>
+      Compatible with the standard resume page&rsquo;s import format (<code>sc_profile_pack_v1</code>).
+    </p>
+    <textarea id="import-json" rows="8" placeholder='{"version":1,"resume":{...},"timeline":[...],"skills_markdown":"..."}'></textarea>
+    <div class="settings-actions">
+      <button class="glass-btn" id="btn-import-apply">Apply Import</button>
+      <button class="glass-btn" id="btn-import-file">Import File&hellip;</button>
+      <input type="file" id="import-file-input" accept=".json,.md,.txt" style="display:none" aria-hidden="true">
+      <button class="glass-btn" id="btn-export">Export JSON</button>
+      <button class="glass-btn" id="btn-reset-data">Reset to Default</button>
+    </div>
+    <p class="settings-status" id="import-status"></p>
+  </div>
+</dialog>
+
+<!-- Scroll hint lives outside #content so GSAP transforms on hero-inner never affect it -->
+<div class="scroll-hint" aria-hidden="true">
+  <span>Scroll to explore</span>
+  <div class="scroll-arrow"></div>
+</div>
 
 <script type="module" src="app.js"></script>
 </body>

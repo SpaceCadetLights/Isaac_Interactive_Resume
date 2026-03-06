@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import * as DATA from './data.js';
+import * as SEED from './data.js';
 
 /* ==========================================================
    TUNING — tweak these constants to trade quality for FPS.
@@ -144,6 +144,110 @@ void main(){
 }`;
 
 /* ==========================================================
+   DATA RESOLUTION
+   Loads from shared localStorage (sc_profile_pack_v1) first —
+   the same key used by the standard resume page — falling back
+   to the hardcoded data.js seed values.  When both pages
+   share a profile pack, edits on one page are reflected here.
+   ========================================================== */
+const LS_KEY = 'sc_profile_pack_v1';
+
+function tokenize(str) {
+  if (Array.isArray(str)) return str.length ? str : null;
+  const arr = (str || '').split(/\s*[•·|,]\s*|\s+\+\s+/).map(s => s.trim()).filter(Boolean);
+  return arr.length ? arr : null;
+}
+
+function parseHeadingLine(line) {
+  const m = line.match(/^(#{1,6})\s+(.*)$/);
+  if (!m) return null;
+  return { level: m[1].length, text: m[2].trim() };
+}
+
+function parseSkillsMarkdownToTree(md) {
+  const lines = (md || '').replace(/\t/g, '  ').split(/\r?\n/);
+  const root = { title: 'Root', level: 0, bullets: [], children: [] };
+  const stack = [root];
+
+  const introNode = { title: 'Overview', level: 1, bullets: [], children: [] };
+  root.children.push(introNode);
+  stack.push(introNode);
+
+  function current() { return stack[stack.length - 1]; }
+
+  for (let i = 0; i < lines.length; i++) {
+    const raw = lines[i];
+    const line = raw.replace(/\s+$/, '');
+    if (/^[-_—]{8,}$/.test(line.trim())) continue;
+    const h = parseHeadingLine(line.trim());
+    const b = line.match(/^\s*[-*]\s+(.*)$/);
+
+    if (h && h.level <= 3) {
+      while (stack.length > h.level) stack.pop();
+      const node = { title: h.text, level: h.level, bullets: [], children: [] };
+      stack[stack.length - 1].children.push(node);
+      stack.push(node);
+      continue;
+    }
+    if (b) {
+      let text = b[1].trim();
+      while (i + 1 < lines.length && /^\s{2,}\S/.test(lines[i + 1]) && !parseHeadingLine(lines[i + 1].trim()) && !/^\s*[-*]\s+/.test(lines[i + 1])) {
+        i++;
+        text += ' ' + lines[i].trim();
+      }
+      current().bullets.push(text.replace(/\s+/g, ' ').trim());
+    }
+  }
+
+  if (!introNode.bullets.length && !introNode.children.length) root.children.shift();
+  return root.children;
+}
+
+function resolveData() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return null;
+    const pack = JSON.parse(raw);
+    const r = pack.resume || {};
+    const h = r.hero || {};
+    return {
+      profile: { ...SEED.profile, ...(r.profile || {}) },
+      hero: {
+        primaryDomains: tokenize(h.primary_domains || h.primaryDomains) || SEED.hero.primaryDomains,
+        focus:  tokenize(h.focus)  || SEED.hero.focus,
+        style:  tokenize(h.style)  || SEED.hero.style,
+        chips:  Array.isArray(h.chips) ? h.chips : SEED.hero.chips,
+      },
+      mvv: { ...SEED.mvv, ...(r.mvv || {}) },
+      jobs: Array.isArray(r.jobs) ? r.jobs : SEED.jobs,
+      education: Array.isArray(r.education) ? r.education : SEED.education,
+      passions: Array.isArray(r.passions) ? r.passions : SEED.passions,
+      capabilities: Array.isArray(r.capabilities) ? r.capabilities : SEED.capabilities,
+      timeline: Array.isArray(pack.timeline) ? pack.timeline : SEED.timeline,
+      skillsTree: pack.skills_markdown
+        ? parseSkillsMarkdownToTree(pack.skills_markdown)
+        : SEED.skillsTree,
+    };
+  } catch (e) {
+    console.warn('3D Resume: could not read localStorage data, using defaults.', e);
+    return null;
+  }
+}
+
+/* Mutable DATA object — re-assigned on import */
+let DATA = resolveData() || {
+  profile:      SEED.profile,
+  hero:         SEED.hero,
+  mvv:          SEED.mvv,
+  jobs:         SEED.jobs,
+  education:    SEED.education,
+  passions:     SEED.passions,
+  capabilities: SEED.capabilities,
+  timeline:     SEED.timeline,
+  skillsTree:   SEED.skillsTree,
+};
+
+/* ==========================================================
    GLOBALS
    ========================================================== */
 const { gsap, ScrollTrigger } = window;
@@ -244,11 +348,11 @@ function updateStarfield(t, vel) {
 }
 
 /* ==========================================================
-   FORMATION GENERATORS (unchanged)
+   FORMATION GENERATORS
    ========================================================== */
 function genSphereCloud(count) {
   const p = new Float32Array(count * 3);
-  const rings = 8, R = 18;
+  const rings = 8, R = 24;
   for (let i = 0; i < count; i++) {
     const ring = i % rings;
     const idx = Math.floor(i / rings);
@@ -343,7 +447,7 @@ function genNautilus(count) {
 const FORMATION_FNS = [genSphereCloud, genFlowerOfLife, genTorusKnot, genReticello, genLissajous, genNautilus];
 
 /* ==========================================================
-   MAIN PARTICLE SYSTEM (custom shader)
+   MAIN PARTICLE SYSTEM
    ========================================================== */
 const PALETTE = [
   new THREE.Color('#d8f0ff'),
@@ -391,7 +495,7 @@ function createParticles(count) {
 }
 
 /* ==========================================================
-   AMBIENT DRIFT PARTICLES (depth / nebula dust)
+   AMBIENT DRIFT PARTICLES
    ========================================================== */
 function createAmbientParticles(count) {
   if (!count) return;
@@ -425,7 +529,7 @@ function createAmbientParticles(count) {
 }
 
 /* ==========================================================
-   NEBULA VOLUME PLANES (FBM noise shaders)
+   NEBULA VOLUME PLANES
    ========================================================== */
 const NEBULA_COLORS = [
   [new THREE.Color('#1a3868'), new THREE.Color('#3a1a6a')],
@@ -460,7 +564,7 @@ function createNebulaPlanes() {
 }
 
 /* ==========================================================
-   CONSTELLATION LINES (high quality only)
+   CONSTELLATION LINES
    ========================================================== */
 function createConstellationLines() {
   if (qualityLevel !== 'high') return;
@@ -510,7 +614,7 @@ function updateConstellationLines() {
 }
 
 /* ==========================================================
-   POST-PROCESSING (bloom, high quality only, lazy-loaded)
+   POST-PROCESSING (bloom, high quality only)
    ========================================================== */
 async function initPostProcessing() {
   if (qualityLevel !== 'high' || TUNING.bloomStrength <= 0) return;
@@ -532,7 +636,7 @@ async function initPostProcessing() {
 }
 
 /* ==========================================================
-   PARTICLE UPDATE (morph + phase-shift + noise)
+   PARTICLE UPDATE
    ========================================================== */
 function updateParticles(t, dt) {
   if (reducedMotion || !particles) return;
@@ -575,7 +679,7 @@ function updateParticles(t, dt) {
 }
 
 /* ==========================================================
-   CAMERA SYSTEM (damped rig + breathing + roll)
+   CAMERA SYSTEM
    ========================================================== */
 function updateCamera(t) {
   const cl = TUNING.cameraLerp;
@@ -615,7 +719,8 @@ function setupScroll() {
       .to(camState, { x: 3,  y:-0.5, z: 32, roll: -0.015, duration: 1, ease: 'none' })
       .to(camState, { x:-2,  y: 2,   z: 42, roll:  0.010, duration: 1, ease: 'none' })
       .to(camState, { x: 4,  y:-1,   z: 35, roll: -0.008, duration: 1, ease: 'none' })
-      .to(camState, { x: 0,  y: 0,   z: 48, roll:  0,     duration: 1, ease: 'none' });
+      .to(camState, { x: 0,  y: 0.5, z: 44, roll:  0.006, duration: 1, ease: 'none' })
+      .to(camState, { x: 0,  y: 0,   z: 50, roll:  0,     duration: 1, ease: 'none' });
   }
 
   if (reducedMotion) return;
@@ -627,6 +732,7 @@ function setupScroll() {
 
   document.querySelectorAll('.chapter').forEach(section => {
     const target = section.querySelector('.hero-inner')
+      || section.querySelector('.summary-row')
       || section.querySelector('.passions-inner')
       || section.querySelector('.footer-inner')
       || section.querySelector('.glass-panel');
@@ -646,7 +752,7 @@ function $(sel, root) { return (root || document).querySelector(sel); }
 function $$(sel, root) { return Array.from((root || document).querySelectorAll(sel)); }
 
 /* ==========================================================
-   UI RENDERING (unchanged)
+   UI RENDERING
    ========================================================== */
 function renderHero() {
   $('#hero-name').textContent = DATA.profile.name;
@@ -702,7 +808,9 @@ function renderJobs() {
 function renderSkillNode(node, depth) {
   const cls = depth === 0 ? 'skill-l1' : depth === 1 ? 'skill-l2' : 'skill-l3';
   const open = depth === 0 ? ' open' : '';
-  const items = (node.items || []).length ? `<ul class="skill-bullets">${node.items.map(b => `<li>${esc(b)}</li>`).join('')}</ul>` : '';
+  /* handle both data.js format (items) and markdown-parsed format (bullets) */
+  const bullets = node.items || node.bullets || [];
+  const items = bullets.length ? `<ul class="skill-bullets">${bullets.map(b => `<li>${esc(b)}</li>`).join('')}</ul>` : '';
   const kids = (node.children || []).map(ch => renderSkillNode(ch, depth + 1)).join('');
   if (!items && !kids) return '';
   return `<details class="skill-node ${cls}"${open}><summary><span>${esc(node.title)}</span><span class="skill-caret"></span></summary><div class="skill-body">${items}${kids}</div></details>`;
@@ -743,6 +851,16 @@ function renderPassions() {
 function renderFooter() {
   const site = $('#footer-site'); site.href = DATA.profile.site; site.textContent = DATA.profile.site.replace('https://', '');
   const email = $('#footer-email'); email.href = `mailto:${DATA.profile.email}`; email.textContent = DATA.profile.email;
+}
+
+function renderAll() {
+  renderHero();
+  renderSummary();
+  renderJobs();
+  renderSkills();
+  renderTimeline();
+  renderPassions();
+  renderFooter();
 }
 
 /* ==========================================================
@@ -789,6 +907,34 @@ function filterSkills(query) {
   highlightParticles(true);
 }
 
+/* ==========================================================
+   TIMELINE SEARCH
+   ========================================================== */
+function setupTimelineSearch() {
+  const input = $('#timeline-search');
+  if (!input) return;
+  let timer;
+  input.addEventListener('input', () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => filterTimeline(input.value.toLowerCase().trim()), 180);
+  });
+}
+
+function filterTimeline(query) {
+  const entries = $$('#timeline-list .timeline-entry');
+  if (!query) {
+    entries.forEach(e => { e.style.display = ''; });
+    return;
+  }
+  entries.forEach(e => {
+    const text = (e.textContent || '').toLowerCase();
+    e.style.display = text.includes(query) ? '' : 'none';
+  });
+}
+
+/* ==========================================================
+   PARTICLE HIGHLIGHTS
+   ========================================================== */
 function highlightParticles(active) {
   if (!particles || reducedMotion) return;
   const colors = particleGeo.attributes.aColor.array;
@@ -807,7 +953,7 @@ function resetParticleColors() {
 }
 
 /* ==========================================================
-   CONTROLS (enhanced with visibility toggles)
+   CONTROLS
    ========================================================== */
 function setupControls() {
   const motionBtn = $('#btn-motion'), motionIcon = $('#motion-icon');
@@ -833,6 +979,149 @@ function setupControls() {
   syncMotion(); syncQuality();
   motionBtn.addEventListener('click', () => { reducedMotion = !reducedMotion; syncMotion(); });
   qualityBtn.addEventListener('click', () => { const i = levels.indexOf(qualityLevel); qualityLevel = levels[(i + 1) % levels.length]; syncQuality(); });
+}
+
+/* ==========================================================
+   IMPORT / EXPORT  (behind gear icon, shared with 2D resume)
+   ========================================================== */
+function buildCurrentPack() {
+  return {
+    version: 1,
+    resume: {
+      profile:      DATA.profile,
+      hero: {
+        primary_domains: DATA.hero.primaryDomains.join(' \u2022 '),
+        focus:  DATA.hero.focus.join(' \u2022 '),
+        style:  DATA.hero.style.join(' \u2022 '),
+        chips:  DATA.hero.chips,
+      },
+      mvv:          DATA.mvv,
+      jobs:         DATA.jobs,
+      education:    DATA.education,
+      passions:     DATA.passions,
+      capabilities: DATA.capabilities,
+    },
+    timeline: DATA.timeline,
+    skills_markdown: null,
+  };
+}
+
+function applyImport(jsonText) {
+  const statusEl = $('#import-status');
+  try {
+    const pack = JSON.parse(jsonText);
+    if (!pack || typeof pack !== 'object') throw new Error('Invalid JSON structure.');
+    const resolved = resolveDataFromPack(pack);
+    DATA = resolved;
+    localStorage.setItem(LS_KEY, JSON.stringify(pack));
+    renderAll();
+    ScrollTrigger.refresh();
+    statusEl.textContent = '\u2713 Import applied. Page content updated.';
+    statusEl.className = 'settings-status ok';
+  } catch (e) {
+    statusEl.textContent = '\u2717 Error: ' + e.message;
+    statusEl.className = 'settings-status err';
+  }
+}
+
+function resolveDataFromPack(pack) {
+  const r = (pack && pack.resume) || {};
+  const h = r.hero || {};
+  return {
+    profile: { ...SEED.profile, ...(r.profile || {}) },
+    hero: {
+      primaryDomains: tokenize(h.primary_domains || h.primaryDomains) || SEED.hero.primaryDomains,
+      focus:  tokenize(h.focus)  || SEED.hero.focus,
+      style:  tokenize(h.style)  || SEED.hero.style,
+      chips:  Array.isArray(h.chips) ? h.chips : SEED.hero.chips,
+    },
+    mvv: { ...SEED.mvv, ...(r.mvv || {}) },
+    jobs: Array.isArray(r.jobs) ? r.jobs : SEED.jobs,
+    education: Array.isArray(r.education) ? r.education : SEED.education,
+    passions: Array.isArray(r.passions) ? r.passions : SEED.passions,
+    capabilities: Array.isArray(r.capabilities) ? r.capabilities : SEED.capabilities,
+    timeline: Array.isArray(pack.timeline) ? pack.timeline : SEED.timeline,
+    skillsTree: pack.skills_markdown
+      ? parseSkillsMarkdownToTree(pack.skills_markdown)
+      : SEED.skillsTree,
+  };
+}
+
+function setupImport() {
+  const modal    = $('#settings-modal');
+  const openBtn  = $('#btn-import');
+  const closeBtn = $('#settings-close');
+  const applyBtn = $('#btn-import-apply');
+  const fileBtn  = $('#btn-import-file');
+  const fileIn   = $('#import-file-input');
+  const exportBtn= $('#btn-export');
+  const resetBtn = $('#btn-reset-data');
+  const jsonArea = $('#import-json');
+  const statusEl = $('#import-status');
+
+  if (!modal || !openBtn) return;
+
+  openBtn.addEventListener('click', () => {
+    statusEl.textContent = '';
+    statusEl.className = 'settings-status';
+    jsonArea.value = '';
+    modal.showModal();
+  });
+  closeBtn.addEventListener('click', () => modal.close());
+  modal.addEventListener('click', e => { if (e.target === modal) modal.close(); });
+
+  applyBtn.addEventListener('click', () => {
+    const text = jsonArea.value.trim();
+    if (!text) { statusEl.textContent = 'Paste JSON above first.'; statusEl.className = 'settings-status err'; return; }
+    applyImport(text);
+  });
+
+  fileBtn.addEventListener('click', () => fileIn.click());
+  fileIn.addEventListener('change', () => {
+    const file = fileIn.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const text = e.target.result;
+      jsonArea.value = text;
+      applyImport(text);
+    };
+    reader.readAsText(file);
+    fileIn.value = '';
+  });
+
+  exportBtn.addEventListener('click', () => {
+    const pack = buildCurrentPack();
+    const blob = new Blob([JSON.stringify(pack, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'resume_profile_pack.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    statusEl.textContent = '\u2713 Exported.';
+    statusEl.className = 'settings-status ok';
+  });
+
+  resetBtn.addEventListener('click', () => {
+    if (!confirm('Reset all resume data to defaults? This cannot be undone.')) return;
+    localStorage.removeItem(LS_KEY);
+    DATA = {
+      profile:      SEED.profile,
+      hero:         SEED.hero,
+      mvv:          SEED.mvv,
+      jobs:         SEED.jobs,
+      education:    SEED.education,
+      passions:     SEED.passions,
+      capabilities: SEED.capabilities,
+      timeline:     SEED.timeline,
+      skillsTree:   SEED.skillsTree,
+    };
+    renderAll();
+    ScrollTrigger.refresh();
+    statusEl.textContent = '\u2713 Reset to defaults.';
+    statusEl.className = 'settings-status ok';
+  });
 }
 
 /* ==========================================================
@@ -902,10 +1191,14 @@ async function init() {
 
   await initPostProcessing();
 
-  renderHero(); renderSummary(); renderJobs(); renderSkills();
-  renderTimeline(); renderPassions(); renderFooter();
+  renderAll();
 
-  setupScroll(); setupSearch(); setupControls(); setupModal();
+  setupScroll();
+  setupSearch();
+  setupTimelineSearch();
+  setupControls();
+  setupModal();
+  setupImport();
   window.addEventListener('resize', onResize);
   animate();
 }

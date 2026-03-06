@@ -87,7 +87,17 @@ body {
   max-width: 960px;
 }
 
-/* ===== Glass Panels ===== */
+/* ===== Glass Panels =====
+ *
+ * Utility classes:
+ *   .glass-panel        — outer shell; hosts iridescent ::before ring + light-sweep ::after.
+ *                         Never set overflow-y on this element — use .panel-body instead.
+ *   .panel-body         — scrollable inner content container; border stays fixed on outer shell.
+ *   .search-bar-wrap    — centers a search bar horizontally inside its panel.
+ *   .summary-row        — flex row for side-by-side summary panels (stacks on mobile).
+ *   .edge-iris          — semantic alias: same iridescent ring, used for non-.glass-panel
+ *                         elements like modals.
+ * ===== */
 .glass-panel {
   background:
     radial-gradient(
@@ -111,12 +121,13 @@ body {
   overflow: hidden;
 }
 
+/* Iridescent border ring — sits at inset: 0 so it is never clipped by overflow:hidden */
 .glass-panel::before {
   content: '';
   position: absolute;
-  inset: -1px;
+  inset: 0;
   border-radius: inherit;
-  padding: 1.5px;
+  padding: 2px;
   background: conic-gradient(
     from var(--border-angle),
     rgba(124,247,255,0.65),
@@ -132,10 +143,12 @@ body {
   opacity: 0.8;
   animation: border-rotate 25s linear infinite;
   pointer-events: none;
+  z-index: 2;
 }
 
 @keyframes border-rotate { to { --border-angle: 360deg; } }
 
+/* Subtle light sweep */
 .glass-panel::after {
   content: '';
   position: absolute;
@@ -159,6 +172,35 @@ body {
   100% { background-position: -250% 0; }
 }
 
+/* ===== Panel Body (scrollable inner container — border ring stays on outer shell) ===== */
+.panel-body {
+  overflow-y: auto;
+  max-height: calc(100vh - 260px);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(124,247,255,0.3) transparent;
+  position: relative;
+  z-index: 0;
+}
+
+.panel-body::-webkit-scrollbar { width: 6px; }
+.panel-body::-webkit-scrollbar-thumb {
+  background: rgba(124,247,255,0.3);
+  border-radius: 999px;
+}
+
+/* ===== Search Bar Wrap (centers search bars inside panels) ===== */
+.search-bar-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.search-bar-wrap .search-bar {
+  max-width: 380px;
+  width: 100%;
+  margin-bottom: 0;
+}
+
 /* ===== Hero ===== */
 .hero-inner {
   text-align: center;
@@ -167,6 +209,54 @@ body {
   align-items: center;
   gap: 16px;
   padding-bottom: 60px;
+  position: relative;
+  /* New stacking context keeps z-index:-1 ::before above the canvas */
+  isolation: isolate;
+}
+
+/*
+ * Soft backdrop blur behind hero text — separates name/headline/summary
+ * from the particle canvas without obscuring them. Uses a radial-gradient
+ * mask to feather all edges so there is no hard box outline.
+ * z-index: -1 + isolation: isolate keeps it above canvas but under text.
+ */
+.hero-inner::before {
+  content: '';
+  position: absolute;
+  /* Cover the text stack, centred slightly above middle (scroll hint lives at bottom) */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(780px, 95vw);
+  height: min(520px, 72vh);
+  backdrop-filter: blur(20px) brightness(0.82);
+  -webkit-backdrop-filter: blur(20px) brightness(0.82);
+  /* Very faint dark tint to add just a whisper of contrast */
+  background: radial-gradient(
+    ellipse 60% 55% at 50% 48%,
+    rgba(8, 6, 26, 0.18) 0%,
+    rgba(8, 6, 26, 0.06) 55%,
+    transparent 100%
+  );
+  /* Feather all edges so it dissolves invisibly into the background */
+  mask-image: radial-gradient(
+    ellipse 68% 62% at 50% 48%,
+    black          20%,
+    rgba(0,0,0,.9) 38%,
+    rgba(0,0,0,.6) 54%,
+    rgba(0,0,0,.2) 68%,
+    transparent    80%
+  );
+  -webkit-mask-image: radial-gradient(
+    ellipse 68% 62% at 50% 48%,
+    black          20%,
+    rgba(0,0,0,.9) 38%,
+    rgba(0,0,0,.6) 54%,
+    rgba(0,0,0,.2) 68%,
+    transparent    80%
+  );
+  pointer-events: none;
+  z-index: -1;
 }
 
 .hero-orb {
@@ -231,25 +321,27 @@ body {
 }
 
 .scroll-hint {
-  position: absolute;
-  bottom: 14px;
+  position: fixed;
+  bottom: 44px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  color: rgba(255,255,255,0.35);
+  color: rgba(255,255,255,0.92);
   font-size: 12px;
   letter-spacing: 1px;
   text-transform: uppercase;
+  pointer-events: none;
+  z-index: 5;
 }
 
 .scroll-arrow {
   width: 18px;
   height: 18px;
-  border-right: 2px solid rgba(255,255,255,0.3);
-  border-bottom: 2px solid rgba(255,255,255,0.3);
+  border-right: 2px solid rgba(255,255,255,0.92);
+  border-bottom: 2px solid rgba(255,255,255,0.92);
   transform: rotate(45deg);
   animation: scroll-bounce 2.5s ease-in-out infinite;
 }
@@ -259,20 +351,21 @@ body {
   50% { transform: rotate(45deg) translateY(8px); }
 }
 
-/* ===== Summary ===== */
-.summary-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+/* ===== Summary Row (side-by-side panels) ===== */
+.summary-row {
+  display: flex;
   gap: 16px;
+  align-items: flex-start;
+  width: 100%;
 }
 
-.summary-card {
-  background: rgba(0,0,0,0.2);
-  border-radius: 18px;
-  border: 1px solid rgba(255,255,255,0.06);
-  padding: 20px;
+.summary-panel-mvv,
+.summary-panel-domains {
+  flex: 1;
+  min-width: 0;
 }
 
+/* Legacy inner-card styles kept for reference; no longer used as outer panels */
 .mvv-block {
   padding: 14px;
   border-radius: 14px;
@@ -440,33 +533,7 @@ body {
   margin-top: 8px;
 }
 
-.jobs-panel {
-  max-height: calc(100vh - 160px);
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(124,247,255,0.3) transparent;
-}
-
-.jobs-panel::-webkit-scrollbar { width: 6px; }
-.jobs-panel::-webkit-scrollbar-thumb {
-  background: rgba(124,247,255,0.3);
-  border-radius: 999px;
-}
-
 /* ===== Skills Tree ===== */
-.skills-panel {
-  max-height: calc(100vh - 160px);
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(124,247,255,0.3) transparent;
-}
-
-.skills-panel::-webkit-scrollbar { width: 6px; }
-.skills-panel::-webkit-scrollbar-thumb {
-  background: rgba(124,247,255,0.3);
-  border-radius: 999px;
-}
-
 .skill-node {
   border-radius: 14px;
   background: rgba(255,255,255,0.025);
@@ -614,6 +681,51 @@ body {
 
 .cap-items li { margin: 2px 0; }
 
+/* ===== Ending Statement ===== */
+.ending-panel {
+  text-align: center;
+  padding: 56px 48px;
+}
+
+.ending-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted2);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin: 0 0 20px;
+}
+
+.ending-headline {
+  font-size: clamp(22px, 4vw, 40px);
+  font-weight: 800;
+  background: linear-gradient(135deg, #e4f9ff 0%, #bceeff 35%, #dfbfff 65%, #ffc2ec 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  margin: 0 0 28px;
+  line-height: 1.1;
+  letter-spacing: -0.5px;
+}
+
+.ending-body {
+  font-size: clamp(14px, 2vw, 16px);
+  color: rgba(255,255,255,0.75);
+  max-width: 560px;
+  margin: 0 auto 16px;
+  line-height: 1.75;
+  text-align: left;
+}
+
+.ending-cta {
+  font-size: 14px;
+  color: var(--muted);
+  max-width: 480px;
+  margin: 28px auto 0;
+  line-height: 1.65;
+  font-style: italic;
+}
+
 /* ===== Footer ===== */
 .footer-inner {
   text-align: center;
@@ -644,6 +756,7 @@ body {
   font-size: 13px;
   transition: transform 0.12s, border-color 0.12s, background 0.12s;
   cursor: pointer;
+  font-family: var(--font);
 }
 
 .glass-btn:hover {
@@ -684,6 +797,7 @@ body {
   text-decoration: none;
   transition: border-color 0.15s, background 0.15s;
   padding: 0;
+  font-family: var(--font);
 }
 
 .ctrl-btn:hover {
@@ -691,8 +805,9 @@ body {
   background: rgba(10,14,30,0.7);
 }
 
-/* ===== Modal ===== */
-#detail-modal {
+/* ===== Modal (shared: detail + settings) ===== */
+#detail-modal,
+#settings-modal {
   width: min(720px, calc(100vw - 32px));
   border: 0;
   padding: 0;
@@ -702,9 +817,38 @@ body {
   backdrop-filter: blur(20px) saturate(140%);
   -webkit-backdrop-filter: blur(20px) saturate(140%);
   box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+  position: relative;
+  overflow: hidden;
 }
 
-#detail-modal::backdrop {
+/* Iridescent border ring on modals */
+#detail-modal::before,
+#settings-modal::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--border-angle),
+    rgba(124,247,255,0.50),
+    rgba(180,140,255,0.45),
+    rgba(255,122,229,0.40),
+    rgba(124,255,154,0.40),
+    rgba(124,247,255,0.50)
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.7;
+  animation: border-rotate 30s linear infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+#detail-modal::backdrop,
+#settings-modal::backdrop {
   background: rgba(0,0,0,0.55);
   backdrop-filter: blur(3px);
   -webkit-backdrop-filter: blur(3px);
@@ -717,6 +861,8 @@ body {
   justify-content: space-between;
   align-items: flex-start;
   gap: 12px;
+  position: relative;
+  z-index: 2;
 }
 
 .modal-title { font-weight: 700; font-size: 15px; }
@@ -748,7 +894,61 @@ body {
   line-height: 1.6;
   max-height: 60vh;
   overflow-y: auto;
+  position: relative;
+  z-index: 2;
 }
+
+/* ===== Settings / Import Modal ===== */
+.settings-body {
+  white-space: normal;
+}
+
+.settings-hint {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0 0 14px;
+  line-height: 1.6;
+}
+
+.settings-hint strong { color: rgba(255,255,255,0.85); }
+
+#import-json {
+  width: 100%;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  padding: 12px;
+  color: rgba(255,255,255,0.85);
+  font-size: 11px;
+  font-family: ui-monospace, "Cascadia Code", "Fira Code", monospace;
+  resize: vertical;
+  margin-bottom: 12px;
+  outline: none;
+  display: block;
+}
+
+#import-json:focus {
+  border-color: rgba(124,247,255,0.4);
+  box-shadow: 0 0 0 1px rgba(124,247,255,0.2) inset;
+}
+
+.settings-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.settings-status {
+  font-size: 12px;
+  min-height: 18px;
+  margin: 0;
+  line-height: 1.5;
+  transition: color 0.2s;
+}
+
+.settings-status.ok { color: var(--green); }
+.settings-status.err { color: var(--pink); }
 
 /* ===== Fallback ===== */
 #fallback {
@@ -807,7 +1007,7 @@ body {
   .chapter { padding: 60px 16px; min-height: auto; }
   #ch-hero { min-height: 100vh; }
   .glass-panel { padding: 20px; border-radius: 20px; }
-  .summary-grid { grid-template-columns: 1fr; }
+  .summary-row { flex-direction: column; }
   .passions-inner { flex-direction: column; }
   .skill-l2, .skill-l3 { margin-left: 8px; }
   #controls { top: 10px; right: 10px; }
@@ -822,28 +1022,53 @@ body {
   .job-preview { font-size: 11px; }
   .footer-links { gap: 8px; }
   .glass-btn { padding: 8px 14px; font-size: 12px; }
+  .ending-panel { padding: 36px 24px; }
+  .ending-body { text-align: center; }
+  .panel-body { max-height: calc(100vh - 200px); }
+  .search-bar-wrap .search-bar { max-width: 100%; }
 }
 
 @media (max-width: 480px) {
   .chapter { padding: 48px 12px; }
   .glass-panel { padding: 16px; border-radius: 18px; }
-  .summary-card { padding: 14px; }
   .kpi-chip { font-size: 11px; padding: 4px 8px; }
   .hero-headline { font-size: 11px; }
+  .settings-actions { flex-direction: column; }
+  .settings-actions .glass-btn { width: 100%; justify-content: center; }
 }
 
 /* ===== Reduced Motion ===== */
 @media (prefers-reduced-motion: reduce) {
   .glass-panel::before,
   .glass-panel::after,
+  #detail-modal::before,
+  #settings-modal::before,
   .hero-orb::after,
   .scroll-arrow { animation: none !important; }
+  /* Disable the hero blur on low-motion: backdrop-filter can cause jitter */
+  .hero-inner::before {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(8,6,26,0.25) !important;
+    mask-image: radial-gradient(ellipse 68% 62% at 50% 48%, black 20%, rgba(0,0,0,.6) 55%, transparent 80%) !important;
+    -webkit-mask-image: radial-gradient(ellipse 68% 62% at 50% 48%, black 20%, rgba(0,0,0,.6) 55%, transparent 80%) !important;
+  }
 }
 
 .reduced-motion .glass-panel::before,
 .reduced-motion .glass-panel::after,
+.reduced-motion #detail-modal::before,
+.reduced-motion #settings-modal::before,
 .reduced-motion .hero-orb::after,
 .reduced-motion .scroll-arrow { animation: none !important; }
+
+.reduced-motion .hero-inner::before {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: rgba(8,6,26,0.25) !important;
+  mask-image: radial-gradient(ellipse 68% 62% at 50% 48%, black 20%, rgba(0,0,0,.6) 55%, transparent 80%) !important;
+  -webkit-mask-image: radial-gradient(ellipse 68% 62% at 50% 48%, black 20%, rgba(0,0,0,.6) 55%, transparent 80%) !important;
+}
 
 .reduced-motion .chapter .glass-panel,
 .reduced-motion .chapter .hero-inner {
