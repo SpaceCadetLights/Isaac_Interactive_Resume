@@ -39,8 +39,11 @@
 }
 
 #cursor-orb {
+  /* Override popover UA stylesheet (it sets inset:0, margin:auto, border,
+     padding, background — all must be explicitly reset here)            */
   position: fixed;
-  top: 0; left: 0;
+  top: 0; left: 0; right: auto; bottom: auto;
+  margin: 0; padding: 0; border: none; overflow: visible;
   /* Slightly taller than wide + asymmetric radius = subtle downward lens point */
   width: 22px; height: 24px;
   border-radius: 50% 50% 44% 50% / 50% 50% 57% 50%;

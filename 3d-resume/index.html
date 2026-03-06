@@ -307,8 +307,9 @@
   </div>
 </dialog>
 
-<!-- Custom glass orb cursor -->
-<div id="cursor-orb" aria-hidden="true"></div>
+<!-- Custom glass orb cursor — popover="manual" places it in the top layer
+     so it renders above showModal() dialogs regardless of z-index -->
+<div id="cursor-orb" aria-hidden="true" popover="manual"></div>
 
 <!-- Scroll hint — outside #content so GSAP transforms on hero-inner never affect it -->
 <div class="scroll-hint" aria-hidden="true">

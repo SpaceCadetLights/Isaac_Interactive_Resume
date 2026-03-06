@@ -1470,6 +1470,10 @@ function setupCursor() {
   const orb = document.getElementById('cursor-orb');
   if (!orb || window.matchMedia('(hover: none), (pointer: coarse)').matches) return;
 
+  /* Place cursor in the browser top layer so it renders above showModal()
+     dialogs. Falls back gracefully in browsers without Popover API.     */
+  try { orb.showPopover(); } catch (_) { /* no popover support — z-index fallback */ }
+
   /* Position is set DIRECTLY from mousemove — zero lag, no lerp */
   let mx = -200, my = -200;
   /* Scale only is lerped for smooth hover/click spring */
@@ -1489,8 +1493,11 @@ function setupCursor() {
       `translate3d(${mx}px,${my}px,0) translate(-50%,-50%) scale(${cs.toFixed(4)})`;
   }
 
-  /* Position: instant — set directly in the event, no rAF delay */
-  document.addEventListener('mousemove', e => {
+  /* pointermove fires at the full hardware polling rate (up to 1000 Hz),
+     unlike mousemove which is throttled to ~60 Hz by the browser.
+     Apply transform directly in the handler — no rAF, no batching.    */
+  document.addEventListener('pointermove', e => {
+    if (e.pointerType === 'touch') return; /* ignore touch events */
     mx = e.clientX; my = e.clientY;
     if (!hasEntered) { orb.classList.add('is-visible'); hasEntered = true; }
     applyTransform();
