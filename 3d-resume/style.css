@@ -351,11 +351,81 @@ body {
   50% { transform: rotate(45deg) translateY(8px); }
 }
 
-/* ===== Summary Row (side-by-side panels) ===== */
+/* ===== Section Navigation Bar ===== */
+#section-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 90;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-100%);
+  /* GSAP controls visibility */
+}
+
+#section-nav.nav-visible {
+  pointer-events: auto;
+}
+
+.section-nav-inner {
+  display: flex;
+  gap: 7px;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 16px 11px;
+  background: rgba(8, 6, 26, 0.75);
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.snav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 13px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.13);
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.82);
+  font-size: 12px;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: transform 0.12s, border-color 0.12s, background 0.12s;
+  white-space: nowrap;
+  flex-shrink: 1;
+  min-width: 0;
+  letter-spacing: 0.2px;
+}
+
+.snav-btn:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255,255,255,0.26);
+  background: rgba(255,255,255,0.09);
+}
+
+.snav-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.snav-btn:nth-child(1) .snav-dot { background: linear-gradient(90deg, #7CF7FF, #B48CFF); }
+.snav-btn:nth-child(2) .snav-dot { background: linear-gradient(90deg, #B48CFF, #FF7AE5); }
+.snav-btn:nth-child(3) .snav-dot { background: linear-gradient(90deg, #FF7AE5, #7CFF9A); }
+.snav-btn:nth-child(4) .snav-dot { background: linear-gradient(90deg, #7CFF9A, #7CF7FF); }
+.snav-btn:nth-child(5) .snav-dot { background: linear-gradient(90deg, #7CF7FF, #FF7AE5); }
+.snav-btn:nth-child(6) .snav-dot { background: linear-gradient(90deg, #B48CFF, #7CFF9A); }
+
+/* ===== Summary Row (side-by-side panels — equal height) ===== */
 .summary-row {
   display: flex;
   gap: 16px;
-  align-items: flex-start;
+  align-items: stretch;
   width: 100%;
 }
 
@@ -364,6 +434,18 @@ body {
   flex: 1;
   min-width: 0;
 }
+
+/* ===== Experience Column (Work History full-width above Education) ===== */
+.experience-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+/* Compact panel bodies for the experience panels */
+.jobs-panel-body { max-height: 260px; }
+.edu-panel-body  { max-height: 220px; }
 
 /* Legacy inner-card styles kept for reference; no longer used as outer panels */
 .mvv-block {
@@ -588,7 +670,277 @@ body {
 .skill-l2 { margin-left: 12px; }
 .skill-l3 { margin-left: 20px; }
 
-/* ===== Timeline ===== */
+/* ===== Horizontal Timeline ===== */
+.tl-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.tl-zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: nowrap;
+}
+
+.tl-btn {
+  padding: 4px 11px;
+  font-size: 14px;
+  font-weight: 500;
+  min-width: 30px;
+  justify-content: center;
+}
+
+#tl-zoom-range {
+  width: 90px;
+  flex-shrink: 1;
+  accent-color: var(--cyan);
+  cursor: pointer;
+}
+
+.tl-zoom-label {
+  font-size: 11px;
+  color: var(--muted2);
+  min-width: 36px;
+  text-align: right;
+}
+
+.tl-wrap {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 6px 2px 14px;
+  margin: 0 -4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(124,247,255,0.3) transparent;
+}
+
+.tl-wrap::-webkit-scrollbar { height: 6px; }
+.tl-wrap::-webkit-scrollbar-thumb {
+  background: rgba(124,247,255,0.3);
+  border-radius: 999px;
+}
+
+.tl-track {
+  --tl-zoom: 1;
+  --tl-card-w: calc(240px * var(--tl-zoom));
+  --tl-gap:    calc(24px  * var(--tl-zoom));
+  display: flex;
+  align-items: flex-start;
+  gap: var(--tl-gap);
+  width: max-content;
+  min-width: 100%;
+  padding: 10px 8px 14px;
+  position: relative;
+}
+
+/* Horizontal iridescent rail line */
+.tl-track::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 37px;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg,
+    rgba(124,247,255,0.85),
+    rgba(180,140,255,0.80),
+    rgba(255,122,229,0.75),
+    rgba(124,255,154,0.75),
+    rgba(124,247,255,0.85)
+  );
+  box-shadow: 0 0 14px rgba(124,247,255,0.25);
+  pointer-events: none;
+}
+
+.tl-entry {
+  width: var(--tl-card-w);
+  min-width: var(--tl-card-w);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.tl-date {
+  font-size: 11px;
+  color: var(--muted2);
+  text-align: center;
+  white-space: nowrap;
+  margin-bottom: 5px;
+  letter-spacing: 0.3px;
+}
+
+.tl-rail {
+  position: relative;
+  height: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.tl-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--cyan), var(--purple));
+  box-shadow: 0 0 10px rgba(124,247,255,0.45), 0 0 0 3px rgba(124,247,255,0.12);
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+.tl-card {
+  border-radius: 14px;
+  background: rgba(0,0,0,0.20);
+  border: 1px solid rgba(255,255,255,0.09);
+  overflow: hidden;
+  min-height: 80px;
+  transition: border-color 0.12s;
+}
+
+.tl-card:hover { border-color: rgba(255,255,255,0.18); }
+
+.tl-card > details > summary {
+  list-style: none;
+  padding: 11px 13px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 1.4;
+  user-select: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 6px;
+  transition: background 0.1s;
+}
+
+.tl-card > details > summary:hover { background: rgba(255,255,255,0.03); }
+.tl-card > details > summary::-webkit-details-marker { display: none; }
+
+.tl-card > details > summary::after {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid rgba(255,255,255,0.4);
+  border-bottom: 1.5px solid rgba(255,255,255,0.4);
+  transform: rotate(-45deg);
+  transition: transform 0.18s;
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+.tl-card > details[open] > summary::after { transform: rotate(45deg); }
+
+.tl-meta {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  padding: 6px 12px 8px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+.tl-body {
+  padding: 0 12px 12px;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.tl-pill {
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.04);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.tl-hint {
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted2);
+  margin: 6px 0 0;
+  letter-spacing: 0.3px;
+}
+
+/* ===== Year Ruler (tape-measure bar, sits between track and scrollbar) =====
+ *
+ * Layout (32px tall, bottom-anchored):
+ *   ─────  ─────────────── (year labels, top: 2px)
+ *     |         |   |   |  (tick marks rising from baseline)
+ *   ──────────────────────  (baseline, bottom: 0)
+ *
+ * .tl-tick          base class — absolutely positioned, width:0, transforms to center
+ * .tl-tick-year     tallest tick + visible year label
+ * .tl-tick-qtr      medium tick (quarter marks), optional label at high zoom
+ * .tl-tick-month    shortest tick, no label
+ * ===== */
+.tl-ruler {
+  position: relative;
+  height: 32px;
+  pointer-events: none;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+/* Baseline — the thin horizontal "tape" line */
+.tl-ruler::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: rgba(255,255,255,0.14);
+}
+
+/* Every tick mark */
+.tl-tick {
+  position: absolute;
+  bottom: 0;
+  width: 0;
+  transform: translateX(-50%);
+}
+
+/* The vertical line rising from the baseline */
+.tl-tick::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 1px;
+  width: 1px;
+}
+
+.tl-tick-year::before  { height: 11px; background: rgba(255,255,255,0.42); }
+.tl-tick-qtr::before   { height: 6px;  background: rgba(255,255,255,0.20); }
+.tl-tick-month::before { height: 3px;  background: rgba(255,255,255,0.13); }
+
+/* Labels sit above their tick mark */
+.tl-tick-label {
+  position: absolute;
+  bottom: 13px;   /* above year tick (11px) + 1px baseline + 1px gap */
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  color: rgba(255,255,255,0.50);
+  white-space: nowrap;
+  letter-spacing: 0.35px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Quarter/month abbreviated labels sit lower than year labels */
+.tl-mo-label {
+  bottom: 8px;
+  font-size: 8px;
+  color: rgba(255,255,255,0.30);
+}
+
+/* ===== Legacy Timeline (kept for compatibility — unused) ===== */
 .timeline-entry {
   display: flex;
   gap: 14px;
@@ -1007,7 +1359,9 @@ body {
   .chapter { padding: 60px 16px; min-height: auto; }
   #ch-hero { min-height: 100vh; }
   .glass-panel { padding: 20px; border-radius: 20px; }
-  .summary-row { flex-direction: column; }
+  .summary-row { flex-direction: column; align-items: stretch; }
+  .jobs-panel-body { max-height: 200px; }
+  .edu-panel-body  { max-height: 180px; }
   .passions-inner { flex-direction: column; }
   .skill-l2, .skill-l3 { margin-left: 8px; }
   #controls { top: 10px; right: 10px; }
@@ -1026,6 +1380,13 @@ body {
   .ending-body { text-align: center; }
   .panel-body { max-height: calc(100vh - 200px); }
   .search-bar-wrap .search-bar { max-width: 100%; }
+  /* Nav scales down on mobile — keep single row, shrink text */
+  .snav-btn { padding: 5px 9px; font-size: 10px; gap: 4px; }
+  .snav-dot { width: 5px; height: 5px; }
+  .section-nav-inner { gap: 5px; padding: 8px 10px 9px; }
+  /* Timeline zoom controls wrap on mobile */
+  .tl-zoom-controls { flex-wrap: wrap; }
+  #tl-zoom-range { width: 70px; }
 }
 
 @media (max-width: 480px) {

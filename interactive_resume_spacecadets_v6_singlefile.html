@@ -3068,6 +3068,22 @@ bindTimelineControls();
 applyTheme(loadTheme(), false);
 rerenderAll();
 setStatus("Loaded v6 single-file resume. Use Settings to import/export one unified package file.");
+
+/* Try to load shared external data file (data/resume_pack.json).
+   If present, it overrides localStorage and re-renders both resumes from the same source. */
+(async function loadExternalDataFile() {
+  try {
+    const r = await fetch("data/resume_pack.json", { cache: "no-store" });
+    if (!r.ok) return;
+    const pack = await r.json();
+    if (!pack || pack.version !== 1) return;
+    applyProfilePack(pack, { persist: false });
+    rerenderAll();
+    setStatus("Loaded from data/resume_pack.json — canonical data source active.");
+  } catch (e) {
+    /* File absent or parse error — continue with defaults/localStorage */
+  }
+})();
 </script>
 </body>
 </html>

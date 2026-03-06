@@ -36,6 +36,30 @@
   </div>
 </div>
 
+<!-- Section nav — slides in from top when hero scrolls out -->
+<nav id="section-nav" aria-label="Jump to section">
+  <div class="section-nav-inner">
+    <button class="snav-btn" data-target="ch-skills">
+      <span class="snav-dot"></span>Skills Map
+    </button>
+    <button class="snav-btn" data-target="panel-work">
+      <span class="snav-dot"></span>Work History
+    </button>
+    <button class="snav-btn" data-target="panel-edu">
+      <span class="snav-dot"></span>Education
+    </button>
+    <button class="snav-btn" data-target="ch-timeline">
+      <span class="snav-dot"></span>Timeline
+    </button>
+    <button class="snav-btn" data-target="panel-passions">
+      <span class="snav-dot"></span>Passions
+    </button>
+    <button class="snav-btn" data-target="panel-caps">
+      <span class="snav-dot"></span>Manufacturing
+    </button>
+  </div>
+</nav>
+
 <!-- Scrollable content overlay -->
 <main id="content">
 
@@ -50,31 +74,35 @@
     </div>
   </section>
 
-  <!-- Ch 1: Mission/Vision/Values + Primary Domains/Focus/Style — two side-by-side panels -->
+  <!-- Ch 1: Mission/Vision/Values + Primary Domains/Focus/Style — slide in from sides -->
   <section class="chapter" id="ch-summary">
     <div class="chapter-inner summary-row">
-      <div class="glass-panel summary-panel-mvv">
+      <div class="glass-panel summary-panel-mvv" id="panel-mvv">
         <h2 class="section-title">Mission &middot; Vision &middot; Values</h2>
         <div id="summary-mvv"></div>
       </div>
-      <div class="glass-panel summary-panel-domains">
+      <div class="glass-panel summary-panel-domains" id="panel-domains">
         <h2 class="section-title">Domains &middot; Focus &middot; Style</h2>
         <div id="summary-kpis"></div>
       </div>
     </div>
   </section>
 
-  <!-- Ch 2: Work History + Education — scrollable body, fixed border ring on outer shell -->
+  <!-- Ch 2: Work History (full-width) above Education (full-width) -->
   <section class="chapter" id="ch-jobs">
-    <div class="chapter-inner">
-      <div class="glass-panel">
-        <h2 class="section-title">Experience</h2>
-        <div class="panel-body" id="jobs-list"></div>
+    <div class="chapter-inner experience-col">
+      <div class="glass-panel" id="panel-work">
+        <h2 class="section-title">Work History</h2>
+        <div class="panel-body jobs-panel-body" id="jobs-list"></div>
+      </div>
+      <div class="glass-panel" id="panel-edu">
+        <h2 class="section-title">Education</h2>
+        <div class="panel-body edu-panel-body" id="edu-list"></div>
       </div>
     </div>
   </section>
 
-  <!-- Ch 3: Skills Map — search bar centered, scrollable body -->
+  <!-- Ch 3: Skills Map -->
   <section class="chapter" id="ch-skills">
     <div class="chapter-inner">
       <div class="glass-panel">
@@ -91,18 +119,30 @@
     </div>
   </section>
 
-  <!-- Ch 4: Timeline — search bar centered, scrollable body -->
+  <!-- Ch 4: Timeline — horizontal left-to-right with zoom -->
   <section class="chapter" id="ch-timeline">
     <div class="chapter-inner">
       <div class="glass-panel">
         <h2 class="section-title">Timeline</h2>
-        <div class="search-bar-wrap">
-          <div class="search-bar">
-            <span class="search-icon" aria-hidden="true">&#8981;</span>
-            <input type="text" id="timeline-search" placeholder="Search timeline..." autocomplete="off" aria-label="Search timeline">
+        <div class="tl-toolbar">
+          <div class="search-bar-wrap" style="margin-bottom:0">
+            <div class="search-bar">
+              <span class="search-icon" aria-hidden="true">&#8981;</span>
+              <input type="text" id="timeline-search" placeholder="Search timeline..." autocomplete="off" aria-label="Search timeline">
+            </div>
+          </div>
+          <div class="tl-zoom-controls">
+            <button class="glass-btn tl-btn" id="tl-zoom-out" aria-label="Zoom out">&#x2212;</button>
+            <input type="range" id="tl-zoom-range" min="25" max="200" step="5" value="40" aria-label="Timeline zoom">
+            <button class="glass-btn tl-btn" id="tl-zoom-in" aria-label="Zoom in">+</button>
+            <button class="glass-btn tl-btn" id="tl-zoom-reset">Reset</button>
+            <span class="tl-zoom-label" id="tl-zoom-label">100%</span>
           </div>
         </div>
-        <div class="panel-body" id="timeline-list"></div>
+        <div class="tl-wrap">
+          <div id="timeline-list"></div>
+        </div>
+        <p class="tl-hint">Scroll horizontally to explore &bull; Use zoom to adjust card width</p>
       </div>
     </div>
   </section>
@@ -110,11 +150,11 @@
   <!-- Ch 5: Passions + Manufacturing Capabilities -->
   <section class="chapter" id="ch-passions">
     <div class="chapter-inner passions-inner">
-      <div class="glass-panel half-panel">
+      <div class="glass-panel half-panel" id="panel-passions">
         <h2 class="section-title">Passions</h2>
         <div id="passions-list"></div>
       </div>
-      <div class="glass-panel half-panel">
+      <div class="glass-panel half-panel" id="panel-caps">
         <h2 class="section-title">Manufacturing Capabilities</h2>
         <div id="caps-list"></div>
       </div>
@@ -187,7 +227,7 @@
   <div class="modal-body settings-body">
     <p class="settings-hint">
       Paste a <strong>Unified Profile Package</strong> JSON to update all resume content.<br>
-      Compatible with the standard resume page&rsquo;s import format (<code>sc_profile_pack_v1</code>).
+      Or drop a <code>resume_pack.json</code> file in the <code>data/</code> folder — both pages auto-load it on startup.
     </p>
     <textarea id="import-json" rows="8" placeholder='{"version":1,"resume":{...},"timeline":[...],"skills_markdown":"..."}'></textarea>
     <div class="settings-actions">
@@ -201,7 +241,7 @@
   </div>
 </dialog>
 
-<!-- Scroll hint lives outside #content so GSAP transforms on hero-inner never affect it -->
+<!-- Scroll hint — outside #content so GSAP transforms on hero-inner never affect it -->
 <div class="scroll-hint" aria-hidden="true">
   <span>Scroll to explore</span>
   <div class="scroll-arrow"></div>

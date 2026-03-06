@@ -156,12 +156,12 @@ export const education = [
 ];
 
 export const timeline = [
-  { date: '2014-01', title: 'Head of 3D Print Lab \u2014 Mojo Coworking', type: 'Role', tags: ['3D Printing', 'Teaching'], details: 'Ran the Mojo 3D Print Lab: operations, repair, management, and community education.', media: [] },
-  { date: '2015-07', title: 'Metal Fabricator \u2014 Linamar NC', type: 'Role', tags: ['Fabrication', 'Welding'], details: 'Maintenance fabrication and assembly-line efficiency improvements.', media: [] },
-  { date: '2016-03', title: 'Machinist & Assembler \u2014 MicroTech Knives', type: 'Role', tags: ['Manufacturing', 'Finishing'], details: 'Thermoforming, sandblasting, and precision finishing for premium knife production.', media: [] },
-  { date: '2016-12', title: 'Electrical & Mechanical Engineer \u2014 Dimension 3 Fabrication', type: 'Role', tags: ['EE', 'ME', 'CNC'], details: 'Designed a multi-function machine combining 3D printing, CNC, and laser engraving.', media: [] },
-  { date: '2017-03', title: 'Gorilla Machines \u2014 CNC Plasma Systems', type: 'Role', tags: ['CNC', 'Controls', 'Manufacturing'], details: 'Designed and manufactured CNC plasma cutting machines with strong motion/control integration.', media: [] },
-  { date: '2020-03', title: 'Space Cadets Lighting \u2014 Founder', type: 'Venture', tags: ['LED', 'ESP32', 'Product'], details: 'Founded Space Cadets Lighting: interactive LED products and installations.', media: [] }
+  { date: '2014-01', significance: 3, title: 'Head of 3D Print Lab \u2014 Mojo Coworking', type: 'Role', tags: ['3D Printing', 'Teaching'], details: 'Ran the Mojo 3D Print Lab: operations, repair, management, and community education.', media: [] },
+  { date: '2015-07', significance: 2, title: 'Metal Fabricator \u2014 Linamar NC', type: 'Role', tags: ['Fabrication', 'Welding'], details: 'Maintenance fabrication and assembly-line efficiency improvements.', media: [] },
+  { date: '2016-03', significance: 2, title: 'Machinist & Assembler \u2014 MicroTech Knives', type: 'Role', tags: ['Manufacturing', 'Finishing'], details: 'Thermoforming, sandblasting, and precision finishing for premium knife production.', media: [] },
+  { date: '2016-12', significance: 3, title: 'Electrical & Mechanical Engineer \u2014 Dimension 3 Fabrication', type: 'Role', tags: ['EE', 'ME', 'CNC'], details: 'Designed a multi-function machine combining 3D printing, CNC, and laser engraving.', media: [] },
+  { date: '2017-03', significance: 4, title: 'Gorilla Machines \u2014 CNC Plasma Systems', type: 'Role', tags: ['CNC', 'Controls', 'Manufacturing'], details: 'Designed and manufactured CNC plasma cutting machines with strong motion/control integration.', media: [] },
+  { date: '2020-03', significance: 5, title: 'Space Cadets Lighting \u2014 Founder', type: 'Venture', tags: ['LED', 'ESP32', 'Product'], details: 'Founded Space Cadets Lighting: interactive LED products and installations.', media: [] }
 ];
 
 export const skillsTree = [

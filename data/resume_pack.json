@@ -1,0 +1,220 @@
+{
+  "version": 1,
+  "_comment": "CANONICAL DATA FILE — edit this file to update BOTH the 3D and standard resume pages simultaneously. Both pages auto-fetch this on startup; localStorage data is a fallback if this file is absent.",
+  "resume": {
+    "profile": {
+      "name": "Isaac E. Norris",
+      "phone": "828-808-8679",
+      "email": "connect@spacecadetslighting.com",
+      "site": "https://spacecadetslighting.com",
+      "headline": "Designer • Full-spectrum systemic perspective • Artisan craft transmuted through futuristic technology",
+      "summary": "Mechanically inclined, artistically driven designer-engineer building interactive systems that turn technology into spaces of connection."
+    },
+    "hero": {
+      "primary_domains": "Design Systems • Electrical Engineering • Mechanical Engineering • Embedded Systems • Artisanal Fabrication",
+      "focus": "Full-spectrum growth • Concept evolution • Artisan direction • Systems zoom-out + detail zoom-in",
+      "style": "Organic • Biomimicry • Futuristic • Adaptive • Multi-language design",
+      "chips": [
+        "Prototype Engineer",
+        "Embedded (ESP32)",
+        "PCB + Wiring",
+        "CAD (Fusion/Inventor)",
+        "CNC + Laser",
+        "Interactive LEDs"
+      ]
+    },
+    "mvv": {
+      "mission": "Design and build human-centered interactive systems that blend artisanship, engineering, and community care to create shared moments of connection.",
+      "vision": "Unify people through interactive technology, lighting, and physical products that invite participation, wonder, and belonging rather than division.",
+      "values": [
+        "Craft + artisanship",
+        "Community + inclusion",
+        "Curiosity + learning",
+        "Clarity + usability",
+        "Responsibility + durability",
+        "Unify, not divide"
+      ]
+    },
+    "jobs": [
+      {
+        "title": "Head of 3D Print Lab — Mojo Coworking",
+        "dates": "Jan 2014 – Jun 2015",
+        "details": [
+          "Operated, repaired, and managed 3D printers for a public-facing lab.",
+          "Taught weekly community classes on 3D printing and design workflows.",
+          "Delivered prints and supported members' projects end-to-end."
+        ],
+        "tags": ["3D Printing", "Community", "Operations", "Teaching"]
+      },
+      {
+        "title": "Metal Fabricator — Linamar NC",
+        "dates": "Jul 2015 – Mar 2016",
+        "details": [
+          "Assisted maintenance fabrication projects to improve assembly line efficiency.",
+          "Welding, machining, and CAD-supported production improvements."
+        ],
+        "tags": ["Fabrication", "Welding", "Machining", "CAD"]
+      },
+      {
+        "title": "Machinist & Assembler — MicroTech Knives",
+        "dates": "Mar 2016 – Dec 2016",
+        "details": [
+          "Thermoformed custom knife sheaths.",
+          "Sandblasted and prepared knives for electroplating and finishing."
+        ],
+        "tags": ["Manufacturing", "Finishing", "Sandblasting"]
+      },
+      {
+        "title": "Electrical & Mechanical Engineer — Dimension 3 Fabrication",
+        "dates": "Dec 2016 – Mar 2017",
+        "details": [
+          "Designed a multi-function machine combining 3D printing, CNC engraving, and laser engraving.",
+          "Owned 3D modeling, electrical design, software development, and manufacturing integration."
+        ],
+        "tags": ["EE", "ME", "Product Design", "CNC", "3D Printing"]
+      },
+      {
+        "title": "Lead Engineer & Design Manager — Gorilla Machines Inc",
+        "dates": "Mar 2017 – Mar 2020",
+        "details": [
+          "Designed and manufactured CNC plasma cutting machines end-to-end.",
+          "Led redesign and manufacturing improvements for flagship platform."
+        ],
+        "tags": ["CNC", "Motion Systems", "CAD", "Controls", "Manufacturing"]
+      },
+      {
+        "title": "Owner / Electrical & Mechanical Engineer / Lighting Designer — Space Cadets Lighting",
+        "dates": "Mar 2020 – Current",
+        "details": [
+          "Designs and manufactures sound-reactive, Wi-Fi connected, full-color LED fixtures and installations.",
+          "Handles product development across electronics, firmware, CAD, additive manufacturing, assembly, and testing."
+        ],
+        "tags": ["LED", "ESP32", "Product", "Manufacturing", "Interactive"]
+      }
+    ],
+    "education": [
+      {
+        "title": "Dedicated Self-Guided Education",
+        "dates": "Ongoing",
+        "details": [
+          "Primary education pillar: continuous self-guided learning across electrical/mechanical engineering, embedded systems, product design, manufacturing, and business operations."
+        ],
+        "tags": ["Continuous Learning", "Mentors", "Applied R&D"]
+      },
+      {
+        "title": "Asheville-Buncombe Technical Community College (AB Tech)",
+        "dates": "1 semester (Electrical Engineering track)",
+        "details": [
+          "Completed one semester toward Electrical Engineering.",
+          "Left formal coursework to build CNC and robotics systems after already surpassing covered material."
+        ],
+        "tags": ["Electrical Engineering", "Self-direction"]
+      },
+      {
+        "title": "Asheville High School (CTE Honors)",
+        "dates": "2013 – 2016",
+        "details": [
+          "Student-teacher in machining / metalworking track.",
+          "Early fabrication mentorship and hands-on engineering foundation."
+        ],
+        "tags": ["CTE", "Machining", "Mentorship"]
+      }
+    ],
+    "passions": [
+      "Interactive light + sound experiences that move people emotionally",
+      "Embedded systems and modular hardware ecosystems",
+      "Product design blending sculpture, nature-inspired form, and engineering",
+      "Rapid prototyping and manufacturing workflows",
+      "Community education and maker culture",
+      "Robotics / motion systems and multidisciplinary machines",
+      "Immersive media and experiential installations"
+    ],
+    "capabilities": [
+      {
+        "group": "Digital Fabrication Infrastructure",
+        "items": [
+          "RatRig V-Core 3.1 (500mm³)",
+          "RatRig V-Core 3.1 (400mm³)",
+          "Bambu Lab X1 Carbon",
+          "Artillery Sidewinder (x2)",
+          "Large-format Elegoo resin printers (x2)",
+          "Anycubic large-format resin printer",
+          "Inventables X-Carve CNC router",
+          "CNC plasma systems",
+          "xTool P2 55W CO₂ laser cutter",
+          "Sublimation printers",
+          "UV printer (Eufy Make E1 – incoming)"
+        ]
+      },
+      {
+        "group": "Electronics + Prototyping Lab",
+        "items": [
+          "Circuit design (EasyEDA – primary)",
+          "Limited exposure: Altium, KiCad",
+          "PCB prototyping + assembly",
+          "High-current LED systems",
+          "Embedded controller development",
+          "Airbrushing + finishing systems",
+          "Sandblasting + surface treatment"
+        ]
+      }
+    ]
+  },
+  "timeline": [
+    {
+      "date": "2014-01",
+      "significance": 3,
+      "title": "Head of 3D Print Lab — Mojo Coworking",
+      "type": "Role",
+      "tags": ["3D Printing", "Teaching", "Community"],
+      "details": "Ran the Mojo 3D Print Lab: operations, repair, management, and community education. Taught weekly public classes on 3D printing and design workflows.",
+      "media": []
+    },
+    {
+      "date": "2015-07",
+      "significance": 2,
+      "title": "Metal Fabricator — Linamar NC",
+      "type": "Role",
+      "tags": ["Fabrication", "Welding", "CAD"],
+      "details": "Maintenance fabrication and assembly-line efficiency improvements using welding, machining, and CAD-supported production.",
+      "media": []
+    },
+    {
+      "date": "2016-03",
+      "significance": 2,
+      "title": "Machinist & Assembler — MicroTech Knives",
+      "type": "Role",
+      "tags": ["Manufacturing", "Finishing", "Sandblasting"],
+      "details": "Thermoforming, sandblasting, and precision finishing for premium knife production.",
+      "media": []
+    },
+    {
+      "date": "2016-12",
+      "significance": 3,
+      "title": "Electrical & Mechanical Engineer — Dimension 3 Fabrication",
+      "type": "Role",
+      "tags": ["EE", "ME", "CNC", "3D Printing"],
+      "details": "Designed a multi-function machine combining 3D printing, CNC engraving, and laser engraving from concept through production.",
+      "media": []
+    },
+    {
+      "date": "2017-03",
+      "significance": 4,
+      "title": "Lead Engineer & Design Manager — Gorilla Machines Inc",
+      "type": "Role",
+      "tags": ["CNC", "Controls", "Manufacturing", "Motion Systems"],
+      "details": "Designed and manufactured CNC plasma cutting machines end-to-end (~100–150 units deployed). Led flagship platform redesign and manufacturing improvements.",
+      "media": []
+    },
+    {
+      "date": "2020-03",
+      "significance": 5,
+      "title": "Space Cadets Lighting — Founder",
+      "type": "Venture",
+      "tags": ["LED", "ESP32", "Product", "Interactive"],
+      "details": "Founded Space Cadets Lighting: interactive LED products and installations. Full-stack hardware ownership — electronics, firmware, CAD, additive manufacturing, assembly, and testing.",
+      "media": []
+    }
+  ],
+  "skills_markdown": "# Isaac Norris — Comprehensive Master Skill & Capability Map\n\n## Core Engineering Domains\n\n### Mechanical Engineering & Product Design\n\n#### CAD & Digital Design\n- 13+ years CAD experience (Autodesk Inventor + Fusion 360)\n- Complex mechanical assemblies\n- Motion systems & linear rail architecture\n- Structural framing & load-aware design\n- Lightweight optimization strategies\n- Sheet metal design\n- CNC-manufacturable part design\n- Additive-manufacturing-optimized geometry\n- Product enclosure architecture\n- Organic / biomimetic structural modeling\n- CAM workflow familiarity\n\n#### Machine Design & Mechatronics\n- CNC plasma cutting machine design & redesign\n- Multi-function fabrication systems (3D print + CNC + laser)\n- Gantry systems & mechanical motion design\n- Mechanical-electrical integration\n- Manufacturable architecture planning\n- Real-world tolerance & assembly awareness\n\n#### Manual & CNC Machining\n- CNC mills, plasma cutters, lathes, laser cutters\n- Manual milling & turning\n- Mechanical assembly construction\n- Fabrication process optimization\n\n#### Woodworking & Structural Construction\n- Cabinetry & furniture\n- Speaker enclosures\n- Structural object construction\n- Practical field installation builds\n\n### Additive Manufacturing (Advanced Specialization)\n- Advanced 3D printer tuning & diagnostics\n- Custom printer building & modification\n- Large-format printer understanding\n- Production repeatability optimization\n- Structural print optimization\n- Surface finish & aesthetic refinement strategies\n- Slicer parameter optimization\n- Failure mode diagnosis & repair\n- Print-for-manufacture design thinking\n\n### Electrical Engineering & Circuit Design\n\n#### Circuit Design & PCB Architecture\n- Schematic capture\n- Production PCB layout\n- Circuit design in EasyEDA (primary tool)\n- Exposure to Altium Designer (limited)\n- Exposure to KiCad (limited)\n- Motor driver systems\n- LED driver systems\n- Modular electronics ecosystems\n- Power regulation systems\n- Prototype → production transition strategy\n- Connector & harness planning\n- High-current system planning\n\n#### Electrical Prototyping\n- Concept-to-hardware implementation\n- Integrated electronics prototyping (core pillar)\n- Robotics & RC aircraft systems\n- CNC control electronics\n- Embedded controller boards\n- Distributed electronics integration\n\n#### Power Systems\n- Solar + battery backup installations\n- Power distribution architecture\n- Real-world wiring reliability\n- Fuse & safety planning\n- Installation-grade power management\n\n### Embedded Systems & Firmware\n\n#### Programming Ecosystems\n- Embedded C++\n- Arduino ecosystem\n- ESP32 / ESP8266 platforms\n- Atmel microcontrollers\n\n#### Control Systems\n- Motor control firmware\n- ESC tuning concepts\n- Real-time control loops\n- Multi-microcontroller coordination\n- Sensor integration\n- Distributed embedded architecture\n\n#### Wireless & Networking\n- WiFi-connected hardware systems\n- Wireless LED mesh systems\n- Network topology reasoning (embedded context)\n- OTA & modular ecosystem thinking\n\n#### User Interface Exposure\n- CAM interface software development\n- Embedded system interface design reasoning\n- Hardware-facing UI thinking\n\n## Motion & Propulsion System Experience\n\n### Flight & Drone Systems (Technical Origin)\n- Quadcopter frame design\n- 3D printed drone components\n- ArduPilot & Pixhawk integration\n- ESC tuning\n- Autonomous flight system setup\n- Motor control integration\n- Real-time control logic understanding\n\n### CNC & Motor Systems\n- Stepper motor drivers\n- Motion control board design\n- CNC motion architecture\n- Gantry performance tuning\n- Control electronics integration\n- Production-scale machine deployment (~100–150 units)\n\n### Electromechanical System Architecture\n- Mechanical + electrical + firmware integration\n- System-level motion reasoning\n- Hardware reliability planning\n- Platform-level modular thinking\n\n## Interactive & Lighting Systems Engineering\n\n### LED Architecture\n- Addressable LED ecosystems\n- Modular lighting platforms\n- Wearable electronics\n- Sculptural integration\n- Installation-scale deployments\n\n### Control & Interaction\n- Sound-reactive lighting systems\n- WiFi controller ecosystems\n- Capacitive touch interfaces\n- Multi-node synchronization\n- Distributed control systems\n\n### Platform Vision\n- LightDrive ecosystem architecture\n- Modular hardware systems\n- Upgradeable design philosophy\n- Licensing-ready hardware concepts\n\n## Systems Engineering & Architecture\n- Cross-domain integration (mechanical + electrical + firmware)\n- Modular platform architecture design\n- Manufacturing-aware engineering\n- Field reliability systems\n- Maintainability planning\n- Real-world deployment logistics\n- Production scaling awareness\n- Iterative product evolution cycles\n- Founder-level system ownership\n\n## Creative & Artistic Capabilities\n\n### Material & Craft Literacy\n- Glassblowing exposure\n- Ceramics & pottery wheel operation\n- Sculptural fabrication\n- Multi-medium art fluency\n\n### Aesthetic Integration\n- Organic geometry design\n- Emotion-driven lighting systems\n- Art-technology fusion\n- Nature-inspired structural thinking\n\n### Audio & Form Exploration\n- Speaker resonance design\n- Nautilus-inspired acoustic forms\n- Sound system wiring experience\n\n## Communication, Leadership & Education\n\n### Teaching & Mentorship\n- Head of 3D Print Lab\n- Community education programs\n- Weekly technical classes\n- Technical knowledge translation\n\n### Team Leadership\n- Lead Engineer & Design Manager roles\n- Manufacturing oversight\n- Engineering redesign leadership\n- Co-running operations in startup environment\n\n### Technical Communication\n- Explaining complex engineering concepts clearly\n- Documentation & instructional materials\n- Cross-disciplinary translation (engineering ↔ creative)\n\n## Business, Brand & Operations\n\n### Entrepreneurial Experience\n- Founded hardware startups\n- Attempted 3D printer company launch\n- Built Space Cadets Lighting ecosystem\n- Product + brand integration\n- Small-scale production management\n\n### Marketing & Digital Presence\n- Website development (WIX + HTML/CSS familiarity)\n- User Interface (UI) design\n- Web system architecture (single-file apps, embedded systems, responsive layouts)\n- Graphic design (Photoshop)\n- Instruction manual design\n- Targeted web advertising (Facebook & Google Ads)\n- Product photography & presentation\n\n### Commercial Fabrication & Installation\n- Commercial signage fabrication & permitting\n- Metal fabrication\n- Field installation logistics\n\n## Broader Technical & Hands-On Skills\n- Sublimation printing systems\n- UV printing systems (Eufy Make E1 – incoming capability)\n- Automotive repair & engine replacement\n- Gas-to-electric vehicle conversion\n- Suspension, brake, and drivetrain repair\n- Computer assembly & optimization\n- Hardware selection for performance systems\n- Tiny home solar installs\n\n## Strategic Strength Summary\n- Designing complete hardware systems from zero\n- Integrating mechanical + electrical + firmware layers\n- Creating modular, upgradeable architectures\n- Leading small hardware teams\n- Shipping real-world physical products\n- Bridging engineering with aesthetic design\n- Translating complexity into clarity\n- Building mission-driven, interdisciplinary systems\n"
+}

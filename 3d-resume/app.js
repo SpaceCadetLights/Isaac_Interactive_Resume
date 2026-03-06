@@ -2,16 +2,7 @@ import * as THREE from 'three';
 import * as SEED from './data.js';
 
 /* ==========================================================
-   TUNING — tweak these constants to trade quality for FPS.
-
-   Performance notes:
-   - If FPS drops, lower ambientCount first (pure eye candy).
-   - Then reduce mainParticles for your quality tier.
-   - nebulaLayers are cheap (4 fullscreen frags) but disable on low.
-   - Constellation lines rebuild every constellationInterval frames;
-     raise that number or set maxLines to 0 to disable.
-   - Bloom is High-only and loaded lazily; it adds one extra
-     fullscreen pass — disable by setting bloomStrength to 0.
+   TUNING
    ========================================================== */
 const TUNING = {
   starLayers: [
@@ -145,12 +136,13 @@ void main(){
 
 /* ==========================================================
    DATA RESOLUTION
-   Loads from shared localStorage (sc_profile_pack_v1) first —
-   the same key used by the standard resume page — falling back
-   to the hardcoded data.js seed values.  When both pages
-   share a profile pack, edits on one page are reflected here.
+   Priority order:
+   1. External file ../data/resume_pack.json  (fetched async at startup)
+   2. Shared localStorage key  sc_profile_pack_v1  (written by either page)
+   3. Hardcoded data.js seed values
    ========================================================== */
 const LS_KEY = 'sc_profile_pack_v1';
+const EXTERNAL_DATA_PATH = '../data/resume_pack.json';
 
 function tokenize(str) {
   if (Array.isArray(str)) return str.length ? str : null;
@@ -168,20 +160,16 @@ function parseSkillsMarkdownToTree(md) {
   const lines = (md || '').replace(/\t/g, '  ').split(/\r?\n/);
   const root = { title: 'Root', level: 0, bullets: [], children: [] };
   const stack = [root];
-
   const introNode = { title: 'Overview', level: 1, bullets: [], children: [] };
   root.children.push(introNode);
   stack.push(introNode);
-
   function current() { return stack[stack.length - 1]; }
-
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
     const line = raw.replace(/\s+$/, '');
     if (/^[-_—]{8,}$/.test(line.trim())) continue;
     const h = parseHeadingLine(line.trim());
     const b = line.match(/^\s*[-*]\s+(.*)$/);
-
     if (h && h.level <= 3) {
       while (stack.length > h.level) stack.pop();
       const node = { title: h.text, level: h.level, bullets: [], children: [] };
@@ -198,44 +186,54 @@ function parseSkillsMarkdownToTree(md) {
       current().bullets.push(text.replace(/\s+/g, ' ').trim());
     }
   }
-
   if (!introNode.bullets.length && !introNode.children.length) root.children.shift();
   return root.children;
 }
 
-function resolveData() {
+function packToData(pack) {
+  if (!pack) return null;
+  const r = (pack.resume) || {};
+  const h = r.hero || {};
+  return {
+    profile: { ...SEED.profile, ...(r.profile || {}) },
+    hero: {
+      primaryDomains: tokenize(h.primary_domains || h.primaryDomains) || SEED.hero.primaryDomains,
+      focus:  tokenize(h.focus)  || SEED.hero.focus,
+      style:  tokenize(h.style)  || SEED.hero.style,
+      chips:  Array.isArray(h.chips) ? h.chips : SEED.hero.chips,
+    },
+    mvv: { ...SEED.mvv, ...(r.mvv || {}) },
+    jobs: Array.isArray(r.jobs) ? r.jobs : SEED.jobs,
+    education: Array.isArray(r.education) ? r.education : SEED.education,
+    passions: Array.isArray(r.passions) ? r.passions : SEED.passions,
+    capabilities: Array.isArray(r.capabilities) ? r.capabilities : SEED.capabilities,
+    timeline: Array.isArray(pack.timeline) ? pack.timeline : SEED.timeline,
+    skillsTree: pack.skills_markdown
+      ? parseSkillsMarkdownToTree(pack.skills_markdown)
+      : SEED.skillsTree,
+  };
+}
+
+function resolveFromLocalStorage() {
   try {
     const raw = localStorage.getItem(LS_KEY);
-    if (!raw) return null;
-    const pack = JSON.parse(raw);
-    const r = pack.resume || {};
-    const h = r.hero || {};
-    return {
-      profile: { ...SEED.profile, ...(r.profile || {}) },
-      hero: {
-        primaryDomains: tokenize(h.primary_domains || h.primaryDomains) || SEED.hero.primaryDomains,
-        focus:  tokenize(h.focus)  || SEED.hero.focus,
-        style:  tokenize(h.style)  || SEED.hero.style,
-        chips:  Array.isArray(h.chips) ? h.chips : SEED.hero.chips,
-      },
-      mvv: { ...SEED.mvv, ...(r.mvv || {}) },
-      jobs: Array.isArray(r.jobs) ? r.jobs : SEED.jobs,
-      education: Array.isArray(r.education) ? r.education : SEED.education,
-      passions: Array.isArray(r.passions) ? r.passions : SEED.passions,
-      capabilities: Array.isArray(r.capabilities) ? r.capabilities : SEED.capabilities,
-      timeline: Array.isArray(pack.timeline) ? pack.timeline : SEED.timeline,
-      skillsTree: pack.skills_markdown
-        ? parseSkillsMarkdownToTree(pack.skills_markdown)
-        : SEED.skillsTree,
-    };
+    if (raw) return packToData(JSON.parse(raw));
+  } catch (e) {}
+  return null;
+}
+
+async function fetchExternalData() {
+  try {
+    const r = await fetch(EXTERNAL_DATA_PATH, { cache: 'no-store' });
+    if (!r.ok) return null;
+    return packToData(await r.json());
   } catch (e) {
-    console.warn('3D Resume: could not read localStorage data, using defaults.', e);
     return null;
   }
 }
 
-/* Mutable DATA object — re-assigned on import */
-let DATA = resolveData() || {
+/* Mutable DATA — re-assigned after external fetch or on import */
+let DATA = resolveFromLocalStorage() || {
   profile:      SEED.profile,
   hero:         SEED.hero,
   mvv:          SEED.mvv,
@@ -277,6 +275,14 @@ let composer = null;
 let formationTargets = [];
 let time = 0;
 
+let tlZoom    = 0.40;
+let fitZoom   = 0.40;   /* updated after first layout measurement; used by significance thresholds */
+const TL_ZOOM_MIN  = 0.10;
+const TL_ZOOM_MAX  = 2.0;
+const TL_ZOOM_STEP = 0.05;
+let currentTimelineItems = [];
+let _sigRerenderTimer = null;
+
 /* ==========================================================
    WEBGL CHECK
    ========================================================== */
@@ -300,7 +306,7 @@ function initScene() {
 }
 
 /* ==========================================================
-   LAYERED STARFIELD (3 parallax layers, custom shader)
+   STARFIELD
    ========================================================== */
 function createStarfield() {
   const q = qualityLevel;
@@ -372,9 +378,7 @@ function genFlowerOfLife(count) {
   const p = new Float32Array(count * 3);
   const R = 11;
   const centers = [[0, 0]];
-  for (let k = 0; k < 6; k++) {
-    centers.push([R * Math.cos(k * Math.PI / 3), R * Math.sin(k * Math.PI / 3)]);
-  }
+  for (let k = 0; k < 6; k++) centers.push([R * Math.cos(k * Math.PI / 3), R * Math.sin(k * Math.PI / 3)]);
   const nC = centers.length;
   for (let i = 0; i < count; i++) {
     const ci = i % nC;
@@ -417,8 +421,7 @@ function genReticello(count) {
 }
 function genLissajous(count) {
   const p = new Float32Array(count * 3);
-  const A = 16, B = 16, C = 10;
-  const a = 3, b = 4, c = 5;
+  const A = 16, B = 16, C = 10, a = 3, b = 4, c = 5;
   const d1 = Math.PI / 4, d2 = Math.PI / 3;
   for (let i = 0; i < count; i++) {
     const t = (i / count) * Math.PI * 2;
@@ -447,16 +450,8 @@ function genNautilus(count) {
 const FORMATION_FNS = [genSphereCloud, genFlowerOfLife, genTorusKnot, genReticello, genLissajous, genNautilus];
 
 /* ==========================================================
-   MAIN PARTICLE SYSTEM
+   PARTICLES
    ========================================================== */
-const PALETTE = [
-  new THREE.Color('#d8f0ff'),
-  new THREE.Color('#e0d8ff'),
-  new THREE.Color('#ffd8f0'),
-  new THREE.Color('#d8ffe8'),
-  new THREE.Color('#d8e4ff'),
-];
-
 function createParticles(count) {
   particleGeo = new THREE.BufferGeometry();
   particlePositions = new Float32Array(count * 3);
@@ -464,39 +459,27 @@ function createParticles(count) {
   particleBaseColors = new Float32Array(count * 3);
   const sizes = new Float32Array(count);
   const phases = new Float32Array(count);
-
   for (let ch = 0; ch < NUM_CHAPTERS; ch++) formationTargets.push(FORMATION_FNS[ch](count));
   particlePositions.set(formationTargets[0]);
-
   for (let i = 0; i < count; i++) {
-    particleBaseColors[i * 3] = 1;
-    particleBaseColors[i * 3 + 1] = 1;
-    particleBaseColors[i * 3 + 2] = 1;
+    particleBaseColors[i * 3] = 1; particleBaseColors[i * 3 + 1] = 1; particleBaseColors[i * 3 + 2] = 1;
     sizes[i] = (IS_MOBILE ? 3.0 : 4.2) * (0.5 + Math.random() * 0.7);
     phases[i] = Math.random();
   }
   colors.set(particleBaseColors);
-
   particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
   particleGeo.setAttribute('aColor', new THREE.BufferAttribute(colors, 3));
   particleGeo.setAttribute('aSize', new THREE.BufferAttribute(sizes, 1));
   particleGeo.setAttribute('aPhase', new THREE.BufferAttribute(phases, 1));
-
   const mat = new THREE.ShaderMaterial({
     uniforms: { uTime: { value: 0 } },
-    vertexShader: PARTICLE_VS,
-    fragmentShader: PARTICLE_FS,
-    transparent: true,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
+    vertexShader: PARTICLE_VS, fragmentShader: PARTICLE_FS,
+    transparent: true, blending: THREE.AdditiveBlending, depthWrite: false,
   });
   particles = new THREE.Points(particleGeo, mat);
   scene.add(particles);
 }
 
-/* ==========================================================
-   AMBIENT DRIFT PARTICLES
-   ========================================================== */
 function createAmbientParticles(count) {
   if (!count) return;
   const geo = new THREE.BufferGeometry();
@@ -518,19 +501,13 @@ function createAmbientParticles(count) {
   geo.setAttribute('aPhase', new THREE.BufferAttribute(phases, 1));
   const mat = new THREE.ShaderMaterial({
     uniforms: { uTime: { value: 0 } },
-    vertexShader: PARTICLE_VS,
-    fragmentShader: PARTICLE_FS,
-    transparent: true,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
+    vertexShader: PARTICLE_VS, fragmentShader: PARTICLE_FS,
+    transparent: true, blending: THREE.AdditiveBlending, depthWrite: false,
   });
   ambientParticles = new THREE.Points(geo, mat);
   scene.add(ambientParticles);
 }
 
-/* ==========================================================
-   NEBULA VOLUME PLANES
-   ========================================================== */
 const NEBULA_COLORS = [
   [new THREE.Color('#1a3868'), new THREE.Color('#3a1a6a')],
   [new THREE.Color('#142e5c'), new THREE.Color('#4a2070')],
@@ -548,12 +525,8 @@ function createNebulaPlanes() {
         uColor2: { value: NEBULA_COLORS[i % NEBULA_COLORS.length][1] },
         uOpacity: { value: TUNING.nebulaOpacity },
       },
-      vertexShader: NEBULA_VS,
-      fragmentShader: NEBULA_FS,
-      transparent: true,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      side: THREE.DoubleSide,
+      vertexShader: NEBULA_VS, fragmentShader: NEBULA_FS,
+      transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
     });
     const mesh = new THREE.Mesh(geo, mat);
     mesh.position.set((Math.random() - 0.5) * 25, (Math.random() - 0.5) * 25, -35 - i * 22);
@@ -563,21 +536,12 @@ function createNebulaPlanes() {
   }
 }
 
-/* ==========================================================
-   CONSTELLATION LINES
-   ========================================================== */
 function createConstellationLines() {
   if (qualityLevel !== 'high') return;
   const max = TUNING.constellationMaxLines;
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(max * 6), 3));
-  const mat = new THREE.LineBasicMaterial({
-    color: 0x7CF7FF,
-    transparent: true,
-    opacity: 0.07,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-  });
+  const mat = new THREE.LineBasicMaterial({ color: 0x7CF7FF, transparent: true, opacity: 0.07, blending: THREE.AdditiveBlending, depthWrite: false });
   constellationLines = new THREE.LineSegments(geo, mat);
   scene.add(constellationLines);
 }
@@ -586,7 +550,6 @@ function updateConstellationLines() {
   if (!constellationLines || !particles) return;
   constellationFrame++;
   if (constellationFrame % TUNING.constellationInterval !== 0) return;
-
   const buf = constellationLines.geometry.attributes.position.array;
   const pp = particleGeo.attributes.position.array;
   const count = particlePositions.length / 3;
@@ -594,7 +557,6 @@ function updateConstellationLines() {
   const step = Math.max(1, Math.floor(count / 70));
   let li = 0;
   const max = TUNING.constellationMaxLines;
-
   for (let i = 0; i < count && li < max; i += step) {
     const ax = pp[i * 3], ay = pp[i * 3 + 1], az = pp[i * 3 + 2];
     for (let j = i + step; j < count && li < max; j += step) {
@@ -613,9 +575,6 @@ function updateConstellationLines() {
   constellationLines.geometry.setDrawRange(0, li * 2);
 }
 
-/* ==========================================================
-   POST-PROCESSING (bloom, high quality only)
-   ========================================================== */
 async function initPostProcessing() {
   if (qualityLevel !== 'high' || TUNING.bloomStrength <= 0) return;
   try {
@@ -630,9 +589,7 @@ async function initPostProcessing() {
       new THREE.Vector2(window.innerWidth, window.innerHeight),
       TUNING.bloomStrength, TUNING.bloomRadius, TUNING.bloomThreshold,
     ));
-  } catch (e) {
-    console.warn('Bloom unavailable:', e.message);
-  }
+  } catch (e) { console.warn('Bloom unavailable:', e.message); }
 }
 
 /* ==========================================================
@@ -646,30 +603,22 @@ function updateParticles(t, dt) {
   const from = Math.min(NUM_CHAPTERS - 1, Math.floor(raw));
   const to = Math.min(NUM_CHAPTERS - 1, from + 1);
   const blend = raw - from;
-
-  const fa = formationTargets[from];
-  const ta = formationTargets[to];
+  const fa = formationTargets[from], ta = formationTargets[to];
   const lerpSpeed = Math.min(1, 2.2 * dt);
   const expansion = Math.sin(blend * Math.PI) * TUNING.phaseShift;
-
   for (let i = 0; i < count; i++) {
     const i3 = i * 3;
     let tx = fa[i3]     + (ta[i3]     - fa[i3])     * blend;
     let ty = fa[i3 + 1] + (ta[i3 + 1] - fa[i3 + 1]) * blend;
     let tz = fa[i3 + 2] + (ta[i3 + 2] - fa[i3 + 2]) * blend;
-
     if (expansion > 0.02) {
       const dist = Math.sqrt(tx * tx + ty * ty + tz * tz) + 1.5;
       const e = expansion * 0.1;
-      tx += (tx / dist) * e;
-      ty += (ty / dist) * e;
-      tz += (tz / dist) * e;
+      tx += (tx / dist) * e; ty += (ty / dist) * e; tz += (tz / dist) * e;
     }
-
     particlePositions[i3]     += (tx - particlePositions[i3])     * lerpSpeed;
     particlePositions[i3 + 1] += (ty - particlePositions[i3 + 1]) * lerpSpeed;
     particlePositions[i3 + 2] += (tz - particlePositions[i3 + 2]) * lerpSpeed;
-
     const ns = 0.03;
     particlePositions[i3]     += Math.sin(t * 0.5 + i * 0.037) * ns;
     particlePositions[i3 + 1] += Math.cos(t * 0.4 + i * 0.029) * ns;
@@ -679,21 +628,18 @@ function updateParticles(t, dt) {
 }
 
 /* ==========================================================
-   CAMERA SYSTEM
+   CAMERA
    ========================================================== */
 function updateCamera(t) {
   const cl = TUNING.cameraLerp;
   camera.position.x += (camState.x - camera.position.x) * cl;
   camera.position.y += (camState.y - camera.position.y) * cl;
   camera.position.z += (camState.z - camera.position.z) * cl;
-
   if (!reducedMotion) {
     camera.position.x += Math.sin(t * TUNING.breathFreq.x) * TUNING.breathAmp.x;
     camera.position.y += Math.cos(t * TUNING.breathFreq.y) * TUNING.breathAmp.y;
   }
-
   camera.lookAt(0, 0, 0);
-
   if (!reducedMotion) {
     currentRoll += (camState.roll - currentRoll) * cl;
     camera.rotation.z = currentRoll;
@@ -701,7 +647,7 @@ function updateCamera(t) {
 }
 
 /* ==========================================================
-   SCROLL ENGINE (GSAP)
+   SCROLL ENGINE
    ========================================================== */
 function setupScroll() {
   const tl = gsap.timeline({
@@ -730,9 +676,21 @@ function setupScroll() {
     opacity: 0,
   });
 
+  /* Summary panels: slide in from left/right with lens-blur effect */
+  gsap.from('#panel-mvv', {
+    scrollTrigger: { trigger: '#ch-summary', start: 'top 78%', toggleActions: 'play none none reverse' },
+    x: -70, opacity: 0, filter: 'blur(12px)', duration: 0.85, ease: 'power2.out',
+  });
+  gsap.from('#panel-domains', {
+    scrollTrigger: { trigger: '#ch-summary', start: 'top 78%', toggleActions: 'play none none reverse' },
+    x: 70, opacity: 0, filter: 'blur(12px)', duration: 0.85, ease: 'power2.out', delay: 0.08,
+  });
+
+  /* Generic scroll-in for all other sections */
   document.querySelectorAll('.chapter').forEach(section => {
+    if (section.id === 'ch-summary') return; // handled above
     const target = section.querySelector('.hero-inner')
-      || section.querySelector('.summary-row')
+      || section.querySelector('.experience-col')
       || section.querySelector('.passions-inner')
       || section.querySelector('.footer-inner')
       || section.querySelector('.glass-panel');
@@ -745,6 +703,53 @@ function setupScroll() {
 }
 
 /* ==========================================================
+   SECTION NAV
+   ========================================================== */
+function setupNav() {
+  const nav = document.getElementById('section-nav');
+  if (!nav) return;
+
+  /* Blur-in entrance when hero scrolls out */
+  ScrollTrigger.create({
+    trigger: '#ch-hero',
+    start: 'bottom 60%',
+    onEnter: () => {
+      nav.classList.add('nav-visible');
+      if (!reducedMotion) {
+        gsap.fromTo(nav,
+          { y: -nav.offsetHeight || -56, opacity: 0, filter: 'blur(16px)' },
+          { y: 0, opacity: 1, filter: 'blur(0px)', duration: 0.55, ease: 'power2.out' }
+        );
+      } else {
+        gsap.set(nav, { y: 0, opacity: 1, filter: 'blur(0px)' });
+      }
+    },
+    onLeaveBack: () => {
+      if (!reducedMotion) {
+        gsap.to(nav, {
+          y: -(nav.offsetHeight || 56), opacity: 0, filter: 'blur(12px)',
+          duration: 0.4, ease: 'power2.in',
+          onComplete: () => nav.classList.remove('nav-visible'),
+        });
+      } else {
+        gsap.set(nav, { opacity: 0 });
+        nav.classList.remove('nav-visible');
+      }
+    },
+  });
+
+  /* Click handlers — smooth scroll to target element */
+  nav.querySelectorAll('.snav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.dataset.target;
+      const el = document.getElementById(targetId);
+      if (!el) return;
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+}
+
+/* ==========================================================
    HTML HELPERS
    ========================================================== */
 function esc(str) { const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML; }
@@ -752,7 +757,7 @@ function $(sel, root) { return (root || document).querySelector(sel); }
 function $$(sel, root) { return Array.from((root || document).querySelectorAll(sel)); }
 
 /* ==========================================================
-   UI RENDERING
+   RENDERERS
    ========================================================== */
 function renderHero() {
   $('#hero-name').textContent = DATA.profile.name;
@@ -774,30 +779,38 @@ function renderSummary() {
   `;
 }
 
-function renderJobs() {
+function renderWorkHistory() {
   const el = $('#jobs-list');
   const reversed = DATA.jobs.slice().reverse();
-  el.innerHTML = `
-    <h3 class="sub-heading">Work History</h3>
-    ${reversed.map((j, i) => `
-      <div class="job-card" tabindex="0" role="button" data-type="job" data-idx="${i}">
-        <div class="job-header"><div class="job-title">${esc(j.title)}</div><div class="job-dates">${esc(j.dates)}</div></div>
-        <div class="job-preview">${esc(j.details.slice(0, 2).join(' \u2022 '))}</div>
-        <div class="job-tags">${j.tags.map(t => `<span class="chip">${esc(t)}</span>`).join('')}</div>
-      </div>`).join('')}
-    <h3 class="sub-heading" style="margin-top:20px">Education</h3>
-    ${DATA.education.map((e, i) => `
-      <div class="job-card" tabindex="0" role="button" data-type="edu" data-idx="${i}">
-        <div class="job-header"><div class="job-title">${esc(e.title)}</div><div class="job-dates">${esc(e.dates)}</div></div>
-        <div class="job-preview">${esc(e.details.join(' \u2022 '))}</div>
-        <div class="job-tags">${e.tags.map(t => `<span class="chip">${esc(t)}</span>`).join('')}</div>
-      </div>`).join('')}
-  `;
+  el.innerHTML = reversed.map((j, i) => `
+    <div class="job-card" tabindex="0" role="button" data-type="job" data-idx="${i}">
+      <div class="job-header"><div class="job-title">${esc(j.title)}</div><div class="job-dates">${esc(j.dates)}</div></div>
+      <div class="job-preview">${esc(j.details.slice(0, 2).join(' \u2022 '))}</div>
+      <div class="job-tags">${j.tags.map(t => `<span class="chip">${esc(t)}</span>`).join('')}</div>
+    </div>`).join('');
   $$('.job-card', el).forEach(card => {
     const handler = () => {
-      const type = card.dataset.type;
       const idx = parseInt(card.dataset.idx, 10);
-      const item = type === 'job' ? DATA.jobs.slice().reverse()[idx] : DATA.education[idx];
+      const item = DATA.jobs.slice().reverse()[idx];
+      openModal(item.title, item.dates, item.details.map(d => '\u2022 ' + d).join('\n'));
+    };
+    card.addEventListener('click', handler);
+    card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handler(); } });
+  });
+}
+
+function renderEducation() {
+  const el = $('#edu-list');
+  el.innerHTML = DATA.education.map((e, i) => `
+    <div class="job-card" tabindex="0" role="button" data-type="edu" data-idx="${i}">
+      <div class="job-header"><div class="job-title">${esc(e.title)}</div><div class="job-dates">${esc(e.dates)}</div></div>
+      <div class="job-preview">${esc(e.details.join(' \u2022 '))}</div>
+      <div class="job-tags">${e.tags.map(t => `<span class="chip">${esc(t)}</span>`).join('')}</div>
+    </div>`).join('');
+  $$('.job-card', el).forEach(card => {
+    const handler = () => {
+      const idx = parseInt(card.dataset.idx, 10);
+      const item = DATA.education[idx];
       openModal(item.title, item.dates, item.details.map(d => '\u2022 ' + d).join('\n'));
     };
     card.addEventListener('click', handler);
@@ -808,7 +821,6 @@ function renderJobs() {
 function renderSkillNode(node, depth) {
   const cls = depth === 0 ? 'skill-l1' : depth === 1 ? 'skill-l2' : 'skill-l3';
   const open = depth === 0 ? ' open' : '';
-  /* handle both data.js format (items) and markdown-parsed format (bullets) */
   const bullets = node.items || node.bullets || [];
   const items = bullets.length ? `<ul class="skill-bullets">${bullets.map(b => `<li>${esc(b)}</li>`).join('')}</ul>` : '';
   const kids = (node.children || []).map(ch => renderSkillNode(ch, depth + 1)).join('');
@@ -818,27 +830,175 @@ function renderSkillNode(node, depth) {
 
 function renderSkills() { $('#skills-tree').innerHTML = DATA.skillsTree.map(n => renderSkillNode(n, 0)).join(''); }
 
-function renderTimeline() {
-  const sorted = DATA.timeline.slice().sort((a, b) => a.date.localeCompare(b.date));
-  const el = $('#timeline-list');
-  el.innerHTML = sorted.map((entry, i) => `
-    <div class="timeline-entry" tabindex="0" role="button" data-idx="${i}">
-      <div class="timeline-dot"></div>
-      <div class="timeline-content">
-        <div class="timeline-date">${esc(entry.date)}</div>
-        <div class="timeline-title">${esc(entry.title)}</div>
-        <span class="timeline-type">${esc(entry.type)}</span>
-        <div class="job-tags" style="margin-top:6px">${(entry.tags || []).map(t => `<span class="chip">${esc(t)}</span>`).join('')}</div>
-      </div>
-    </div>`).join('');
-  $$('.timeline-entry', el).forEach(row => {
-    const handler = () => {
-      const entry = sorted[parseInt(row.dataset.idx, 10)];
-      openModal(entry.title, `${entry.date} \u2022 ${entry.type}`, entry.details || '');
-    };
-    row.addEventListener('click', handler);
-    row.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handler(); } });
+/* ==========================================================
+   TIMELINE ZOOM — FIT, LOD, AND APPLY
+   ========================================================== */
+
+/* Solve for the zoom where N items exactly fill the container.
+   Formula: trackW = z * (264N − 24) + 16  →  z = (containerW − 16) / (264N − 24) */
+function computeFitZoom(itemCount) {
+  const wrap = document.querySelector('.tl-wrap');
+  if (!wrap || itemCount <= 0) return 0.4;
+  const w = wrap.clientWidth || wrap.offsetWidth;
+  if (!w) return 0.4;
+  const divisor = 264 * itemCount - 24;
+  if (divisor <= 0) return TL_ZOOM_MIN;
+  return Math.max(TL_ZOOM_MIN, Math.min(TL_ZOOM_MAX, (w - 16) / divisor));
+}
+
+/* Return the minimum significance required to be visible at the current zoom.
+   Thresholds are expressed as a fraction of fitZoom so they scale naturally
+   regardless of how many items are on the timeline. */
+function getMinSignificance(zoom) {
+  if (!fitZoom || fitZoom <= 0) return 1;
+  const r = zoom / fitZoom;  /* ratio: 1.0 = "fit" view, < 1.0 = zoomed out further */
+  if (r < 0.30) return 5;
+  if (r < 0.50) return 4;
+  if (r < 0.70) return 3;
+  if (r < 0.90) return 2;
+  return 1;
+}
+
+/* Module-level zoom applier so it can be called from setupTimelineZoom,
+   onResize, and anywhere else without scope issues. */
+function applyTimelineZoom(v) {
+  const prevSig = getMinSignificance(tlZoom);
+  tlZoom = Math.max(TL_ZOOM_MIN, Math.min(TL_ZOOM_MAX, v));
+
+  /* Sync controls */
+  const range = $('#tl-zoom-range');
+  const label = $('#tl-zoom-label');
+  if (range) range.value  = Math.round(tlZoom * 100);
+  if (label) label.textContent = Math.round(tlZoom * 100) + '%';
+
+  const newSig = getMinSignificance(tlZoom);
+
+  if (newSig !== prevSig) {
+    /* Significance threshold crossed — re-render to show/hide items.
+       Debounce so rapid dragging doesn't hammer the DOM. */
+    clearTimeout(_sigRerenderTimer);
+    _sigRerenderTimer = setTimeout(() => {
+      renderTimeline($('#timeline-search') ? $('#timeline-search').value : '');
+    }, 120);
+  } else {
+    /* Just update the CSS variable and ruler — no full re-render needed */
+    const track = document.querySelector('.tl-track');
+    if (track) track.style.setProperty('--tl-zoom', tlZoom.toFixed(3));
+    rebuildRuler();
+  }
+}
+
+/* Build the year ruler HTML — a time-proportional tape-measure bar.
+   Left = most recent (maxYear), Right = oldest (minYear), matching track direction.
+   Shows year ticks always; month ticks when zoom is high enough. */
+function buildRulerHtml(items) {
+  if (!items.length) return '';
+
+  /* Track dimensions (mirror CSS .tl-track formula) */
+  const cardW    = 240 * tlZoom;
+  const gapSize  = 24  * tlZoom;
+  const stride   = cardW + gapSize;
+  const padStart = 8;
+  const N        = items.length;
+  const trackW   = N * stride - gapSize + padStart * 2;
+
+  /* Date range: earliest item year → max(latest item year, current year) */
+  const itemYears = items
+    .map(t => parseInt((t.date || '').slice(0, 4), 10))
+    .filter(y => !isNaN(y));
+  if (!itemYears.length) return '';
+
+  const minYear  = Math.min(...itemYears);
+  const maxYear  = Math.max(Math.max(...itemYears), new Date().getFullYear());
+  const yearSpan = maxYear - minYear;
+  if (yearSpan <= 0) return '';
+
+  const pxPerYear   = trackW / yearSpan;
+  const showMonths  = pxPerYear >= 80;       // show minor month ticks
+  const showMoLabels= pxPerYear >= 180;      // show abbreviated month names on quarter ticks
+
+  const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  /* x position for an absolute month offset from maxYear (going rightward = older) */
+  const totalM = yearSpan * 12;
+  const pxPerM = trackW / totalM;
+
+  let html = '';
+
+  for (let i = 0; i <= totalM; i++) {
+    const x       = (i * pxPerM).toFixed(1);
+    const isYear  = i % 12 === 0;
+    const isQtr   = !isYear && i % 3 === 0;
+
+    if (isYear) {
+      const year = maxYear - i / 12;
+      html += `<div class="tl-tick tl-tick-year" style="left:${x}px" aria-hidden="true">
+        <span class="tl-tick-label">${year}</span>
+      </div>`;
+    } else if (showMonths) {
+      /* Month index (0=Jan … 11=Dec) for this position */
+      const mIdx  = ((maxYear * 12 - i) % 12 + 12) % 12;
+      const label = showMoLabels && isQtr
+        ? `<span class="tl-tick-label tl-mo-label">${MONTH_NAMES[mIdx]}</span>`
+        : '';
+      html += `<div class="tl-tick ${isQtr ? 'tl-tick-qtr' : 'tl-tick-month'}" style="left:${x}px" aria-hidden="true">${label}</div>`;
+    }
+  }
+
+  return `<div class="tl-ruler" id="tl-ruler" style="width:${trackW.toFixed(0)}px" aria-hidden="true">${html}</div>`;
+}
+
+function rebuildRuler() {
+  const existing = document.getElementById('tl-ruler');
+  if (!existing) return;
+  const html = buildRulerHtml(currentTimelineItems);
+  if (!html) return;
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  if (tmp.firstElementChild) existing.replaceWith(tmp.firstElementChild);
+}
+
+function renderTimeline(query) {
+  const q = (query || '').toLowerCase().trim();
+  /* Sort DESCENDING: most recent on the LEFT */
+  const sorted = DATA.timeline.slice().sort((a, b) => b.date.localeCompare(a.date));
+
+  /* Significance filter: items with a significance field below the threshold are
+     hidden at lower zoom levels (LOD).  Items without the field default to sig=3. */
+  const minSig = getMinSignificance(tlZoom);
+  const items = sorted.filter(t => {
+    const sig = (typeof t.significance === 'number') ? t.significance : 3;
+    if (sig < minSig) return false;
+    if (!q) return true;
+    return `${t.date} ${t.title} ${t.type} ${t.details || ''} ${(t.tags || []).join(' ')}`.toLowerCase().includes(q);
   });
+
+  currentTimelineItems = items;
+
+  const el = $('#timeline-list');
+  if (!items.length) {
+    el.innerHTML = `<p style="text-align:center;color:var(--muted2);padding:24px 0;font-size:13px">No entries match &ldquo;${esc(q)}&rdquo;</p>`;
+    return;
+  }
+
+  el.innerHTML = `<div class="tl-track" style="--tl-zoom:${tlZoom.toFixed(3)}">
+    ${items.map(t => `
+      <article class="tl-entry">
+        <div class="tl-date">${esc(t.date || '')}</div>
+        <div class="tl-rail"><div class="tl-dot" aria-hidden="true"></div></div>
+        <div class="tl-card">
+          <details>
+            <summary>${esc(t.title || 'Untitled')}</summary>
+            <div class="tl-meta">
+              <span class="tl-pill">${esc(t.type || 'Milestone')}</span>
+              ${(t.tags || []).slice(0, 8).map(x => `<span class="tl-pill">${esc(x)}</span>`).join('')}
+            </div>
+            <div class="tl-body">${t.details ? esc(t.details).replace(/\n/g, '<br>') : ''}</div>
+          </details>
+        </div>
+      </article>`).join('')}
+  </div>
+  ${buildRulerHtml(items)}`;
 }
 
 function renderPassions() {
@@ -856,9 +1016,10 @@ function renderFooter() {
 function renderAll() {
   renderHero();
   renderSummary();
-  renderJobs();
+  renderWorkHistory();
+  renderEducation();
   renderSkills();
-  renderTimeline();
+  renderTimeline($('#timeline-search') ? $('#timeline-search').value : '');
   renderPassions();
   renderFooter();
 }
@@ -908,7 +1069,7 @@ function filterSkills(query) {
 }
 
 /* ==========================================================
-   TIMELINE SEARCH
+   TIMELINE SEARCH + ZOOM
    ========================================================== */
 function setupTimelineSearch() {
   const input = $('#timeline-search');
@@ -916,19 +1077,44 @@ function setupTimelineSearch() {
   let timer;
   input.addEventListener('input', () => {
     clearTimeout(timer);
-    timer = setTimeout(() => filterTimeline(input.value.toLowerCase().trim()), 180);
+    timer = setTimeout(() => renderTimeline(input.value), 200);
   });
 }
 
-function filterTimeline(query) {
-  const entries = $$('#timeline-list .timeline-entry');
-  if (!query) {
-    entries.forEach(e => { e.style.display = ''; });
-    return;
+function setupTimelineZoom() {
+  const range  = $('#tl-zoom-range');
+  const btnIn  = $('#tl-zoom-in');
+  const btnOut = $('#tl-zoom-out');
+  const btnRst = $('#tl-zoom-reset');
+  if (!range) return;
+
+  range.addEventListener('input', () => applyTimelineZoom(parseInt(range.value, 10) / 100));
+  btnIn.addEventListener('click',  () => applyTimelineZoom(tlZoom + TL_ZOOM_STEP));
+  btnOut.addEventListener('click', () => applyTimelineZoom(tlZoom - TL_ZOOM_STEP));
+  /* Reset = return to "perfect fit" zoom */
+  btnRst.addEventListener('click', () => applyTimelineZoom(fitZoom));
+
+  /* Ctrl/Cmd + wheel to zoom */
+  const wrap = document.querySelector('.tl-wrap');
+  if (wrap) {
+    wrap.addEventListener('wheel', e => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      applyTimelineZoom(tlZoom - e.deltaY * 0.001);
+    }, { passive: false });
   }
-  entries.forEach(e => {
-    const text = (e.textContent || '').toLowerCase();
-    e.style.display = text.includes(query) ? '' : 'none';
+
+  /* After one layout pass the container has its real width — compute the exact
+     "fit" zoom so all items fill the panel edge-to-edge, then re-render cleanly. */
+  requestAnimationFrame(() => {
+    fitZoom = computeFitZoom(DATA.timeline.length);
+    range.min  = Math.max(10, Math.floor(fitZoom * 100 * 0.15));
+    tlZoom     = Math.max(TL_ZOOM_MIN, Math.min(TL_ZOOM_MAX, fitZoom));
+    range.value = Math.round(tlZoom * 100);
+    const lbl = $('#tl-zoom-label');
+    if (lbl) lbl.textContent = Math.round(tlZoom * 100) + '%';
+    /* Full re-render at the correct zoom so ruler and track are pixel-perfect */
+    renderTimeline($('#timeline-search') ? $('#timeline-search').value : '');
   });
 }
 
@@ -965,7 +1151,6 @@ function setupControls() {
     motionIcon.textContent = reducedMotion ? '\u25CC' : '\u29BF';
     motionBtn.title = reducedMotion ? 'Enable Motion' : 'Reduce Motion';
   }
-
   function syncQuality() {
     const icons = { high: '\u25C6', medium: '\u25C7', low: '\u25CB' };
     qualityIcon.textContent = icons[qualityLevel] || '\u25C6';
@@ -982,23 +1167,23 @@ function setupControls() {
 }
 
 /* ==========================================================
-   IMPORT / EXPORT  (behind gear icon, shared with 2D resume)
+   IMPORT / EXPORT
    ========================================================== */
 function buildCurrentPack() {
   return {
     version: 1,
     resume: {
-      profile:      DATA.profile,
+      profile: DATA.profile,
       hero: {
         primary_domains: DATA.hero.primaryDomains.join(' \u2022 '),
-        focus:  DATA.hero.focus.join(' \u2022 '),
-        style:  DATA.hero.style.join(' \u2022 '),
-        chips:  DATA.hero.chips,
+        focus: DATA.hero.focus.join(' \u2022 '),
+        style: DATA.hero.style.join(' \u2022 '),
+        chips: DATA.hero.chips,
       },
-      mvv:          DATA.mvv,
-      jobs:         DATA.jobs,
-      education:    DATA.education,
-      passions:     DATA.passions,
+      mvv: DATA.mvv,
+      jobs: DATA.jobs,
+      education: DATA.education,
+      passions: DATA.passions,
       capabilities: DATA.capabilities,
     },
     timeline: DATA.timeline,
@@ -1011,8 +1196,7 @@ function applyImport(jsonText) {
   try {
     const pack = JSON.parse(jsonText);
     if (!pack || typeof pack !== 'object') throw new Error('Invalid JSON structure.');
-    const resolved = resolveDataFromPack(pack);
-    DATA = resolved;
+    DATA = packToData(pack);
     localStorage.setItem(LS_KEY, JSON.stringify(pack));
     renderAll();
     ScrollTrigger.refresh();
@@ -1022,29 +1206,6 @@ function applyImport(jsonText) {
     statusEl.textContent = '\u2717 Error: ' + e.message;
     statusEl.className = 'settings-status err';
   }
-}
-
-function resolveDataFromPack(pack) {
-  const r = (pack && pack.resume) || {};
-  const h = r.hero || {};
-  return {
-    profile: { ...SEED.profile, ...(r.profile || {}) },
-    hero: {
-      primaryDomains: tokenize(h.primary_domains || h.primaryDomains) || SEED.hero.primaryDomains,
-      focus:  tokenize(h.focus)  || SEED.hero.focus,
-      style:  tokenize(h.style)  || SEED.hero.style,
-      chips:  Array.isArray(h.chips) ? h.chips : SEED.hero.chips,
-    },
-    mvv: { ...SEED.mvv, ...(r.mvv || {}) },
-    jobs: Array.isArray(r.jobs) ? r.jobs : SEED.jobs,
-    education: Array.isArray(r.education) ? r.education : SEED.education,
-    passions: Array.isArray(r.passions) ? r.passions : SEED.passions,
-    capabilities: Array.isArray(r.capabilities) ? r.capabilities : SEED.capabilities,
-    timeline: Array.isArray(pack.timeline) ? pack.timeline : SEED.timeline,
-    skillsTree: pack.skills_markdown
-      ? parseSkillsMarkdownToTree(pack.skills_markdown)
-      : SEED.skillsTree,
-  };
 }
 
 function setupImport() {
@@ -1058,69 +1219,39 @@ function setupImport() {
   const resetBtn = $('#btn-reset-data');
   const jsonArea = $('#import-json');
   const statusEl = $('#import-status');
-
   if (!modal || !openBtn) return;
 
-  openBtn.addEventListener('click', () => {
-    statusEl.textContent = '';
-    statusEl.className = 'settings-status';
-    jsonArea.value = '';
-    modal.showModal();
-  });
+  openBtn.addEventListener('click', () => { statusEl.textContent = ''; statusEl.className = 'settings-status'; jsonArea.value = ''; modal.showModal(); });
   closeBtn.addEventListener('click', () => modal.close());
   modal.addEventListener('click', e => { if (e.target === modal) modal.close(); });
-
   applyBtn.addEventListener('click', () => {
     const text = jsonArea.value.trim();
     if (!text) { statusEl.textContent = 'Paste JSON above first.'; statusEl.className = 'settings-status err'; return; }
     applyImport(text);
   });
-
   fileBtn.addEventListener('click', () => fileIn.click());
   fileIn.addEventListener('change', () => {
     const file = fileIn.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = e => {
-      const text = e.target.result;
-      jsonArea.value = text;
-      applyImport(text);
-    };
+    reader.onload = e => { jsonArea.value = e.target.result; applyImport(e.target.result); };
     reader.readAsText(file);
     fileIn.value = '';
   });
-
   exportBtn.addEventListener('click', () => {
-    const pack = buildCurrentPack();
-    const blob = new Blob([JSON.stringify(pack, null, 2)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify(buildCurrentPack(), null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
-    a.download = 'resume_profile_pack.json';
-    a.click();
+    a.href = url; a.download = 'resume_pack.json'; a.click();
     URL.revokeObjectURL(url);
-    statusEl.textContent = '\u2713 Exported.';
-    statusEl.className = 'settings-status ok';
+    statusEl.textContent = '\u2713 Exported.'; statusEl.className = 'settings-status ok';
   });
-
   resetBtn.addEventListener('click', () => {
     if (!confirm('Reset all resume data to defaults? This cannot be undone.')) return;
     localStorage.removeItem(LS_KEY);
-    DATA = {
-      profile:      SEED.profile,
-      hero:         SEED.hero,
-      mvv:          SEED.mvv,
-      jobs:         SEED.jobs,
-      education:    SEED.education,
-      passions:     SEED.passions,
-      capabilities: SEED.capabilities,
-      timeline:     SEED.timeline,
-      skillsTree:   SEED.skillsTree,
-    };
-    renderAll();
-    ScrollTrigger.refresh();
-    statusEl.textContent = '\u2713 Reset to defaults.';
-    statusEl.className = 'settings-status ok';
+    DATA = { profile: SEED.profile, hero: SEED.hero, mvv: SEED.mvv, jobs: SEED.jobs, education: SEED.education, passions: SEED.passions, capabilities: SEED.capabilities, timeline: SEED.timeline, skillsTree: SEED.skillsTree };
+    renderAll(); ScrollTrigger.refresh();
+    statusEl.textContent = '\u2713 Reset to defaults.'; statusEl.className = 'settings-status ok';
   });
 }
 
@@ -1133,6 +1264,9 @@ function onResize() {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
   if (composer) composer.setSize(window.innerWidth, window.innerHeight);
+  /* Recompute fit zoom so significance thresholds stay correct after resize */
+  const newFit = computeFitZoom(DATA.timeline.length);
+  if (newFit > 0) fitZoom = newFit;
 }
 
 /* ==========================================================
@@ -1144,29 +1278,20 @@ function animate() {
   const dt = Math.min(clock.getDelta(), 0.1);
   time += dt;
   frameCount++;
-
   const rawVel = (scrollProgress - lastScrollProgress) / Math.max(dt, 0.016);
   scrollVelocity += (rawVel - scrollVelocity) * 0.08;
   lastScrollProgress = scrollProgress;
-
   updateCamera(time);
   updateParticles(time, dt);
   updateStarfield(time, scrollVelocity);
-
   if (ambientParticles && !reducedMotion) {
     ambientParticles.material.uniforms.uTime.value = time;
     ambientParticles.rotation.y = time * 0.004;
     ambientParticles.rotation.x = Math.sin(time * 0.003) * 0.015;
   }
-
   nebulaPlanes.forEach(m => { m.material.uniforms.uTime.value = time; });
-
   if (!reducedMotion) updateConstellationLines();
-
-  if (frameCount % 6 === 0) {
-    document.documentElement.style.setProperty('--scroll-progress', scrollProgress.toFixed(3));
-  }
-
+  if (frameCount % 6 === 0) document.documentElement.style.setProperty('--scroll-progress', scrollProgress.toFixed(3));
   if (composer) composer.render();
   else renderer.render(scene, camera);
 }
@@ -1188,14 +1313,20 @@ async function init() {
   createAmbientParticles(TUNING.ambientCount[qualityLevel]);
   createNebulaPlanes();
   createConstellationLines();
-
   await initPostProcessing();
 
-  renderAll();
+  /* Try external data file first — if it loads, override localStorage/defaults */
+  const externalData = await fetchExternalData();
+  if (externalData) {
+    DATA = externalData;
+  }
 
+  renderAll();
   setupScroll();
+  setupNav();
   setupSearch();
   setupTimelineSearch();
+  setupTimelineZoom();
   setupControls();
   setupModal();
   setupImport();
