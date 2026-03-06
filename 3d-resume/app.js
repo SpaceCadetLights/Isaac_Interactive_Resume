@@ -1543,6 +1543,26 @@ function setupShare() {
 }
 
 /* ==========================================================
+   SUPPRESS NATIVE BROWSER TOOLTIPS
+   ========================================================== */
+function suppressTooltips() {
+  /* Strip existing title attributes */
+  document.querySelectorAll('[title]').forEach(el => el.removeAttribute('title'));
+
+  /* Observe future DOM additions (e.g. dynamically rendered cards) */
+  const mo = new MutationObserver(mutations => {
+    for (const m of mutations) {
+      for (const node of m.addedNodes) {
+        if (node.nodeType !== 1) continue;
+        if (node.hasAttribute('title')) node.removeAttribute('title');
+        node.querySelectorAll('[title]').forEach(el => el.removeAttribute('title'));
+      }
+    }
+  });
+  mo.observe(document.body, { subtree: true, childList: true });
+}
+
+/* ==========================================================
    CUSTOM CURSOR
    ========================================================== */
 function setupCursor() {
@@ -1649,6 +1669,7 @@ async function init() {
   setupControls();
   setupThemes();
   setupShare();
+  suppressTooltips();
   setupCursor();
   setupModal();
   setupImport();
