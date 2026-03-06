@@ -173,11 +173,11 @@ body {
 }
 
 .chapter {
-  min-height: 100vh;
+  min-height: 72vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 80px 24px;
+  padding: 48px 24px;
   position: relative;
 }
 
@@ -185,6 +185,9 @@ body {
   width: 100%;
   max-width: 960px;
 }
+
+/* Hero always fills the full viewport so the title scene has room to breathe */
+#ch-hero { min-height: 100vh; padding-top: 0; padding-bottom: 0; }
 
 /* ===== Glass Panels =====
  *
@@ -572,7 +575,7 @@ body {
 .experience-col {
   display: flex;
   flex-direction: column;
-  gap: 48px;
+  gap: 72px;
   width: 100%;
 }
 
@@ -1795,8 +1798,8 @@ body {
 
 /* ===== Responsive ===== */
 @media (max-width: 768px) {
-  .chapter { padding: 60px 16px; min-height: auto; }
-  #ch-hero { min-height: 100vh; }
+  .chapter { padding: 36px 16px; min-height: auto; }
+  #ch-hero { min-height: 100vh; padding-top: 0; padding-bottom: 0; }
   .glass-panel { padding: 20px; border-radius: 20px; }
   .summary-row { flex-direction: column; align-items: stretch; }
   .jobs-panel-body { max-height: 200px; }
