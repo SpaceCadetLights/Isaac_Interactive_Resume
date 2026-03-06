@@ -1464,6 +1464,85 @@ function animate() {
 }
 
 /* ==========================================================
+   SHARE BUTTON
+   ========================================================== */
+function setupShare() {
+  const wrap  = document.getElementById('share-wrap');
+  const btn   = document.getElementById('share-btn');
+  const popup = document.getElementById('share-popup');
+  if (!btn || !popup) return;
+
+  const PAGE_URL  = window.location.href;
+  const PAGE_TEXT = 'Check out Isaac Norris\'s interactive 3D resume.';
+
+  function openPopup() {
+    popup.classList.add('is-open');
+    btn.setAttribute('aria-expanded', 'true');
+  }
+  function closePopup() {
+    popup.classList.remove('is-open');
+    btn.setAttribute('aria-expanded', 'false');
+  }
+
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    popup.classList.contains('is-open') ? closePopup() : openPopup();
+  });
+
+  /* Close on outside click */
+  document.addEventListener('click', e => {
+    if (wrap && !wrap.contains(e.target)) closePopup();
+  });
+
+  /* Facebook */
+  const fbBtn = document.getElementById('share-facebook');
+  if (fbBtn) {
+    fbBtn.href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(PAGE_URL)}`;
+    fbBtn.addEventListener('click', closePopup);
+  }
+
+  /* LinkedIn */
+  const liBtn = document.getElementById('share-linkedin');
+  if (liBtn) {
+    liBtn.href = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(PAGE_URL)}`;
+    liBtn.addEventListener('click', closePopup);
+  }
+
+  /* SMS / Text */
+  const smsBtn = document.getElementById('share-sms');
+  if (smsBtn) {
+    const smsBody = `${PAGE_TEXT} ${PAGE_URL}`;
+    /* iOS uses &body=, Android uses ?body= — the semicolon variant works on both */
+    smsBtn.href = `sms:?&body=${encodeURIComponent(smsBody)}`;
+    smsBtn.addEventListener('click', closePopup);
+  }
+
+  /* Copy link */
+  const copyBtn   = document.getElementById('share-copy');
+  const copyIcon  = document.getElementById('share-copy-icon');
+  const copyLabel = document.getElementById('share-copy-label');
+  if (copyBtn && copyIcon && copyLabel) {
+    copyBtn.addEventListener('click', async () => {
+      closePopup();
+      try {
+        await navigator.clipboard.writeText(PAGE_URL);
+        copyIcon.textContent  = '✓';
+        copyLabel.textContent = 'Copied!';
+        copyBtn.classList.add('share-copied');
+        setTimeout(() => {
+          copyIcon.textContent  = '⊗';
+          copyLabel.textContent = 'Copy Link';
+          copyBtn.classList.remove('share-copied');
+        }, 2200);
+      } catch (_) {
+        copyLabel.textContent = 'Unavailable';
+        setTimeout(() => { copyLabel.textContent = 'Copy Link'; }, 2000);
+      }
+    });
+  }
+}
+
+/* ==========================================================
    CUSTOM CURSOR
    ========================================================== */
 function setupCursor() {
@@ -1485,6 +1564,7 @@ function setupCursor() {
     'a', 'button', '[role="button"]', 'label', 'summary',
     '.ctrl-btn', '.snav-btn', '.theme-swatch', '.glass-btn',
     '.skill-node', '.tl-entry', '.tl-btn', 'select',
+    '.hero-site-link', '.share-option', '#share-btn', '#share-facebook', '#share-sms',
   ].join(', ');
 
   function applyTransform() {
@@ -1568,6 +1648,7 @@ async function init() {
   setupTimelineZoom();
   setupControls();
   setupThemes();
+  setupShare();
   setupCursor();
   setupModal();
   setupImport();

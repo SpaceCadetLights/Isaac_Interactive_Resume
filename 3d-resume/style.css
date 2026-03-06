@@ -422,6 +422,177 @@ body {
   margin-top: 8px;
 }
 
+/* ── Hero site link ─────────────────────────────────────── */
+.hero-site-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 18px;
+  padding: 8px 20px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.055);
+  backdrop-filter: blur(8px);
+  color: rgba(255,255,255,0.78);
+  font-size: 12.5px;
+  font-family: var(--font);
+  letter-spacing: 0.025em;
+  text-decoration: none;
+  transition: background 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.18s;
+}
+.hero-site-link:hover {
+  background: rgba(124,247,255,0.08);
+  border-color: rgba(124,247,255,0.32);
+  color: #fff;
+  box-shadow: 0 0 18px rgba(124,247,255,0.12);
+}
+.hero-site-arrow {
+  font-size: 13px;
+  opacity: 0.65;
+  transition: opacity 0.18s, transform 0.18s;
+}
+.hero-site-link:hover .hero-site-arrow {
+  opacity: 1;
+  transform: translate(2px, -2px);
+}
+
+/* ── Share button + popup ───────────────────────────────── */
+#share-wrap {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 92;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+#share-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(8,6,26,0.72);
+  color: rgba(255,255,255,0.80);
+  cursor: none;
+  backdrop-filter: blur(18px) saturate(140%);
+  /* rainbow glow: soft conic halo behind the circle */
+  box-shadow:
+    0 2px 16px rgba(0,0,0,0.36),
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    0 0 0 3px rgba(0,0,0,0.0),
+    0 0 14px 4px rgba(180,140,255,0.18),
+    0 0 22px 6px rgba(124,247,255,0.10),
+    0 0 28px 8px rgba(255,120,200,0.07);
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+#share-btn:hover {
+  background: rgba(20,15,45,0.84);
+  border-color: rgba(124,247,255,0.28);
+  box-shadow:
+    0 2px 22px rgba(0,0,0,0.42),
+    inset 0 1px 0 rgba(255,255,255,0.10),
+    0 0 18px 6px rgba(180,140,255,0.26),
+    0 0 28px 8px rgba(124,247,255,0.16),
+    0 0 36px 10px rgba(255,120,200,0.10);
+  transform: scale(1.07);
+}
+#share-btn svg {
+  width: 15px;
+  height: 15px;
+  opacity: 0.82;
+}
+
+#share-popup {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+  border-radius: 16px;
+  background: rgba(8,6,26,0.88);
+  border: 1px solid rgba(255,255,255,0.12);
+  backdrop-filter: blur(28px) saturate(160%);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08);
+  min-width: 176px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(8px) scale(0.95);
+  transform-origin: bottom right;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+#share-popup.is-open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+}
+
+.share-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 13px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,0.78);
+  font-size: 13px;
+  font-family: var(--font);
+  text-decoration: none;
+  cursor: none;
+  transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
+  text-align: left;
+}
+.share-option:hover {
+  background: rgba(255,255,255,0.07);
+  color: #fff;
+}
+.share-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  background: rgba(255,255,255,0.08);
+  font-size: 12px;
+  font-style: normal;
+  flex-shrink: 0;
+}
+.share-li-icon {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+.share-fb-icon {
+  font-size: 14px;
+  font-weight: 700;
+  font-family: Georgia, serif;
+}
+
+.share-option.share-copied {
+  color: rgba(124,247,255,0.90);
+}
+
+/* ── Mobile: tuck share btn higher so it clears the scroll hint ── */
+@media (max-width: 600px) {
+  #share-wrap {
+    bottom: 72px;
+    right: 16px;
+  }
+  #share-btn {
+    width: 32px;
+    height: 32px;
+  }
+}
+
 .scroll-hint {
   position: fixed;
   bottom: 44px;

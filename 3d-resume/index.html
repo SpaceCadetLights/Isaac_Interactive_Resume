@@ -91,6 +91,10 @@
       <p class="hero-headline" id="hero-headline"></p>
       <p class="hero-summary" id="hero-summary"></p>
       <div class="hero-chips" id="hero-chips"></div>
+      <a href="https://www.spacecadetslighting.com" target="_blank" rel="noopener"
+         class="hero-site-link" id="hero-site-link">
+        spacecadetslighting.com<span class="hero-site-arrow" aria-hidden="true">&#x2197;</span>
+      </a>
     </div>
   </section>
 
@@ -315,6 +319,33 @@
 <div class="scroll-hint" aria-hidden="true">
   <span>Scroll to explore</span>
   <div class="scroll-arrow"></div>
+</div>
+
+<!-- Share button — fixed bottom-center -->
+<div id="share-wrap">
+  <div id="share-popup" role="menu" aria-label="Share options">
+    <a class="share-option" id="share-facebook" href="#" target="_blank" rel="noopener" role="menuitem">
+      <span class="share-icon share-fb-icon">f</span>Facebook
+    </a>
+    <a class="share-option" id="share-linkedin" href="#" target="_blank" rel="noopener" role="menuitem">
+      <span class="share-icon share-li-icon">in</span>LinkedIn
+    </a>
+    <a class="share-option" id="share-sms" href="#" role="menuitem">
+      <span class="share-icon">&#x1F4AC;</span>Text Message
+    </a>
+    <button class="share-option" id="share-copy" role="menuitem">
+      <span class="share-icon" id="share-copy-icon">&#x29C5;</span><span id="share-copy-label">Copy Link</span>
+    </button>
+  </div>
+  <button id="share-btn" aria-label="Share this page" aria-haspopup="true" aria-expanded="false">
+    <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle cx="13.5" cy="3.5" r="2" stroke="currentColor" stroke-width="1.4"/>
+      <circle cx="4.5" cy="9" r="2" stroke="currentColor" stroke-width="1.4"/>
+      <circle cx="13.5" cy="14.5" r="2" stroke="currentColor" stroke-width="1.4"/>
+      <line x1="6.3" y1="7.9" x2="11.7" y2="4.6" stroke="currentColor" stroke-width="1.4"/>
+      <line x1="6.3" y1="10.1" x2="11.7" y2="13.4" stroke="currentColor" stroke-width="1.4"/>
+    </svg>
+  </button>
 </div>
 
 <script type="module" src="app.js"></script>
