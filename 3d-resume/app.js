@@ -284,6 +284,113 @@ let currentTimelineItems = [];
 let _sigRerenderTimer = null;
 
 /* ==========================================================
+   COLOR THEMES
+   ========================================================== */
+const COLOR_THEME_KEY = 'sc_color_theme';
+
+/* Nebula radial positions — shared across all themes */
+const _NP = [
+  '380px 280px at 14% 10%', '320px 260px at 84% 8%', '280px 220px at 72% 78%',
+  '260px 200px at 22% 82%', '200px 180px at 50% 45%',
+  '1400px 900px at 18% 20%', '1200px 850px at 82% 30%',
+  '1000px 900px at 50% 78%', '1600px 1000px at 50% 50%',
+];
+const _NE = [44,42,40,38,36,60,56,58,65]; /* transparent % per layer */
+
+const THEMES = {
+  aurora: {
+    label: 'Aurora',
+    vars: { '--cyan':'#7CF7FF', '--purple':'#B48CFF', '--pink':'#FF7AE5', '--green':'#7CFF9A' },
+    /* Very gentle — barely-there colour wisps over a deep-space base */
+    tint: ['rgba(130,95,220,0.05)','rgba(70,120,230,0.04)','rgba(140,80,220,0.04)',
+           'rgba(65,105,220,0.03)','rgba(160,110,220,0.03)',
+           'rgba(60,35,145,0.06)','rgba(32,55,165,0.05)','rgba(85,40,160,0.04)','rgba(44,22,110,0.04)'],
+    bgGrad: 'linear-gradient(155deg,#0b0720 0%,#0d0f30 30%,#09092200%,#0c0824 100%)',
+  },
+  galactic: {
+    label: 'Galactic',
+    vars: { '--cyan':'#00E8C4', '--purple':'#8A60FF', '--pink':'#E060C0', '--green':'#40F8B0' },
+    /* Near-black base — the colour comes from the animated CSS aurora overlay */
+    tint: ['rgba(0,200,160,0.03)','rgba(80,40,200,0.03)','rgba(0,150,210,0.02)',
+           'rgba(160,50,150,0.02)','rgba(0,180,150,0.02)',
+           'rgba(4,5,18,0.09)','rgba(4,5,18,0.08)','rgba(4,5,18,0.07)','rgba(4,5,18,0.06)'],
+    bgGrad: 'linear-gradient(155deg,#04040e 0%,#05050f 30%,#03030c 60%,#04040e 100%)',
+  },
+  ocean: {
+    label: 'Ocean',
+    vars: { '--cyan':'#06E6D0', '--purple':'#4193F5', '--pink':'#00C8E8', '--green':'#2ED4A0' },
+    tint: ['rgba(6,230,208,0.12)','rgba(65,147,245,0.11)','rgba(0,200,232,0.09)',
+           'rgba(46,212,160,0.07)','rgba(14,165,233,0.07)',
+           'rgba(2,45,95,0.13)','rgba(4,72,125,0.11)','rgba(0,90,115,0.10)','rgba(2,35,75,0.08)'],
+    bgGrad: 'linear-gradient(155deg,#030d16 0%,#041220 30%,#050f1a 60%,#060e18 100%)',
+  },
+  emerald: {
+    label: 'Emerald',
+    vars: { '--cyan':'#2ECC8D', '--purple':'#1AAB6B', '--pink':'#66F5B0', '--green':'#C0FAD8' },
+    tint: ['rgba(46,204,141,0.12)','rgba(26,171,107,0.11)','rgba(102,245,176,0.09)',
+           'rgba(5,150,105,0.08)','rgba(52,211,153,0.07)',
+           'rgba(0,55,28,0.13)','rgba(0,75,45,0.11)','rgba(0,55,38,0.10)','rgba(0,38,22,0.08)'],
+    bgGrad: 'linear-gradient(155deg,#030e06 0%,#061409 30%,#040e07 60%,#050e08 100%)',
+  },
+  solar: {
+    label: 'Solar',
+    vars: { '--cyan':'#FBCC2F', '--purple':'#F97316', '--pink':'#FC8A42', '--green':'#FBB824' },
+    tint: ['rgba(251,204,47,0.12)','rgba(249,115,22,0.13)','rgba(252,138,66,0.09)',
+           'rgba(251,184,36,0.08)','rgba(253,186,116,0.07)',
+           'rgba(96,28,0,0.13)','rgba(115,38,0,0.11)','rgba(96,24,0,0.10)','rgba(78,18,0,0.08)'],
+    bgGrad: 'linear-gradient(155deg,#110600 0%,#1a0800 30%,#120600 60%,#140700 100%)',
+  },
+  midnight: {
+    label: 'Midnight',
+    vars: { '--cyan':'#A0AEBB', '--purple':'#C4CDD8', '--pink':'#DDEAF3', '--green':'#EEF3F8' },
+    tint: ['rgba(148,163,184,0.09)','rgba(100,116,139,0.09)','rgba(148,163,184,0.07)',
+           'rgba(100,116,139,0.06)','rgba(148,163,184,0.05)',
+           'rgba(28,28,48,0.13)','rgba(18,18,38,0.11)','rgba(24,24,44,0.10)','rgba(14,14,30,0.08)'],
+    bgGrad: 'linear-gradient(155deg,#04040a 0%,#060610 30%,#050508 60%,#05050c 100%)',
+  },
+};
+
+function buildNebulaBackground(name) {
+  const t = THEMES[name] || THEMES.aurora;
+  const radials = t.tint.map((c, i) =>
+    `radial-gradient(${_NP[i]}, ${c}, transparent ${_NE[i]}%)`
+  ).join(',\n    ');
+  return `${radials},\n    ${t.bgGrad}`;
+}
+
+function applyColorTheme(name) {
+  const t = THEMES[name] || THEMES.aurora;
+  const root = document.documentElement;
+  root.dataset.colorTheme = name;
+  /* Apply accent CSS vars inline so they override :root defaults */
+  Object.entries(t.vars).forEach(([k, v]) => root.style.setProperty(k, v));
+  /* Update nebula background */
+  const nebulaEl = document.getElementById('nebula-bg');
+  if (nebulaEl) nebulaEl.style.background = buildNebulaBackground(name);
+  /* Persist */
+  try { localStorage.setItem(COLOR_THEME_KEY, name); } catch(_) {}
+  /* Sync active swatch highlight */
+  document.querySelectorAll('.theme-swatch').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.theme === name);
+  });
+}
+
+function loadColorTheme() {
+  try { return localStorage.getItem(COLOR_THEME_KEY) || 'galactic'; } catch(_) { return 'galactic'; }
+}
+
+function setupThemes() {
+  document.querySelectorAll('.theme-swatch').forEach(btn => {
+    btn.addEventListener('click', () => applyColorTheme(btn.dataset.theme));
+  });
+  /* sync active state (theme was already applied early in init) */
+  const saved = loadColorTheme();
+  document.querySelectorAll('.theme-swatch').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.theme === saved);
+  });
+}
+
+/* ==========================================================
    WEBGL CHECK
    ========================================================== */
 function supportsWebGL() {
@@ -706,34 +813,61 @@ function setupScroll() {
    SECTION NAV
    ========================================================== */
 function setupNav() {
-  const nav = document.getElementById('section-nav');
+  const nav        = document.getElementById('section-nav');
+  const resumeBtn  = document.getElementById('btn-std-resume');
+  const controls   = document.getElementById('controls');
   if (!nav) return;
 
-  /* Blur-in entrance when hero scrolls out */
+  const TOP_ELEMS = [resumeBtn, controls].filter(Boolean);
+
+  /* Ensure top elements start fully visible so autoAlpha can track them */
+  gsap.set(TOP_ELEMS, { autoAlpha: 1 });
+
   ScrollTrigger.create({
     trigger: '#ch-hero',
     start: 'bottom 60%',
+
     onEnter: () => {
       nav.classList.add('nav-visible');
+
       if (!reducedMotion) {
+        const h = nav.offsetHeight || 56;
+
+        /* Camera-lens blur-in: coalesce from above with a scale squeeze + heavy blur */
         gsap.fromTo(nav,
-          { y: -nav.offsetHeight || -56, opacity: 0, filter: 'blur(16px)' },
-          { y: 0, opacity: 1, filter: 'blur(0px)', duration: 0.55, ease: 'power2.out' }
+          { y: -(h + 12), scale: 0.96, opacity: 0, filter: 'blur(28px) brightness(1.4)' },
+          { y: 0,         scale: 1,    opacity: 1, filter: 'blur(0px)  brightness(1)',
+            duration: 0.75, ease: 'expo.out',
+          }
         );
+
+        /* Top-right buttons dissolve out */
+        gsap.to(TOP_ELEMS, { autoAlpha: 0, duration: 0.35, ease: 'power2.in' });
+
       } else {
-        gsap.set(nav, { y: 0, opacity: 1, filter: 'blur(0px)' });
+        gsap.set(nav,       { y: 0, opacity: 1, filter: 'none', scale: 1 });
+        gsap.set(TOP_ELEMS, { autoAlpha: 0 });
       }
     },
+
     onLeaveBack: () => {
       if (!reducedMotion) {
+        const h = nav.offsetHeight || 56;
+
+        /* Blur back out, lift upward */
         gsap.to(nav, {
-          y: -(nav.offsetHeight || 56), opacity: 0, filter: 'blur(12px)',
-          duration: 0.4, ease: 'power2.in',
+          y: -(h + 12), scale: 0.96, opacity: 0, filter: 'blur(24px) brightness(1.3)',
+          duration: 0.45, ease: 'power2.in',
           onComplete: () => nav.classList.remove('nav-visible'),
         });
+
+        /* Top-right buttons fade back in */
+        gsap.to(TOP_ELEMS, { autoAlpha: 1, duration: 0.45, ease: 'power2.out' });
+
       } else {
         gsap.set(nav, { opacity: 0 });
         nav.classList.remove('nav-visible');
+        gsap.set(TOP_ELEMS, { autoAlpha: 1 });
       }
     },
   });
@@ -741,12 +875,31 @@ function setupNav() {
   /* Click handlers — smooth scroll to target element */
   nav.querySelectorAll('.snav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      const targetId = btn.dataset.target;
-      const el = document.getElementById(targetId);
-      if (!el) return;
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const el = document.getElementById(btn.dataset.target);
+      scrollToBlock(el);
     });
   });
+}
+
+/* Scroll so that el is vertically centered in the usable viewport (below the nav).
+   If the element is taller than the usable space, top-align with a small offset instead. */
+function scrollToBlock(el) {
+  if (!el) return;
+  const navH   = (document.getElementById('section-nav')?.offsetHeight || 52) + 12;
+  const elH    = el.getBoundingClientRect().height;
+  const vpH    = window.innerHeight;
+  const usable = vpH - navH;
+  /* absolute doc-top of the element */
+  const elDocTop = el.getBoundingClientRect().top + window.scrollY;
+  let target;
+  if (elH + 48 <= usable) {
+    /* center in the usable area below the nav bar */
+    target = elDocTop - navH - (usable - elH) / 2;
+  } else {
+    /* too tall to center — top-align with breathing room */
+    target = elDocTop - navH - 16;
+  }
+  window.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
 }
 
 /* ==========================================================
@@ -1142,28 +1295,42 @@ function resetParticleColors() {
    CONTROLS
    ========================================================== */
 function setupControls() {
-  const motionBtn = $('#btn-motion'), motionIcon = $('#motion-icon');
-  const qualityBtn = $('#btn-quality'), qualityIcon = $('#quality-icon');
+  const motionBtn   = $('#btn-motion');
+  const motionIcon  = $('#motion-icon');
+  const motionLabel = $('#motion-label');
+  const qualityBtn  = $('#btn-quality');
+  const qualityIcon = $('#quality-icon');
+  const qualityLbl  = $('#quality-label');
   const levels = ['high', 'medium', 'low'];
 
   function syncMotion() {
     document.body.classList.toggle('reduced-motion', reducedMotion);
-    motionIcon.textContent = reducedMotion ? '\u25CC' : '\u29BF';
-    motionBtn.title = reducedMotion ? 'Enable Motion' : 'Reduce Motion';
+    if (motionIcon)  motionIcon.textContent  = reducedMotion ? '\u25CC' : '\u29BF';
+    if (motionLabel) motionLabel.textContent  = reducedMotion ? 'Particle Motion: Off' : 'Particle Motion: On';
+    if (motionBtn)   motionBtn.title          = reducedMotion ? 'Enable Particle Motion' : 'Disable Particle Motion';
   }
+
   function syncQuality() {
-    const icons = { high: '\u25C6', medium: '\u25C7', low: '\u25CB' };
-    qualityIcon.textContent = icons[qualityLevel] || '\u25C6';
-    qualityBtn.title = `Quality: ${qualityLevel}`;
+    const icons   = { high: '\u25C6', medium: '\u25C7', low: '\u25CB' };
+    const labels  = { high: 'Render Quality: High', medium: 'Render Quality: Medium', low: 'Render Quality: Low' };
+    if (qualityIcon) qualityIcon.textContent = icons[qualityLevel]  || '\u25C6';
+    if (qualityLbl)  qualityLbl.textContent  = labels[qualityLevel] || 'Render Quality: High';
+    if (qualityBtn)  qualityBtn.title        = `Render Quality: ${qualityLevel}`;
     if (renderer) renderer.setPixelRatio(Math.min(window.devicePixelRatio, TUNING.dpr[qualityLevel]));
     nebulaPlanes.forEach(p => { p.visible = qualityLevel !== 'low'; });
     if (constellationLines) constellationLines.visible = qualityLevel === 'high';
-    if (ambientParticles) ambientParticles.visible = qualityLevel !== 'low';
+    if (ambientParticles)   ambientParticles.visible   = qualityLevel !== 'low';
   }
 
-  syncMotion(); syncQuality();
-  motionBtn.addEventListener('click', () => { reducedMotion = !reducedMotion; syncMotion(); });
-  qualityBtn.addEventListener('click', () => { const i = levels.indexOf(qualityLevel); qualityLevel = levels[(i + 1) % levels.length]; syncQuality(); });
+  syncMotion();
+  syncQuality();
+
+  if (motionBtn)  motionBtn.addEventListener('click',  () => { reducedMotion = !reducedMotion; syncMotion(); });
+  if (qualityBtn) qualityBtn.addEventListener('click', () => {
+    const i = levels.indexOf(qualityLevel);
+    qualityLevel = levels[(i + 1) % levels.length];
+    syncQuality();
+  });
 }
 
 /* ==========================================================
@@ -1297,9 +1464,74 @@ function animate() {
 }
 
 /* ==========================================================
+   CUSTOM CURSOR
+   ========================================================== */
+function setupCursor() {
+  const orb = document.getElementById('cursor-orb');
+  if (!orb || window.matchMedia('(hover: none), (pointer: coarse)').matches) return;
+
+  /* Position is set DIRECTLY from mousemove — zero lag, no lerp */
+  let mx = -200, my = -200;
+  /* Scale only is lerped for smooth hover/click spring */
+  let ts = 1.0, cs = 1.0;
+  let isOverInteractive = false;
+  let hasEntered = false;
+
+  const INTERACTIVE = [
+    'a', 'button', '[role="button"]', 'label', 'summary',
+    '.ctrl-btn', '.snav-btn', '.theme-swatch', '.glass-btn',
+    '.skill-node', '.tl-entry', '.tl-btn', 'select',
+  ].join(', ');
+
+  function applyTransform() {
+    /* translate3d forces the element onto its own GPU compositor layer */
+    orb.style.transform =
+      `translate3d(${mx}px,${my}px,0) translate(-50%,-50%) scale(${cs.toFixed(4)})`;
+  }
+
+  /* Position: instant — set directly in the event, no rAF delay */
+  document.addEventListener('mousemove', e => {
+    mx = e.clientX; my = e.clientY;
+    if (!hasEntered) { orb.classList.add('is-visible'); hasEntered = true; }
+    applyTransform();
+  }, { passive: true });
+
+  document.addEventListener('mouseleave', () => orb.classList.remove('is-visible'));
+  document.addEventListener('mouseenter', () => { if (hasEntered) orb.classList.add('is-visible'); });
+
+  document.addEventListener('mousedown', () => { ts = 0.72; });
+  document.addEventListener('mouseup',   () => { ts = isOverInteractive ? 1.35 : 1.0; });
+
+  document.addEventListener('mouseover', e => {
+    if (e.target.closest(INTERACTIVE)) {
+      isOverInteractive = true; ts = 1.35;
+      document.body.classList.add('cursor-hover');
+    }
+  });
+  document.addEventListener('mouseout', e => {
+    if (e.target.closest(INTERACTIVE)) {
+      isOverInteractive = false; ts = 1.0;
+      document.body.classList.remove('cursor-hover');
+    }
+  });
+
+  /* rAF loop handles ONLY the scale spring — very cheap */
+  (function scaleTick() {
+    if (Math.abs(ts - cs) > 0.0005) {
+      cs += (ts - cs) * 0.14;
+      applyTransform();
+    }
+    requestAnimationFrame(scaleTick);
+  })();
+}
+
+/* ==========================================================
    INIT
    ========================================================== */
 async function init() {
+  /* Apply saved color theme immediately — before paint to avoid flash */
+  applyColorTheme(loadColorTheme());
+
   if (!supportsWebGL()) {
     $('#fallback').classList.add('active');
     $('#content').style.display = 'none';
@@ -1328,6 +1560,8 @@ async function init() {
   setupTimelineSearch();
   setupTimelineZoom();
   setupControls();
+  setupThemes();
+  setupCursor();
   setupModal();
   setupImport();
   window.addEventListener('resize', onResize);

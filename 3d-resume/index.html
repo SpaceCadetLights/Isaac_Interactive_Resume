@@ -25,6 +25,26 @@
 <canvas id="bg-canvas" aria-hidden="true"></canvas>
 <div id="nebula-bg" aria-hidden="true"></div>
 
+<!-- Galactic theme: parallax aurora bands (CSS-driven, renders below canvas) -->
+<div id="galactic-aurora" aria-hidden="true">
+  <!-- Layer 1 — fastest parallax: primary green + violet + cyan -->
+  <div class="ga-layer" style="--pa:-0.22">
+    <div class="ga-band ga-b1"></div>
+    <div class="ga-band ga-b2"></div>
+    <div class="ga-band ga-b3"></div>
+  </div>
+  <!-- Layer 2 — medium parallax: bright needle + deep teal base -->
+  <div class="ga-layer" style="--pa:-0.12">
+    <div class="ga-band ga-b4"></div>
+    <div class="ga-band ga-b5"></div>
+  </div>
+  <!-- Layer 3 — slowest parallax: magenta flash + ice-blue veil -->
+  <div class="ga-layer" style="--pa:-0.06">
+    <div class="ga-band ga-b6"></div>
+    <div class="ga-band ga-b7"></div>
+  </div>
+</div>
+
 <!-- WebGL fallback -->
 <div id="fallback">
   <div class="fallback-inner">
@@ -187,20 +207,16 @@
   </footer>
 </main>
 
-<!-- Controls cluster -->
+<!-- Standard Resume — prominent top-right anchor -->
+<a id="btn-std-resume" href="../interactive_resume_spacecadets_v6_singlefile.html" aria-label="View Standard Resume">
+  Standard Resume <span aria-hidden="true">&#x2197;</span>
+</a>
+
+<!-- Controls cluster — vertical column below the resume button -->
 <div id="controls">
-  <button id="btn-motion" class="ctrl-btn" title="Toggle Reduced Motion" aria-label="Toggle reduced motion">
-    <span id="motion-icon">&#x29BF;</span>
-  </button>
-  <button id="btn-quality" class="ctrl-btn" title="Quality: Auto" aria-label="Change quality">
-    <span id="quality-icon">&#x25C6;</span>
-  </button>
-  <button id="btn-import" class="ctrl-btn" title="Import / Export Data" aria-label="Open import settings">
+  <button id="btn-import" class="ctrl-btn" title="Settings &amp; Import" aria-label="Open settings">
     <span>&#x2699;&#xFE0E;</span>
   </button>
-  <a href="../interactive_resume_spacecadets_v6_singlefile.html" class="ctrl-btn" title="Standard Resume" aria-label="View standard resume">
-    <span>&#9776;</span>
-  </a>
 </div>
 
 <!-- Detail modal -->
@@ -225,21 +241,74 @@
     <button class="modal-close" id="settings-close" aria-label="Close">&#x2715;</button>
   </div>
   <div class="modal-body settings-body">
-    <p class="settings-hint">
-      Paste a <strong>Unified Profile Package</strong> JSON to update all resume content.<br>
-      Or drop a <code>resume_pack.json</code> file in the <code>data/</code> folder — both pages auto-load it on startup.
-    </p>
-    <textarea id="import-json" rows="8" placeholder='{"version":1,"resume":{...},"timeline":[...],"skills_markdown":"..."}'></textarea>
-    <div class="settings-actions">
-      <button class="glass-btn" id="btn-import-apply">Apply Import</button>
-      <button class="glass-btn" id="btn-import-file">Import File&hellip;</button>
-      <input type="file" id="import-file-input" accept=".json,.md,.txt" style="display:none" aria-hidden="true">
-      <button class="glass-btn" id="btn-export">Export JSON</button>
-      <button class="glass-btn" id="btn-reset-data">Reset to Default</button>
+
+    <!-- Color Scheme -->
+    <div class="settings-section">
+      <h3 class="settings-section-label">Color Scheme</h3>
+      <div class="theme-swatches" id="theme-swatches">
+        <button class="theme-swatch" data-theme="aurora">
+          <span class="swatch-preview" style="background:linear-gradient(135deg,#B48CFF,#7CF7FF)"></span>Aurora
+        </button>
+        <button class="theme-swatch" data-theme="ocean">
+          <span class="swatch-preview" style="background:linear-gradient(135deg,#4193F5,#06E6D0)"></span>Ocean
+        </button>
+        <button class="theme-swatch" data-theme="emerald">
+          <span class="swatch-preview" style="background:linear-gradient(135deg,#1AAB6B,#66F5B0)"></span>Emerald
+        </button>
+        <button class="theme-swatch" data-theme="solar">
+          <span class="swatch-preview" style="background:linear-gradient(135deg,#F97316,#FBCC2F)"></span>Solar
+        </button>
+        <button class="theme-swatch" data-theme="midnight">
+          <span class="swatch-preview" style="background:linear-gradient(135deg,#6B7B90,#CBD5E1)"></span>Midnight
+        </button>
+        <button class="theme-swatch" data-theme="galactic">
+          <span class="swatch-preview" style="background:linear-gradient(135deg,#8A60FF,#00E8C4)"></span>Galactic
+        </button>
+      </div>
     </div>
+
+    <div class="settings-divider"></div>
+
+    <!-- Visual Effects controls -->
+    <div class="settings-section">
+      <h3 class="settings-section-label">Visual Effects</h3>
+      <div class="vfx-controls">
+        <button class="glass-btn vfx-btn" id="btn-motion" aria-label="Toggle particle motion">
+          <span class="vfx-icon" id="motion-icon">&#x29BF;</span>
+          <span class="vfx-label" id="motion-label">Particle Motion: On</span>
+        </button>
+        <button class="glass-btn vfx-btn" id="btn-quality" aria-label="Change render quality">
+          <span class="vfx-icon" id="quality-icon">&#x25C6;</span>
+          <span class="vfx-label" id="quality-label">Render Quality: High</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="settings-divider"></div>
+
+    <!-- Data import / export -->
+    <div class="settings-section">
+      <h3 class="settings-section-label">Resume Data</h3>
+      <p class="settings-hint">
+        Paste a <strong>Unified Profile Package</strong> JSON to update all resume content.<br>
+        Or drop a <code>resume_pack.json</code> file in the <code>data/</code> folder &mdash; both pages auto-load it on startup.
+      </p>
+      <textarea id="import-json" rows="7" placeholder='{"version":1,"resume":{...},"timeline":[...],"skills_markdown":"..."}'></textarea>
+      <div class="settings-actions">
+        <button class="glass-btn" id="btn-import-apply">Apply Import</button>
+        <button class="glass-btn" id="btn-import-file">Import File&hellip;</button>
+        <input type="file" id="import-file-input" accept=".json,.md,.txt" style="display:none" aria-hidden="true">
+        <button class="glass-btn" id="btn-export">Export JSON</button>
+        <button class="glass-btn" id="btn-reset-data">Reset to Default</button>
+      </div>
+    </div>
+
     <p class="settings-status" id="import-status"></p>
   </div>
 </dialog>
+
+<!-- Custom glass orb cursor -->
+<div id="cursor-orb" aria-hidden="true"></div>
 
 <!-- Scroll hint — outside #content so GSAP transforms on hero-inner never affect it -->
 <div class="scroll-hint" aria-hidden="true">
