@@ -907,24 +907,65 @@
     position:relative;
     z-index:2;
   }
-  .tCard{border-radius:16px; background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.12); overflow:hidden; min-height:84px}
-  .tCard details{margin:0; border:none; background:transparent; padding:0}
-  .tCard summary{padding:12px 12px; font-weight:650; line-height:1.35}
-  .tCard summary:hover{background:rgba(255,255,255,.04)}
+  .tCard{border-radius:16px; background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.12); overflow:hidden; min-height:88px; transition:border-color .15s, background .15s}
+  .tCard:hover{border-color:rgba(255,255,255,.20)}
+  .tCard.tCardMedia{border-color:rgba(124,247,255,.15)}
+  .tCard.tCardMedia:hover{border-color:rgba(124,247,255,.32); background:rgba(124,247,255,.025)}
+  /* Button-based card header */
+  .tSummary{width:100%; padding:13px 12px 9px; cursor:pointer; font-weight:650; font-size:12.5px; line-height:1.4; text-align:left; display:flex; justify-content:space-between; align-items:flex-start; gap:6px; background:none; border:none; color:var(--text); font-family:inherit; transition:background .1s}
+  .tSummary:hover{background:rgba(255,255,255,.04)}
+  .tSummaryText{flex:1; min-width:0}
+  .tSummaryEnd{display:flex; align-items:center; gap:5px; flex-shrink:0; padding-top:1px}
+  .tSummaryArrow{width:16px; height:16px; display:grid; place-items:center; font-size:14px; color:rgba(255,255,255,.30); transition:color .15s, transform .15s}
+  .tSummary:hover .tSummaryArrow{color:var(--a); transform:translateX(2px)}
+  .tMediaBadge{display:inline-flex; align-items:center; gap:3px; font-size:10px; font-weight:700; padding:2px 6px; border-radius:999px; background:rgba(124,247,255,.10); border:1px solid rgba(124,247,255,.22); color:var(--a)}
+  .tPillsPreview{display:flex; gap:5px; flex-wrap:wrap; padding:0 12px 11px}
+  .tDotMedia{animation:dotPulse 3s ease-in-out infinite}
+  @keyframes dotPulse{0%,100%{box-shadow:0 0 0 5px rgba(255,255,255,.08), 0 10px 24px rgba(0,0,0,.5)} 50%{box-shadow:0 0 16px rgba(124,247,255,.55), 0 0 0 6px rgba(124,247,255,.18)}}
   .tBody{padding:0 12px 12px}
   .tMeta{display:flex; gap:8px; flex-wrap:wrap; margin:0 12px 10px}
   .pillMini{font-size:11px; color:rgba(255,255,255,.84); padding:4px 8px; border-radius:999px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.05)}
-  mark.searchHit{
-    background:rgba(255,228,122,.30);
-    color:#fff;
-    border-radius:6px;
-    padding:0 2px;
-    box-shadow:0 0 0 1px rgba(255,255,255,.12) inset;
-  }
-  .mediaGrid{display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px; margin-top:10px}
-  .mediaCard{display:block; padding:10px 10px; border-radius:14px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); text-decoration:none; color:rgba(255,255,255,.88)}
-  .mediaCard small{color:var(--muted2)}
-  .mediaImg{width:100%; border-radius:12px; border:1px solid rgba(255,255,255,.12); display:block}
+  .pillType{border-color:rgba(180,140,255,.25); background:rgba(180,140,255,.07); color:var(--b)}
+  mark.searchHit{background:rgba(255,228,122,.30); color:#fff; border-radius:6px; padding:0 2px; box-shadow:0 0 0 1px rgba(255,255,255,.12) inset}
+  /* Gallery modal */
+  #galleryModal{width:min(960px, calc(100vw - 32px)); max-height:calc(100dvh - 40px); border:0; padding:0; border-radius:22px; background:rgba(8,12,26,.94); color:var(--text); backdrop-filter:blur(24px) saturate(150%); box-shadow:0 32px 90px rgba(0,0,0,.55); position:relative; overflow:hidden}
+  #galleryModal::backdrop{background:rgba(0,0,0,.65); backdrop-filter:blur(4px)}
+  .galInner{display:flex; flex-direction:column; max-height:calc(100dvh - 40px)}
+  .galHead{padding:18px 22px 14px; border-bottom:1px solid rgba(255,255,255,.07); display:flex; justify-content:space-between; align-items:flex-start; gap:14px; flex-shrink:0}
+  .galHeadContent{flex:1; min-width:0}
+  .galDate{font-size:11px; color:var(--muted2); letter-spacing:.5px; margin-bottom:5px}
+  .galTitle{font-size:17px; font-weight:750; line-height:1.3; margin:0 0 10px; color:var(--text)}
+  .galPills{display:flex; flex-wrap:wrap; gap:5px}
+  .galBody{overflow-y:auto; padding:20px 22px 28px; flex:1; min-height:0; scrollbar-width:thin; scrollbar-color:rgba(124,247,255,.25) transparent}
+  .galDetails{font-size:13px; color:var(--muted); line-height:1.7; margin:0 0 22px; white-space:pre-wrap}
+  .galGrid{display:grid; grid-template-columns:repeat(auto-fill, minmax(175px, 1fr)); gap:10px; margin-bottom:22px}
+  .galThumb{position:relative; border-radius:12px; overflow:hidden; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); cursor:pointer; aspect-ratio:4/3; transition:transform .18s cubic-bezier(.34,1.56,.64,1), border-color .15s, box-shadow .15s; padding:0; display:block; width:100%}
+  .galThumb:hover{transform:scale(1.03); border-color:rgba(124,247,255,.38); box-shadow:0 6px 24px rgba(0,0,0,.35)}
+  .galThumb img{width:100%; height:100%; object-fit:cover; display:block}
+  .galThumbNoPoster{width:100%; height:100%; background:rgba(255,255,255,.05)}
+  .galPlayIcon{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:26px; color:rgba(255,255,255,.88); background:rgba(0,0,0,.30); border-radius:inherit; pointer-events:none}
+  .galThumbCaption{position:absolute; bottom:0; left:0; right:0; padding:6px 9px 8px; background:linear-gradient(transparent,rgba(0,0,0,.70)); font-size:10.5px; color:rgba(255,255,255,.88); line-height:1.3; text-align:left; pointer-events:none}
+  .galEmpty{text-align:center; color:var(--muted2); font-size:13px; padding:32px 0 16px; line-height:1.6}
+  .galEmpty code{font-size:11px; background:rgba(255,255,255,.07); border-radius:4px; padding:1px 5px; color:var(--a)}
+  .galLinks{display:flex; flex-wrap:wrap; gap:8px; margin-top:2px}
+  .galLinkBtn{display:inline-flex; align-items:center; gap:5px; padding:7px 15px; border-radius:999px; background:rgba(124,247,255,.08); border:1px solid rgba(124,247,255,.22); color:var(--a); font-size:12px; font-weight:500; text-decoration:none; transition:background .14s, border-color .14s; font-family:inherit; cursor:pointer}
+  .galLinkBtn:hover{background:rgba(124,247,255,.16); border-color:rgba(124,247,255,.42)}
+  /* Lightbox */
+  .galLightbox{position:absolute; inset:0; background:rgba(4,6,16,.97); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:10; border-radius:22px}
+  .galLightbox[hidden]{display:none}
+  .lbStage{flex:1; display:flex; align-items:center; justify-content:center; padding:56px 68px 8px; width:100%; min-height:0}
+  .lbStage img{max-width:100%; max-height:100%; border-radius:10px; object-fit:contain; box-shadow:0 20px 60px rgba(0,0,0,.7); display:block}
+  .lbStage video{max-width:100%; max-height:100%; border-radius:10px; outline:none}
+  .lbNav{position:absolute; top:50%; transform:translateY(-50%); width:46px; height:46px; border-radius:50%; background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.18); color:#fff; font-size:26px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .12s, transform .12s; z-index:12; font-family:inherit}
+  .lbPrev{left:12px}
+  .lbNext{right:12px}
+  .lbPrev:hover{background:rgba(255,255,255,.20); transform:translateY(-50%) scale(1.08)}
+  .lbNext:hover{background:rgba(255,255,255,.20); transform:translateY(-50%) scale(1.08)}
+  .lbInfo{display:flex; justify-content:center; align-items:baseline; width:100%; padding:8px 68px 18px; gap:12px}
+  .lbCaption{font-size:12px; color:var(--muted); text-align:center; flex:1; line-height:1.4}
+  .lbCounter{font-size:11px; color:var(--muted2); white-space:nowrap; font-variant-numeric:tabular-nums}
+  .lbClose{position:absolute; top:14px; right:14px; width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.18); color:#fff; font-size:15px; cursor:pointer; display:grid; place-items:center; transition:background .12s; z-index:13; font-family:inherit}
+  .lbClose:hover{background:rgba(255,255,255,.22)}
 
   /* Dialog */
   dialog{width:min(980px, calc(100vw - 24px)); border:0; padding:0; border-radius:22px; background:rgba(15,18,30,.93); color:var(--text); box-shadow:var(--shadow); backdrop-filter:blur(16px) saturate(150%)}
@@ -1134,7 +1175,8 @@
       </div>
     </div>
     <div class="actions">
-      <a class="pill" href="3d-resume/" title="View 3D Interactive Resume"><span class="dot"></span><span>View 3D Resume</span></a>
+      <a class="pill" id="navPortfolio" href="portfolio/" title="View Portfolio"><span class="dot"></span><span>Portfolio</span></a>
+      <a class="pill" id="nav3dResume" href="3d-resume/" title="View 3D Interactive Resume"><span class="dot"></span><span>3D Resume</span></a>
       <a class="pill" id="siteLink" target="_blank" rel="noopener"><span class="dot"></span><span>spacecadetslighting.com</span></a>
       <a class="pill" id="phoneLink"><span class="dot"></span><span id="phoneText"></span></a>
       <a class="pill" id="emailLink"><span class="dot"></span><span id="emailText"></span></a>
@@ -2389,6 +2431,14 @@ function renderHeader(){
   $("#phoneLink").setAttribute("href", `tel:${RESUME.profile.phone.replace(/[^0-9+]/g,"")}`);
   $("#siteLink").setAttribute("href", RESUME.profile.site);
 
+  const repo = "/Isaac_Interactive_Resume/";
+  const onGh = window.location.pathname.includes(repo);
+  const base = onGh ? repo : "";
+  const navP = $("#navPortfolio");
+  const nav3 = $("#nav3dResume");
+  if (navP) navP.setAttribute("href", base + "portfolio/");
+  if (nav3) nav3.setAttribute("href", base + "3d-resume/");
+
   $("#mMission").textContent = RESUME.mvv.mission;
   $("#mVision").textContent = RESUME.mvv.vision;
   $("#mValues").textContent = RESUME.mvv.values.map(v => "• " + v).join("\n");
@@ -2566,8 +2616,8 @@ function renderCapabilities(q=""){
   `).join("");
 }
 
-const TL_BASE_CARD_PX = 280;
-const TL_BASE_GAP_PX = 28;
+const TL_BASE_CARD_PX = 300;
+const TL_BASE_GAP_PX  = 28;
 const TL_ZOOM_MAX_CAP = 6;
 const TL_TARGET_VISIBLE_AT_MAX = 2;
 let timelineZoom = 1;
@@ -2616,36 +2666,42 @@ function renderTimeline(q=""){
   timelineZoom = clampNum(timelineZoom, timelineZoomBounds.min, timelineZoomBounds.max);
   syncTimelineZoomUI();
 
-  $("#timelineList").innerHTML = `
+  const wrap = $("#timelineList");
+  wrap.innerHTML = `
     <div class="timelineTrack" style="--tl-zoom:${timelineZoom.toFixed(4)}; --tl-base-card:${TL_BASE_CARD_PX}px; --tl-base-gap:${TL_BASE_GAP_PX}px;">
-      ${items.map((t)=>`
+      ${items.map((t, i)=>{
+        const pics = (t.media || []).filter(m=>m.type==="image"||m.type==="video"||(m.type==="image"&&m.data));
+        const hasMedia = pics.length > 0;
+        return `
         <article class="tRow">
           <div class="tDate">${escapeHtml(t.date || "")}</div>
-          <div class="tRail"><div class="tDot" aria-hidden="true"></div></div>
-          <div class="tCard">
-            <details>
-              <summary>${escapeHtml(t.title || "Untitled")}</summary>
-              <div class="tMeta">
-                <span class="pillMini">${escapeHtml(t.type || "Milestone")}</span>
-                ${(t.tags || []).slice(0,8).map((x)=>`<span class="pillMini">${escapeHtml(x)}</span>`).join("")}
-              </div>
-              <div class="tBody">
-                ${t.details ? `<div style="color:var(--muted); font-size:13px; line-height:1.55">${escapeHtml(t.details).replace(/\n/g,"<br/>")}</div>` : ""}
-                ${(t.media || []).length ? `<div class="mediaGrid">${(t.media || []).map((m)=>{
-                  if (m.type === "image" && m.data && /^data:image\//.test(m.data)){
-                    return `<div class="mediaCard" style="cursor:default"><img class="mediaImg" src="${m.data}" alt="${escapeHtml(m.name || "embedded image")}"/><small>${escapeHtml(m.name || "Embedded image")}</small></div>`;
-                  }
-                  const url = (m.url || "").trim();
-                  if (!url) return "";
-                  return `<a class="mediaCard" href="${url}" target="_blank" rel="noopener">${escapeHtml(m.label || url)}<br/><small>link</small></a>`;
-                }).join("")}</div>` : ""}
-              </div>
-            </details>
+          <div class="tRail"><div class="tDot${hasMedia?" tDotMedia":""}" aria-hidden="true"></div></div>
+          <div class="tCard${hasMedia?" tCardMedia":""}">
+            <button class="tSummary" data-tl-open="${i}" aria-label="Open details for ${escapeHtml(t.title||"Untitled")}">
+              <span class="tSummaryText">${escapeHtml(t.title || "Untitled")}</span>
+              <span class="tSummaryEnd">
+                ${hasMedia?`<span class="tMediaBadge">&#9671; ${pics.length}</span>`:""}
+                <span class="tSummaryArrow" aria-hidden="true">&#8250;</span>
+              </span>
+            </button>
+            <div class="tPillsPreview">
+              <span class="pillMini pillType">${escapeHtml(t.type||"Milestone")}</span>
+              ${(t.tags||[]).slice(0,5).map(x=>`<span class="pillMini">${escapeHtml(x)}</span>`).join("")}
+            </div>
           </div>
-        </article>
-      `).join("")}
+        </article>`;
+      }).join("")}
     </div>
   `;
+  /* Gallery opener via event delegation */
+  wrap.removeEventListener("click", wrap._tlHandler);
+  wrap._tlHandler = e => {
+    const btn = e.target.closest("[data-tl-open]");
+    if (!btn) return;
+    const idx = parseInt(btn.dataset.tlOpen, 10);
+    if (items[idx]) openV6Gallery(items[idx]);
+  };
+  wrap.addEventListener("click", wrap._tlHandler);
 }
 
 function syncTimelineZoomUI(){
@@ -2683,6 +2739,141 @@ detail.innerHTML = `
   </div>
 `;
 document.body.appendChild(detail);
+
+/* ── Gallery modal ── */
+const galModal = document.createElement("dialog");
+galModal.id = "galleryModal";
+galModal.setAttribute("aria-labelledby", "galTitleEl");
+galModal.innerHTML = `
+  <div class="galInner">
+    <div class="galHead">
+      <div class="galHeadContent">
+        <div class="galDate" id="galDateEl"></div>
+        <h2 class="galTitle" id="galTitleEl"></h2>
+        <div class="galPills" id="galPillsEl"></div>
+      </div>
+      <button class="x" id="galClose" aria-label="Close gallery">&#x2715;</button>
+    </div>
+    <div class="galBody" id="galBody">
+      <p class="galDetails" id="galDetailsEl"></p>
+      <div class="galGrid" id="galGrid"></div>
+      <div class="galLinks" id="galLinks"></div>
+    </div>
+  </div>
+  <div class="galLightbox" id="galLightbox" hidden>
+    <button class="lbNav lbPrev" id="lbPrev" aria-label="Previous photo">&#8249;</button>
+    <div class="lbStage" id="lbStage"></div>
+    <button class="lbNav lbNext" id="lbNext" aria-label="Next photo">&#8250;</button>
+    <div class="lbInfo">
+      <span class="lbCaption" id="lbCaption"></span>
+      <span class="lbCounter" id="lbCounter"></span>
+    </div>
+    <button class="lbClose" id="lbClose" aria-label="Close photo viewer">&#x2715;</button>
+  </div>
+`;
+document.body.appendChild(galModal);
+
+let _v6GalItems = [], _v6GalIdx = 0;
+
+function openV6Gallery(entry) {
+  const m = galModal;
+  m.querySelector("#galDateEl").textContent  = entry.date || "";
+  m.querySelector("#galTitleEl").textContent = entry.title || "Untitled";
+  const allTags = [entry.type || "Milestone", ...(entry.tags || []).slice(0, 6)];
+  m.querySelector("#galPillsEl").innerHTML = allTags
+    .map((p, i) => `<span class="pillMini${i===0?" pillType":""}">${escapeHtml(p)}</span>`).join("");
+  const detEl = m.querySelector("#galDetailsEl");
+  if (entry.details) { detEl.innerHTML = escapeHtml(entry.details).replace(/\n/g,"<br>"); detEl.style.display = ""; }
+  else detEl.style.display = "none";
+
+  const media = entry.media || [];
+  _v6GalItems = media.filter(v => v.type==="image"||v.type==="video"||(v.type==="image"&&v.data));
+  const links = media.filter(v => v.type==="link");
+
+  const grid = m.querySelector("#galGrid");
+  if (_v6GalItems.length) {
+    grid.innerHTML = _v6GalItems.map((it, i) => {
+      const isImg = it.type==="image";
+      const imgSrc = isImg ? (it.src || it.data || "") : (it.poster || "");
+      return `<button class="galThumb${isImg?"":" galThumbVid"}" data-v6-idx="${i}" aria-label="${isImg?"View":"Play"} ${escapeHtml(it.caption||("item "+(i+1)))}">
+        ${imgSrc ? `<img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(it.caption||"")}" loading="lazy">` : '<div class="galThumbNoPoster"></div>'}
+        ${!isImg ? '<div class="galPlayIcon" aria-hidden="true">&#9654;</div>' : ""}
+        ${it.caption ? `<div class="galThumbCaption">${escapeHtml(it.caption)}</div>` : ""}
+      </button>`;
+    }).join("");
+  } else {
+    grid.innerHTML = '<p class="galEmpty">No photos added yet.<br>Drop images in <code>data/media/</code> and reference them in <code>resume_pack.json</code>.</p>';
+  }
+
+  const linksEl = m.querySelector("#galLinks");
+  if (links.length) {
+    linksEl.innerHTML = links.map(l => `<a href="${escapeHtml(l.url)}" class="galLinkBtn" target="_blank" rel="noopener">${escapeHtml(l.label||l.url)} &#x2197;</a>`).join("");
+    linksEl.hidden = false;
+  } else { linksEl.innerHTML = ""; linksEl.hidden = true; }
+
+  closeV6Lightbox();
+  const b = m.querySelector("#galBody"); if (b) b.scrollTop = 0;
+  m.showModal();
+}
+
+function openV6Lightbox(i) {
+  _v6GalIdx = i;
+  galModal.querySelector("#galLightbox").removeAttribute("hidden");
+  renderV6Slide();
+}
+function closeV6Lightbox() {
+  const lb = galModal.querySelector("#galLightbox");
+  if (!lb || lb.hasAttribute("hidden")) return;
+  const v = lb.querySelector("video"); if (v) { v.pause(); v.removeAttribute("src"); v.load(); }
+  lb.setAttribute("hidden","");
+}
+function renderV6Slide() {
+  if (!_v6GalItems.length) return;
+  _v6GalIdx = ((_v6GalIdx % _v6GalItems.length) + _v6GalItems.length) % _v6GalItems.length;
+  const it = _v6GalItems[_v6GalIdx];
+  const stage = galModal.querySelector("#lbStage");
+  if (it.type==="image") {
+    stage.innerHTML = `<img src="${escapeHtml(it.src||it.data||"")}" alt="${escapeHtml(it.caption||"")}" loading="eager">`;
+  } else {
+    stage.innerHTML = `<video controls autoplay playsinline${it.poster?` poster="${escapeHtml(it.poster)}"`:""}>
+      <source src="${escapeHtml(it.src||"")}">
+    </video>`;
+  }
+  galModal.querySelector("#lbCaption").textContent = it.caption || "";
+  galModal.querySelector("#lbCounter").textContent = `${_v6GalIdx+1} / ${_v6GalItems.length}`;
+  const show = _v6GalItems.length > 1 ? "" : "none";
+  galModal.querySelector("#lbPrev").style.display = show;
+  galModal.querySelector("#lbNext").style.display = show;
+}
+
+/* Wire gallery modal interactions */
+galModal.querySelector("#galClose").addEventListener("click", ()=>galModal.close());
+galModal.addEventListener("click", e=>{ if (e.target===galModal) galModal.close(); });
+galModal.querySelector("#lbClose").addEventListener("click", closeV6Lightbox);
+galModal.querySelector("#lbPrev").addEventListener("click", ()=>{ _v6GalIdx--; renderV6Slide(); });
+galModal.querySelector("#lbNext").addEventListener("click", ()=>{ _v6GalIdx++; renderV6Slide(); });
+galModal.querySelector("#galGrid").addEventListener("click", e=>{
+  const btn = e.target.closest("[data-v6-idx]");
+  if (btn) openV6Lightbox(parseInt(btn.dataset.v6Idx, 10));
+});
+let _v6TouchX = null;
+const _v6Lb = galModal.querySelector("#galLightbox");
+_v6Lb.addEventListener("touchstart", e=>{ _v6TouchX=e.touches[0].clientX; }, {passive:true});
+_v6Lb.addEventListener("touchend", e=>{
+  if (_v6TouchX===null) return;
+  const dx = e.changedTouches[0].clientX - _v6TouchX;
+  if (Math.abs(dx)>44) { _v6GalIdx+=(dx<0?1:-1); renderV6Slide(); }
+  _v6TouchX=null;
+}, {passive:true});
+galModal.addEventListener("keydown", e=>{
+  const lbOpen = !galModal.querySelector("#galLightbox").hasAttribute("hidden");
+  if (lbOpen) {
+    if (e.key==="ArrowLeft")  { e.preventDefault(); _v6GalIdx--; renderV6Slide(); }
+    if (e.key==="ArrowRight") { e.preventDefault(); _v6GalIdx++; renderV6Slide(); }
+    if (e.key==="Escape")     { e.preventDefault(); closeV6Lightbox(); }
+  }
+});
+galModal.addEventListener("close", closeV6Lightbox);
 function openDetail({ title, meta, body }){
   $("#dTitle", detail).textContent = title || "";
   $("#dMeta", detail).textContent = meta || "";
@@ -3073,10 +3264,14 @@ setStatus("Loaded v6 single-file resume. Use Settings to import/export one unifi
    If present, it overrides localStorage and re-renders both resumes from the same source. */
 (async function loadExternalDataFile() {
   try {
-    const r = await fetch("data/resume_pack.json", { cache: "no-store" });
+    const repo = "/Isaac_Interactive_Resume/";
+    const path = window.location.pathname.includes(repo)
+      ? repo + "data/resume_pack.json"
+      : "data/resume_pack.json";
+    const r = await fetch(path, { cache: "no-store" });
     if (!r.ok) return;
     const pack = await r.json();
-    if (!pack || pack.version !== 1) return;
+    if (!pack || (pack.version !== 1 && pack.version !== 2)) return;
     applyProfilePack(pack, { persist: false });
     rerenderAll();
     setStatus("Loaded from data/resume_pack.json — canonical data source active.");

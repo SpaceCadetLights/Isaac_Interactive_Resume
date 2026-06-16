@@ -253,6 +253,18 @@ let DATA = resolveFromLocalStorage() || {
   skillsTree:   SEED.skillsTree,
 };
 
+/* ==========================================================
+   MEDIA + PROJECT HELPERS
+   ========================================================== */
+const GAL_PAGE_SIZE = 30;
+let _discCategory = 'all';
+let _projCategory = 'all';
+let _galAllItems = [];
+let _galVisibleCount = GAL_PAGE_SIZE;
+let _galTagFilter = 'all';
+let _heroReelTimer = null;
+let _heroReelIdx = 0;
+
 function resolveMediaUrl(src) {
   if (!src) return '';
   if (/^https?:\/\//i.test(src)) return src;
@@ -276,6 +288,66 @@ function getEntryMedia(entry) {
   return entry.media || [];
 }
 
+function getProjectLinks(project) {
+  const links = [...(project.links || [])];
+  const mediaLinks = (project.media || []).filter(m => m.type === 'link');
+  mediaLinks.forEach(ml => {
+    if (!links.some(l => l.url === ml.url)) links.push({ url: ml.url, label: ml.label || ml.url });
+  });
+  return links;
+}
+
+function countMediaPics(media) {
+  return (media || []).filter(m => m.type === 'image' || m.type === 'video').length;
+}
+
+function projectHeroSrc(project) {
+  if (!project || !project.hero || !project.hero.src) return '';
+  return resolveMediaUrl(project.hero.src);
+}
+
+function galleryContextFromEntry(entry) {
+  if (entry && entry.id && DATA.projectById[entry.id]) {
+    const p = entry;
+    return {
+      title: p.title,
+      date: p.date || '',
+      type: p.category || 'Project',
+      tags: p.tags || [],
+      details: p.details || p.summary || '',
+      media: p.media || [],
+      links: getProjectLinks(p),
+      timelineRef: p.timelineRef,
+      projectId: p.id,
+    };
+  }
+  const project = entry.projectId ? getProject(entry.projectId) : null;
+  if (project) {
+    return {
+      title: project.title,
+      date: entry.date || project.date || '',
+      type: entry.type || project.category || 'Project',
+      tags: project.tags || entry.tags || [],
+      details: project.details || entry.details || project.summary || '',
+      media: getEntryMedia(entry),
+      links: getProjectLinks(project),
+      timelineRef: project.timelineRef || entry.id,
+      projectId: project.id,
+    };
+  }
+  return {
+    title: entry.title,
+    date: entry.date || '',
+    type: entry.type || 'Milestone',
+    tags: entry.tags || [],
+    details: entry.details || '',
+    media: entry.media || [],
+    links: (entry.media || []).filter(m => m.type === 'link').map(m => ({ url: m.url, label: m.label })),
+    timelineRef: entry.id,
+    projectId: null,
+  };
+}
+
 function setupSiteSwitcher(active) {
   const nav = document.getElementById('site-switcher');
   if (!nav) return;
@@ -290,6 +362,21 @@ function setupSiteSwitcher(active) {
     a.removeAttribute('aria-current');
     if (key === active) a.setAttribute('aria-current', 'page');
   });
+}
+
+function updateOgMeta(project) {
+  const title = project ? `${project.title} · Isaac Norris` : 'Isaac Norris · Portfolio';
+  const desc = project ? (project.summary || project.subtitle || '') : (DATA.profile.summary || '');
+  const ogTitle = document.getElementById('og-title');
+  const ogDesc = document.getElementById('og-description');
+  const metaDesc = document.getElementById('meta-description');
+  const ogImage = document.getElementById('og-image');
+  if (ogTitle) ogTitle.setAttribute('content', title);
+  if (ogDesc) ogDesc.setAttribute('content', desc);
+  if (metaDesc) metaDesc.setAttribute('content', desc);
+  if (ogImage && project && project.hero && project.hero.src) {
+    ogImage.setAttribute('content', resolveMediaUrl(project.hero.src));
+  }
 }
 
 /* ==========================================================
@@ -972,9 +1059,110 @@ function $$(sel, root) { return Array.from((root || document).querySelectorAll(s
    ========================================================== */
 function renderHero() {
   $('#hero-name').textContent = DATA.profile.name;
-  $('#hero-headline').textContent = DATA.profile.headline;
+  $('#hero-headline').textContent = 'Designer · Engineer · Builder — explore work through light, motion, and hardware.';
   $('#hero-summary').textContent = DATA.profile.summary;
   $('#hero-chips').innerHTML = DATA.hero.chips.map(c => `<span class="chip">${esc(c)}</span>`).join('');
+  renderHeroReel();
+}
+
+function renderHeroReel() {
+  const el = $('#hero-reel');
+  if (!el) return;
+  if (_heroReelTimer) { clearInterval(_heroReelTimer); _heroReelTimer = null; }
+  const featured = (DATA.projects || []).filter(p => p.featured && projectHeroSrc(p));
+  if (!featured.length) { el.innerHTML = ''; return; }
+  if (PREFERS_REDUCED) {
+    el.innerHTML = `<img class="hero-reel-img active" src="${esc(projectHeroSrc(featured[0]))}" alt="">`;
+    return;
+  }
+  el.innerHTML = featured.map((p, i) =>
+    `<img class="hero-reel-img${i === 0 ? ' active' : ''}" data-proj-id="${esc(p.id)}" src="${esc(projectHeroSrc(p))}" alt="${esc(p.title)}">`
+  ).join('');
+  _heroReelIdx = 0;
+  el.onclick = () => {
+    const active = featured[_heroReelIdx];
+    if (active) openGalleryModal(active);
+  };
+  if (featured.length > 1) {
+    _heroReelTimer = setInterval(() => {
+      const imgs = el.querySelectorAll('.hero-reel-img');
+      imgs[_heroReelIdx]?.classList.remove('active');
+      _heroReelIdx = (_heroReelIdx + 1) % featured.length;
+      imgs[_heroReelIdx]?.classList.add('active');
+    }, 7000);
+  }
+}
+
+function renderDiscover() {
+  const grid = $('#discover-grid');
+  if (!grid) return;
+  let items = (DATA.projects || []).slice();
+  items.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0) || (b.date || '').localeCompare(a.date || ''));
+  if (_discCategory !== 'all') items = items.filter(p => p.category === _discCategory);
+  if (!items.length) {
+    grid.innerHTML = '<p class="disc-empty">No projects in this category yet.</p>';
+    return;
+  }
+  grid.innerHTML = items.map(p => {
+    const n = countMediaPics(p.media);
+    const hero = projectHeroSrc(p);
+    const thumb = hero
+      ? `<img src="${esc(hero)}" alt="" loading="lazy">`
+      : '<div class="disc-tile-placeholder"></div>';
+    const tag = (p.tags || [])[0] || p.category || 'Project';
+    return `<button type="button" class="disc-tile" data-proj-id="${esc(p.id)}" aria-label="Open ${esc(p.title)}">
+      ${thumb}
+      <div class="disc-tile-body">
+        <div class="disc-tile-title">${esc(p.title)}</div>
+        <div class="disc-tile-meta">
+          <span class="tl-pill">${esc(tag)}</span>
+          ${n ? `<span class="tl-media-badge"><span class="tl-media-badge-icon">&#9671;</span>${n}</span>` : ''}
+        </div>
+      </div>
+    </button>`;
+  }).join('');
+}
+
+function renderProjects(query) {
+  const grid = $('#projects-grid');
+  if (!grid) return;
+  const q = (query || '').toLowerCase().trim();
+  let items = (DATA.projects || []).slice();
+  if (_projCategory !== 'all') items = items.filter(p => p.category === _projCategory);
+  if (q) {
+    items = items.filter(p =>
+      `${p.title} ${p.subtitle || ''} ${p.summary || ''} ${(p.tags || []).join(' ')}`.toLowerCase().includes(q)
+    );
+  }
+  items.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0) || (b.date || '').localeCompare(a.date || '') || (a.title || '').localeCompare(b.title || ''));
+  if (!items.length) {
+    grid.innerHTML = `<p class="proj-empty">No projects match${q ? ` &ldquo;${esc(q)}&rdquo;` : ''}.</p>`;
+    return;
+  }
+  grid.innerHTML = items.map(p => {
+    const pics = countMediaPics(p.media);
+    const vids = (p.media || []).filter(m => m.type === 'video').length;
+    const hero = projectHeroSrc(p);
+    const thumb = hero
+      ? `<img src="${esc(hero)}" alt="" loading="lazy">`
+      : '<div class="proj-card-placeholder"></div>';
+    const meta = [pics ? `${pics} photo${pics !== 1 ? 's' : ''}` : '', vids ? `${vids} video${vids !== 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ') || 'Details & links';
+    const timelineLink = p.timelineRef
+      ? `<a href="${esc(siteUrl('3d-resume/'))}#ch-timeline" class="proj-timeline-link">View on career timeline &#x2197;</a>`
+      : '';
+    return `<article class="proj-card">
+      <button type="button" class="proj-card-hit" data-proj-id="${esc(p.id)}" aria-label="Open ${esc(p.title)}">
+        <div class="proj-card-hero">${thumb}</div>
+        <div class="proj-card-body">
+          <h3 class="proj-card-title">${esc(p.title)}</h3>
+          <p class="proj-card-sub">${esc(p.subtitle || '')}</p>
+          <div class="proj-card-tags">${(p.tags || []).slice(0, 3).map(t => `<span class="tl-pill">${esc(t)}</span>`).join('')}</div>
+          <p class="proj-card-meta">${esc(meta)}</p>
+        </div>
+      </button>
+      ${timelineLink}
+    </article>`;
+  }).join('');
 }
 
 function renderSummary() {
@@ -1196,6 +1384,11 @@ function renderTimeline(query) {
     ${items.map((t, i) => {
       const mediaPics = getEntryMedia(t).filter(m => m.type === 'image' || m.type === 'video');
       const hasMedia = mediaPics.length > 0;
+      const project = t.projectId ? getProject(t.projectId) : null;
+      const heroSrc = project ? projectHeroSrc(project) : '';
+      const heroStrip = heroSrc
+        ? `<div class="tl-hero-strip"><img src="${esc(heroSrc)}" alt="" loading="lazy"></div>`
+        : '';
       return `
       <article class="tl-entry">
         <div class="tl-date">${esc(t.date || '')}</div>
@@ -1203,6 +1396,7 @@ function renderTimeline(query) {
           <div class="tl-dot${hasMedia ? ' tl-dot-media' : ''}" aria-hidden="true"></div>
         </div>
         <div class="tl-card${hasMedia ? ' tl-card-has-media' : ''}">
+          ${heroStrip}
           <button class="tl-summary" data-tl-open="${i}" aria-label="Open details for ${esc(t.title || 'Untitled')}">
             <span class="tl-summary-text">${esc(t.title || 'Untitled')}</span>
             <span class="tl-summary-end">
@@ -1267,6 +1461,8 @@ function renderContact() {
 
 function renderAll() {
   renderHero();
+  renderDiscover();
+  renderProjects($('#projects-search') ? $('#projects-search').value : '');
   renderSummary();
   renderWorkHistory();
   renderEducation();
@@ -1275,7 +1471,7 @@ function renderAll() {
   renderPassions();
   renderContact();
   renderFooter();
-  setupSiteSwitcher('3d-resume');
+  setupSiteSwitcher('portfolio');
 }
 
 /* ==========================================================
@@ -1296,101 +1492,128 @@ function setupModal() {
 /* ==========================================================
    GALLERY MODAL
    ========================================================== */
-let _galItems = [];   /* image/video items for current open entry */
-let _galIdx   = 0;    /* current lightbox index */
+let _galItems = [];
+let _galIdx   = 0;
+let _galContext = null;
+
+function collectGalleryTags(items) {
+  const tags = new Set();
+  items.forEach(m => (m.tags || []).forEach(t => tags.add(t)));
+  return [...tags].sort();
+}
+
+function renderGalleryGrid() {
+  const grid = $('#gal-grid');
+  const loadMore = $('#gal-load-more');
+  if (!grid) return;
+  let items = _galAllItems;
+  if (_galTagFilter !== 'all') {
+    items = items.filter(m => (m.tags || []).includes(_galTagFilter));
+  }
+  _galItems = items;
+  const visible = items.slice(0, _galVisibleCount);
+  if (visible.length) {
+    grid.innerHTML = visible.map((m, i) => {
+      const src = resolveMediaUrl(m.src);
+      const poster = m.poster ? resolveMediaUrl(m.poster) : '';
+      if (m.type === 'image') {
+        return `<button class="gallery-thumb" data-gal-idx="${i}" aria-label="View ${esc(m.caption || 'photo ' + (i + 1))}">
+          <img src="${esc(src)}" alt="${esc(m.caption || '')}" loading="lazy">
+          ${m.caption ? `<div class="gallery-thumb-caption">${esc(m.caption)}</div>` : ''}
+        </button>`;
+      }
+      return `<button class="gallery-thumb gallery-thumb-video" data-gal-idx="${i}" aria-label="Play ${esc(m.caption || 'video ' + (i + 1))}">
+        ${poster ? `<img src="${esc(poster)}" alt="" loading="lazy">` : '<div class="gallery-thumb-noposter"></div>'}
+        <div class="gallery-thumb-play-icon" aria-hidden="true">&#9654;</div>
+        ${m.caption ? `<div class="gallery-thumb-caption">${esc(m.caption)}</div>` : ''}
+      </button>`;
+    }).join('');
+  } else {
+    grid.innerHTML = '<p class="gallery-empty">No photos in this filter.<br>Upload media to R2 and reference paths in <code>resume_pack.json</code>.</p>';
+  }
+  if (loadMore) {
+    const more = items.length > _galVisibleCount;
+    loadMore.hidden = !more;
+    loadMore.textContent = `Load more (${items.length - _galVisibleCount} remaining)`;
+  }
+}
 
 function openGalleryModal(entry) {
   const modal = $('#gallery-modal');
   if (!modal) return;
 
-  /* Header */
-  $('#gal-date').textContent  = entry.date  || '';
-  $('#gal-title').textContent = entry.title || 'Untitled';
+  const ctx = galleryContextFromEntry(entry);
+  _galContext = ctx;
 
-  const typeTag = entry.type || 'Milestone';
-  const tags    = (entry.tags || []).slice(0, 6);
+  $('#gal-date').textContent  = ctx.date  || '';
+  $('#gal-title').textContent = ctx.title || 'Untitled';
+
+  const typeTag = ctx.type || 'Milestone';
+  const tags    = (ctx.tags || []).slice(0, 6);
   $('#gal-pills').innerHTML = [typeTag, ...tags]
     .map((p, i) => `<span class="tl-pill${i === 0 ? ' tl-pill-type' : ''}">${esc(p)}</span>`)
     .join('');
 
-  /* Details text */
   const detEl = $('#gal-details');
-  if (entry.details) {
-    detEl.innerHTML = esc(entry.details).replace(/\n/g, '<br>');
+  if (ctx.details) {
+    detEl.innerHTML = esc(ctx.details).replace(/\n/g, '<br>');
     detEl.style.display = '';
   } else {
     detEl.style.display = 'none';
   }
 
-  /* Partition media */
-  const media = getEntryMedia(entry);
-  if (entry.projectId) {
-    const p = getProject(entry.projectId);
-    if (p) {
-      $('#gal-title').textContent = p.title || entry.title || 'Untitled';
-      if (p.details || p.summary) {
-        const detEl = $('#gal-details');
-        detEl.innerHTML = esc(p.details || p.summary).replace(/\n/g, '<br>');
-        detEl.style.display = '';
-      }
+  _galAllItems = (ctx.media || []).filter(m => m.type === 'image' || m.type === 'video');
+  _galVisibleCount = GAL_PAGE_SIZE;
+  _galTagFilter = 'all';
+
+  const tagFilters = $('#gal-tag-filters');
+  const galTags = collectGalleryTags(_galAllItems);
+  if (tagFilters) {
+    if (galTags.length) {
+      tagFilters.hidden = false;
+      tagFilters.innerHTML = ['all', ...galTags].map(t =>
+        `<button type="button" class="glass-btn gal-tag-filter${t === 'all' ? ' active' : ''}" data-gal-tag="${esc(t)}">${t === 'all' ? 'All' : esc(t)}</button>`
+      ).join('');
+    } else {
+      tagFilters.hidden = true;
+      tagFilters.innerHTML = '';
     }
   }
-  _galItems   = media.filter(m => m.type === 'image' || m.type === 'video');
-  const links = media.filter(m => m.type === 'link');
-  if (entry.projectId) {
-    const p = getProject(entry.projectId);
-    (p?.links || []).forEach(l => {
-      if (!links.some(x => x.url === l.url)) links.push({ type: 'link', url: l.url, label: l.label });
-    });
-  }
 
-  /* Photo/video grid */
-  const grid = $('#gal-grid');
-  if (_galItems.length) {
-    grid.innerHTML = _galItems.map((m, i) => {
-      if (m.type === 'image') {
-        return `<button class="gallery-thumb" data-gal-idx="${i}" aria-label="View ${esc(m.caption || 'photo ' + (i + 1))}">
-          <img src="${esc(resolveMediaUrl(m.src))}" alt="${esc(m.caption || '')}" loading="lazy">
-          ${m.caption ? `<div class="gallery-thumb-caption">${esc(m.caption)}</div>` : ''}
-        </button>`;
-      } else {
-        return `<button class="gallery-thumb gallery-thumb-video" data-gal-idx="${i}" aria-label="Play ${esc(m.caption || 'video ' + (i + 1))}">
-          ${m.poster ? `<img src="${esc(resolveMediaUrl(m.poster))}" alt="" loading="lazy">` : '<div class="gallery-thumb-noposter"></div>'}
-          <div class="gallery-thumb-play-icon" aria-hidden="true">&#9654;</div>
-          ${m.caption ? `<div class="gallery-thumb-caption">${esc(m.caption)}</div>` : ''}
-        </button>`;
-      }
-    }).join('');
-  } else {
-    grid.innerHTML = '<p class="gallery-empty">No photos added yet for this entry.<br>Drop images in <code>data/media/</code> and reference them in <code>resume_pack.json</code>.</p>';
-  }
+  renderGalleryGrid();
 
-  /* External links */
+  const links = ctx.links || [];
   const linksEl = $('#gal-links');
-  if (links.length) {
-    linksEl.innerHTML = links.map(l =>
-      `<a href="${esc(l.url)}" class="gallery-link-btn" target="_blank" rel="noopener">${esc(l.label || l.url)} &#x2197;</a>`
-    ).join('');
+  let linksHtml = links.map(l =>
+    `<a href="${esc(l.url)}" class="gallery-link-btn" target="_blank" rel="noopener">${esc(l.label || l.url)} &#x2197;</a>`
+  ).join('');
+  if (ctx.timelineRef) {
+    linksHtml += `<a href="${esc(siteUrl('3d-resume/'))}#ch-timeline" class="gallery-link-btn">View on career timeline &#x2197;</a>`;
+  }
+  if (linksHtml) {
+    linksEl.innerHTML = linksHtml;
     linksEl.hidden = false;
   } else {
     linksEl.innerHTML = '';
     linksEl.hidden = true;
   }
 
+  if (entry && entry.id && DATA.projectById[entry.id]) {
+    updateOgMeta(entry);
+    try {
+      history.replaceState(null, '', `#project=${encodeURIComponent(entry.id)}`);
+    } catch (_) {}
+  }
+
   closeLightbox();
   const bodyEl = $('#gallery-body');
   if (bodyEl) bodyEl.scrollTop = 0;
 
-  /* Save scroll position — showModal() moves focus and can trigger a scroll jump */
   const savedScrollY = window.scrollY;
   modal.showModal();
-  /* Restore scroll immediately and on next frame (focus jump is async) */
   window.scrollTo({ top: savedScrollY, behavior: 'instant' });
   requestAnimationFrame(() => window.scrollTo({ top: savedScrollY, behavior: 'instant' }));
 
-  /* Re-stack the cursor orb above the dialog in the top layer.
-     showModal() adds the dialog on top of the existing popover; calling
-     hidePopover+showPopover moves the orb back to the topmost slot.     */
   const orb = document.getElementById('cursor-orb');
   if (orb?.hidePopover) {
     try { orb.hidePopover(); orb.showPopover(); } catch (_) {}
@@ -1441,6 +1664,9 @@ function closeGalleryModal() {
     done = true;
     modal.classList.remove('gallery-closing');
     modal.close();
+    if (window.location.hash.startsWith('#project=')) {
+      try { history.replaceState(null, '', window.location.pathname + window.location.search); } catch (_) {}
+    }
   };
   modal.classList.add('gallery-closing');
   modal.addEventListener('animationend', finish, { once: true });
@@ -1477,6 +1703,26 @@ function setupGalleryModal() {
     if (btn) openLightbox(parseInt(btn.dataset.galIdx, 10));
   });
 
+  const loadMore = $('#gal-load-more');
+  if (loadMore) {
+    loadMore.addEventListener('click', () => {
+      _galVisibleCount += GAL_PAGE_SIZE;
+      renderGalleryGrid();
+    });
+  }
+
+  const tagFilters = $('#gal-tag-filters');
+  if (tagFilters) {
+    tagFilters.addEventListener('click', e => {
+      const btn = e.target.closest('[data-gal-tag]');
+      if (!btn) return;
+      _galTagFilter = btn.dataset.galTag;
+      _galVisibleCount = GAL_PAGE_SIZE;
+      tagFilters.querySelectorAll('.gal-tag-filter').forEach(b => b.classList.toggle('active', b === btn));
+      renderGalleryGrid();
+    });
+  }
+
   /* Keyboard nav inside modal */
   modal.addEventListener('keydown', e => {
     const lbOpen = !$('#gallery-lightbox').hasAttribute('hidden');
@@ -1495,6 +1741,68 @@ function setupGalleryModal() {
 
   /* Clean up video on modal close */
   modal.addEventListener('close', closeLightbox);
+}
+
+function setupDiscoverFilters() {
+  const wrap = $('#discover-filters');
+  const grid = $('#discover-grid');
+  if (!wrap) return;
+  wrap.addEventListener('click', e => {
+    const btn = e.target.closest('[data-disc-cat]');
+    if (!btn) return;
+    _discCategory = btn.dataset.discCat;
+    wrap.querySelectorAll('.disc-filter').forEach(b => b.classList.toggle('active', b === btn));
+    renderDiscover();
+  });
+  if (grid) {
+    grid.addEventListener('click', e => {
+      const tile = e.target.closest('[data-proj-id]');
+      if (!tile) return;
+      const p = getProject(tile.dataset.projId);
+      if (p) openGalleryModal(p);
+    });
+  }
+}
+
+function setupProjectsSearch() {
+  const input = $('#projects-search');
+  const wrap = $('#projects-filters');
+  if (input) {
+    let timer;
+    input.addEventListener('input', () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => renderProjects(input.value), 200);
+    });
+  }
+  if (wrap) {
+    wrap.addEventListener('click', e => {
+      const btn = e.target.closest('[data-proj-cat]');
+      if (!btn) return;
+      _projCategory = btn.dataset.projCat;
+      wrap.querySelectorAll('.proj-filter').forEach(b => b.classList.toggle('active', b === btn));
+      renderProjects(input ? input.value : '');
+    });
+  }
+  const grid = $('#projects-grid');
+  if (grid) {
+    grid.addEventListener('click', e => {
+      if (e.target.closest('.proj-timeline-link')) return;
+      const hit = e.target.closest('[data-proj-id]');
+      if (!hit) return;
+      const p = getProject(hit.dataset.projId);
+      if (p) openGalleryModal(p);
+    });
+  }
+}
+
+function openProjectFromHash() {
+  const hash = window.location.hash.replace(/^#/, '');
+  if (!hash.startsWith('project=')) return;
+  const slug = decodeURIComponent(hash.slice('project='.length));
+  const project = (DATA.projects || []).find(p => p.id === slug || p.slug === slug);
+  if (project) {
+    requestAnimationFrame(() => openGalleryModal(project));
+  }
 }
 
 /* ==========================================================
@@ -1780,7 +2088,7 @@ function setupShare() {
   if (!btn || !popup) return;
 
   const PAGE_URL  = window.location.href;
-  const PAGE_TEXT = 'Check out Isaac Norris\'s interactive 3D resume.';
+  const PAGE_TEXT = 'Explore Isaac Norris\'s interactive portfolio.';
 
   function openPopup() {
     popup.classList.add('is-open');
@@ -1891,7 +2199,8 @@ function setupCursor() {
     'a', 'button', '[role="button"]', 'label', 'summary',
     '.ctrl-btn', '.snav-btn', '.theme-swatch', '.glass-btn',
     '.skill-node', '.tl-entry', '.tl-btn', '.tl-summary', '.gallery-thumb', '.gallery-link-btn', '.lb-nav', '.lb-close', 'select',
-    '.hero-site-link', '.share-option', '#share-btn', '#share-facebook', '#share-sms', '.site-switch-link',
+    '.hero-site-link', '.share-option', '#share-btn', '#share-facebook', '#share-sms',
+    '.disc-tile', '.proj-card-hit', '.site-switch-link', '.gal-tag-filter', '#gal-load-more',
   ].join(', ');
 
   function applyTransform() {
@@ -1970,6 +2279,8 @@ async function init() {
   renderAll();
   setupScroll();
   setupNav();
+  setupDiscoverFilters();
+  setupProjectsSearch();
   setupSearch();
   setupTimelineSearch();
   setupTimelineZoom();
@@ -1981,12 +2292,14 @@ async function init() {
   setupModal();
   setupGalleryModal();
   setupImport();
+  openProjectFromHash();
+  window.addEventListener('hashchange', openProjectFromHash);
   window.addEventListener('resize', onResize);
   animate();
 }
 
 function handleInitError(err) {
-  console.error('3D Resume init failed:', err);
+  console.error('Portfolio init failed:', err);
   const fb = document.getElementById('fallback');
   if (fb) fb.classList.add('active');
   const ct = document.getElementById('content');

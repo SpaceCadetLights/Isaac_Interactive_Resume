@@ -1,6 +1,9 @@
 {
-  "version": 1,
-  "_comment": "CANONICAL DATA FILE — edit this file to update BOTH the 3D and standard resume pages simultaneously. Both pages auto-fetch this on startup; localStorage data is a fallback if this file is absent.",
+  "version": 2,
+  "_comment": "CANONICAL DATA FILE — updates Portfolio, 3D Resume, and Standard Resume. Set config.mediaBaseUrl after R2 setup (see data/media/R2_SETUP.md).",
+  "config": {
+    "mediaBaseUrl": ""
+  },
   "resume": {
     "profile": {
       "name": "Isaac E. Norris",
@@ -160,8 +163,100 @@
       }
     ]
   },
+  "projects": [
+    {
+      "id": "space-cadets-lighting",
+      "slug": "space-cadets-lighting",
+      "title": "Space Cadets Lighting",
+      "subtitle": "Interactive LED products and installations",
+      "category": "venture",
+      "featured": true,
+      "hero": null,
+      "tags": ["LED", "ESP32", "Product", "Interactive"],
+      "date": "2020-03",
+      "summary": "Sound-reactive, Wi-Fi connected LED fixtures and installations — full-stack hardware from electronics to field deployment.",
+      "details": "Founded Space Cadets Lighting: interactive LED products and installations. Full-stack hardware ownership — electronics, firmware, CAD, additive manufacturing, assembly, and testing.",
+      "media": [
+        {
+          "type": "link",
+          "url": "https://spacecadetslighting.com",
+          "label": "spacecadetslighting.com"
+        }
+      ],
+      "links": [
+        { "url": "https://spacecadetslighting.com", "label": "Website" }
+      ],
+      "timelineRef": "2020-03-space-cadets"
+    },
+    {
+      "id": "gorilla-machines",
+      "slug": "gorilla-machines",
+      "title": "Gorilla Machines",
+      "subtitle": "CNC plasma cutting machines",
+      "category": "engineering",
+      "featured": true,
+      "hero": null,
+      "tags": ["CNC", "Controls", "Manufacturing", "Motion Systems"],
+      "date": "2017-03",
+      "summary": "End-to-end design and manufacture of CNC plasma platforms — ~100–150 units deployed.",
+      "details": "Designed and manufactured CNC plasma cutting machines end-to-end. Led flagship platform redesign and manufacturing improvements.",
+      "media": [],
+      "links": [],
+      "timelineRef": "2017-03-gorilla-machines"
+    },
+    {
+      "id": "dimension-3-fabrication",
+      "slug": "dimension-3-fabrication",
+      "title": "Dimension 3 Multi-Function Machine",
+      "subtitle": "3D print + CNC + laser integration",
+      "category": "engineering",
+      "featured": false,
+      "hero": null,
+      "tags": ["EE", "ME", "CNC", "3D Printing"],
+      "date": "2016-12",
+      "summary": "A single platform combining additive, CNC engraving, and laser workflows.",
+      "details": "Designed a multi-function machine combining 3D printing, CNC engraving, and laser engraving from concept through production.",
+      "media": [],
+      "links": [],
+      "timelineRef": "2016-12-dimension-3"
+    },
+    {
+      "id": "mojo-3d-print-lab",
+      "slug": "mojo-3d-print-lab",
+      "title": "Mojo 3D Print Lab",
+      "subtitle": "Community maker lab operations",
+      "category": "community",
+      "featured": false,
+      "hero": null,
+      "tags": ["3D Printing", "Teaching", "Community"],
+      "date": "2014-01",
+      "summary": "Ran a public-facing 3D print lab with weekly community education.",
+      "details": "Ran the Mojo 3D Print Lab: operations, repair, management, and community education. Taught weekly public classes on 3D printing and design workflows.",
+      "media": [],
+      "links": [],
+      "timelineRef": "2014-01-mojo-lab"
+    },
+    {
+      "id": "experiments",
+      "slug": "experiments",
+      "title": "Experiments & R&D",
+      "subtitle": "Sculptural forms, biomimicry, and prototypes",
+      "category": "art",
+      "featured": false,
+      "hero": null,
+      "tags": ["R&D", "Biomimicry", "Interactive", "Sculpture"],
+      "date": "2016-01",
+      "summary": "Exploratory work at the intersection of craft, light, and electromechanical systems.",
+      "details": "Personal and client-adjacent R&D — organic geometry, immersive media, and rapid prototyping across disciplines.",
+      "media": [],
+      "links": [],
+      "timelineRef": null
+    }
+  ],
   "timeline": [
     {
+      "id": "2014-01-mojo-lab",
+      "projectId": "mojo-3d-print-lab",
       "date": "2014-01",
       "significance": 3,
       "title": "Head of 3D Print Lab — Mojo Coworking",
@@ -171,8 +266,8 @@
       "media": []
     },
     {
+      "id": "2015-07-linamar",
       "date": "2015-07",
-      "significance": 2,
       "title": "Metal Fabricator — Linamar NC",
       "type": "Role",
       "tags": ["Fabrication", "Welding", "CAD"],
@@ -180,8 +275,8 @@
       "media": []
     },
     {
+      "id": "2016-03-microtech",
       "date": "2016-03",
-      "significance": 2,
       "title": "Machinist & Assembler — MicroTech Knives",
       "type": "Role",
       "tags": ["Manufacturing", "Finishing", "Sandblasting"],
@@ -189,8 +284,9 @@
       "media": []
     },
     {
+      "id": "2016-12-dimension-3",
+      "projectId": "dimension-3-fabrication",
       "date": "2016-12",
-      "significance": 3,
       "title": "Electrical & Mechanical Engineer — Dimension 3 Fabrication",
       "type": "Role",
       "tags": ["EE", "ME", "CNC", "3D Printing"],
@@ -198,8 +294,9 @@
       "media": []
     },
     {
+      "id": "2017-03-gorilla-machines",
+      "projectId": "gorilla-machines",
       "date": "2017-03",
-      "significance": 4,
       "title": "Lead Engineer & Design Manager — Gorilla Machines Inc",
       "type": "Role",
       "tags": ["CNC", "Controls", "Manufacturing", "Motion Systems"],
@@ -207,8 +304,9 @@
       "media": []
     },
     {
+      "id": "2020-03-space-cadets",
+      "projectId": "space-cadets-lighting",
       "date": "2020-03",
-      "significance": 5,
       "title": "Space Cadets Lighting — Founder",
       "type": "Venture",
       "tags": ["LED", "ESP32", "Product", "Interactive"],

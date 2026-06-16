@@ -3,11 +3,15 @@
 <head>
 <!--
   Run locally: python3 -m http.server 8000
-  Then open: http://localhost:8000/3d-resume/
+  Then open: http://localhost:8000/portfolio/
 -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Isaac Norris &bull; 3D Interactive Resume</title>
+<title>Isaac Norris &bull; Portfolio</title>
+<meta id="meta-description" name="description" content="Interactive portfolio — engineering, lighting, and fabrication work by Isaac E. Norris.">
+<meta id="og-title" property="og:title" content="Isaac Norris · Portfolio">
+<meta id="og-description" property="og:description" content="Explore projects in light, motion, and hardware.">
+<meta id="og-image" property="og:image" content="">
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
@@ -52,14 +56,23 @@
     <h1 class="fallback-title">Isaac E. Norris</h1>
     <p class="fallback-subtitle">Designer &bull; Engineer &bull; Builder</p>
     <p class="fallback-msg">Your browser doesn&rsquo;t support the 3D version of this resume.</p>
-    <a href="../portfolio/" class="glass-btn fallback-btn">View Portfolio</a>
     <a href="../interactive_resume_spacecadets_v6_singlefile.html" class="glass-btn fallback-btn">View Standard Resume</a>
+    <a href="../3d-resume/" class="glass-btn fallback-btn">View 3D Resume</a>
   </div>
 </div>
 
 <!-- Section nav — slides in from top when hero scrolls out -->
 <nav id="section-nav" aria-label="Jump to section">
   <div class="section-nav-inner">
+    <button class="snav-btn" data-target="ch-discover">
+      <span class="snav-dot"></span>Discover
+    </button>
+    <button class="snav-btn" data-target="ch-projects">
+      <span class="snav-dot"></span>Projects
+    </button>
+    <button class="snav-btn" data-target="ch-timeline">
+      <span class="snav-dot"></span>Timeline
+    </button>
     <button class="snav-btn" data-target="ch-skills">
       <span class="snav-dot"></span>Skills Map
     </button>
@@ -68,9 +81,6 @@
     </button>
     <button class="snav-btn" data-target="panel-edu">
       <span class="snav-dot"></span>Education
-    </button>
-    <button class="snav-btn" data-target="ch-timeline">
-      <span class="snav-dot"></span>Timeline
     </button>
     <button class="snav-btn" data-target="panel-passions">
       <span class="snav-dot"></span>Passions
@@ -88,6 +98,8 @@
   <section class="chapter" id="ch-hero">
     <div class="chapter-inner hero-inner">
       <div class="hero-orb" aria-hidden="true"></div>
+      <div class="hero-reel" id="hero-reel" aria-hidden="true"></div>
+      <p class="hero-eyebrow">Portfolio</p>
       <h1 class="hero-name" id="hero-name"></h1>
       <p class="hero-headline" id="hero-headline"></p>
       <p class="hero-summary" id="hero-summary"></p>
@@ -96,6 +108,50 @@
          class="hero-site-link" id="hero-site-link">
         spacecadetslighting.com<span class="hero-site-arrow" aria-hidden="true">&#x2197;</span>
       </a>
+    </div>
+  </section>
+
+  <!-- Ch: Discover -->
+  <section class="chapter" id="ch-discover">
+    <div class="chapter-inner">
+      <div class="glass-panel">
+        <h2 class="section-title">Discover</h2>
+        <p class="section-subtitle">Explore work through photos, video, and installations</p>
+        <div class="disc-filters" id="discover-filters" role="group" aria-label="Filter by category">
+          <button type="button" class="glass-btn disc-filter active" data-disc-cat="all">All</button>
+          <button type="button" class="glass-btn disc-filter" data-disc-cat="venture">Products</button>
+          <button type="button" class="glass-btn disc-filter" data-disc-cat="engineering">Engineering</button>
+          <button type="button" class="glass-btn disc-filter" data-disc-cat="community">Community</button>
+          <button type="button" class="glass-btn disc-filter" data-disc-cat="art">Art</button>
+        </div>
+        <div class="disc-grid" id="discover-grid"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Ch: Projects -->
+  <section class="chapter" id="ch-projects">
+    <div class="chapter-inner">
+      <div class="glass-panel">
+        <h2 class="section-title">Projects</h2>
+        <p class="section-subtitle">Browse the full library</p>
+        <div class="proj-toolbar">
+          <div class="search-bar-wrap" style="margin-bottom:0">
+            <div class="search-bar">
+              <span class="search-icon" aria-hidden="true">&#8981;</span>
+              <input type="text" id="projects-search" placeholder="Search projects..." autocomplete="off" aria-label="Search projects">
+            </div>
+          </div>
+          <div class="proj-filters" id="projects-filters" role="group" aria-label="Filter projects">
+            <button type="button" class="glass-btn proj-filter active" data-proj-cat="all">All</button>
+            <button type="button" class="glass-btn proj-filter" data-proj-cat="venture">Products</button>
+            <button type="button" class="glass-btn proj-filter" data-proj-cat="engineering">Engineering</button>
+            <button type="button" class="glass-btn proj-filter" data-proj-cat="community">Community</button>
+            <button type="button" class="glass-btn proj-filter" data-proj-cat="art">Art</button>
+          </div>
+        </div>
+        <div class="proj-grid" id="projects-grid"></div>
+      </div>
     </div>
   </section>
 
@@ -213,7 +269,7 @@
   <footer class="chapter" id="ch-footer">
     <div class="chapter-inner footer-inner">
       <div class="footer-links">
-        <a href="../portfolio/" class="glass-btn">View Portfolio</a>
+        <a href="../3d-resume/" class="glass-btn">View 3D Resume</a>
         <a href="../interactive_resume_spacecadets_v6_singlefile.html" class="glass-btn">View Standard Resume</a>
         <a id="footer-site" class="glass-btn" target="_blank" rel="noopener"></a>
         <a id="footer-email" class="glass-btn"></a>
@@ -225,12 +281,12 @@
 
 <!-- Site switcher -->
 <nav id="site-switcher" class="site-switcher" aria-label="Site navigation">
-  <a class="site-switch-link" data-site="portfolio" href="../portfolio/">Portfolio</a>
-  <a class="site-switch-link" data-site="3d-resume" href="." aria-current="page">3D Resume</a>
+  <a class="site-switch-link" data-site="portfolio" href="." aria-current="page">Portfolio</a>
+  <a class="site-switch-link" data-site="3d-resume" href="../3d-resume/">3D Resume</a>
   <a class="site-switch-link" data-site="standard" href="../interactive_resume_spacecadets_v6_singlefile.html">Standard</a>
 </nav>
 
-<!-- Controls cluster -->
+<!-- Controls cluster — vertical column below the site switcher -->
 <div id="controls">
   <button id="btn-import" class="ctrl-btn" aria-label="Open settings">
     <span>&#x2699;&#xFE0E;</span>
@@ -254,7 +310,7 @@
   <div class="modal-head">
     <div>
       <div class="modal-title">Import &amp; Export Resume Data</div>
-      <div class="modal-meta">Both 3D and standard resume pages share the same data store</div>
+      <div class="modal-meta">Portfolio, 3D resume, and standard resume share the same data store</div>
     </div>
     <button class="modal-close" id="settings-close" aria-label="Close">&#x2715;</button>
   </div>
@@ -338,7 +394,9 @@
     </div>
     <div class="gallery-body" id="gallery-body">
       <p class="gallery-details" id="gal-details"></p>
+      <div class="gallery-tag-filters" id="gal-tag-filters" hidden></div>
       <div class="gallery-grid" id="gal-grid"></div>
+      <button type="button" class="glass-btn gallery-load-more" id="gal-load-more" hidden>Load more</button>
       <div class="gallery-links" id="gal-links"></div>
     </div>
   </div>
