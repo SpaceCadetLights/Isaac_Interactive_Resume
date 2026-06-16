@@ -1,0 +1,36 @@
+---
+description: Cloud development and GitHub sync workflow for Cursor Cloud Agents
+globs:
+alwaysApply: true
+---
+
+# Cloud development
+
+This repo is developed primarily in **Cursor Cloud Agents**. The cloud VM is the working environment; GitHub is the durable sync target.
+
+## Workflow
+
+1. Create or use a `cursor/<name>-5095` feature branch off `main`
+2. Develop and test with `./scripts/dev-server.sh` (port 8000)
+3. After each stable change: commit, push, and update the PR
+4. Never leave finished work only on the cloud VM
+
+## Sync command
+
+```bash
+./scripts/sync-stable.sh "commit message"
+```
+
+Or manually: `git add -A && git commit -m "..." && git push -u origin <branch>`
+
+## Testing
+
+- Portfolio: http://localhost:8000/portfolio/
+- 3D Resume: http://localhost:8000/3d-resume/
+- Standard: http://localhost:8000/interactive_resume_spacecadets_v6_singlefile.html
+
+## Data changes
+
+- Edit `data/resume_pack.json` for content updates
+- Do not commit media binaries; use R2 per `data/media/R2_SETUP.md`
+- Run `./scripts/cloud-install.sh` to validate JSON before pushing
