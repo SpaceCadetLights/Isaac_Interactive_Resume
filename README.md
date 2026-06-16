@@ -10,11 +10,27 @@ Three linked experiences, one shared data file:
 
 Canonical data: [`data/resume_pack.json`](data/resume_pack.json)
 
-## Local development
+## Development
+
+### Cursor Cloud (recommended)
+
+Development runs in [Cursor Cloud Agents](https://cursor.com/docs/cloud-agent). Environment config lives in [`.cursor/environment.json`](.cursor/environment.json). Agent workflow details are in [`AGENTS.md`](AGENTS.md).
 
 ```bash
-cd "/Users/spacecadet/Software Dev/Isaac_Interactive_Resume"
-python3 -m http.server 8000
+./scripts/dev-server.sh
+```
+
+After each stable change, sync to GitHub:
+
+```bash
+./scripts/sync-stable.sh "Describe what changed"
+```
+
+### Local
+
+```bash
+./scripts/dev-server.sh
+# or: python3 -m http.server 8000
 ```
 
 - Portfolio: http://localhost:8000/portfolio/

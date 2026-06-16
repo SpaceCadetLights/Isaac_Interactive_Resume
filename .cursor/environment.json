@@ -1,0 +1,17 @@
+{
+  "name": "Isaac Interactive Resume",
+  "install": "./scripts/cloud-install.sh",
+  "terminals": [
+    {
+      "name": "dev-server",
+      "command": "./scripts/dev-server.sh",
+      "description": "Static site preview at http://localhost:8000/ (portfolio, 3d-resume, standard resume)"
+    }
+  ],
+  "ports": [
+    {
+      "name": "dev-server",
+      "port": 8000
+    }
+  ]
+}
