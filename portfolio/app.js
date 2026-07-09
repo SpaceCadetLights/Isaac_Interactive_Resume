@@ -270,14 +270,24 @@ let _galTagFilter = 'all';
 let _heroReelTimer = null;
 let _heroReelIdx = 0;
 
-function resolveMediaUrl(src) {
-  if (!src) return '';
+function resolveMediaUrl(srcOrItem) {
+  const item = srcOrItem && typeof srcOrItem === 'object' ? srcOrItem : null;
+  const src = item ? item.src : srcOrItem;
+  if (!src && !(item && item.publicUrl)) return '';
+  if (item?.publicUrl) return item.publicUrl;
   if (/^https?:\/\//i.test(src)) return src;
   const base = (DATA.config && DATA.config.mediaBaseUrl) ? String(DATA.config.mediaBaseUrl).replace(/\/$/, '') : '';
-  const path = src.replace(/^\//, '');
+  const path = String(src).replace(/^\//, '');
   if (base) return `${base}/${path}`;
   if (isGitHubPagesRepo()) return `/${REPO_NAME}/${path}`;
   return `../${path}`;
+}
+
+function projectHeroSrc(project) {
+  if (!project) return '';
+  if (project.hero && project.hero.src) return resolveMediaUrl(project.hero);
+  const first = (project.media || []).find(m => (m.type === 'image' || m.type === 'video') && (m.src || m.publicUrl));
+  return first ? resolveMediaUrl(first) : '';
 }
 
 function getProject(id) {
@@ -304,11 +314,6 @@ function getProjectLinks(project) {
 
 function countMediaPics(media) {
   return (media || []).filter(m => m.type === 'image' || m.type === 'video').length;
-}
-
-function projectHeroSrc(project) {
-  if (!project || !project.hero || !project.hero.src) return '';
-  return resolveMediaUrl(project.hero.src);
 }
 
 function galleryContextFromEntry(entry) {
@@ -379,8 +384,9 @@ function updateOgMeta(project) {
   if (ogTitle) ogTitle.setAttribute('content', title);
   if (ogDesc) ogDesc.setAttribute('content', desc);
   if (metaDesc) metaDesc.setAttribute('content', desc);
-  if (ogImage && project && project.hero && project.hero.src) {
-    ogImage.setAttribute('content', resolveMediaUrl(project.hero.src));
+  if (ogImage && project) {
+    const ogSrc = projectHeroSrc(project);
+    if (ogSrc) ogImage.setAttribute('content', ogSrc);
   }
 }
 
@@ -1519,7 +1525,7 @@ function renderGalleryGrid() {
   const visible = items.slice(0, _galVisibleCount);
   if (visible.length) {
     grid.innerHTML = visible.map((m, i) => {
-      const src = resolveMediaUrl(m.src);
+      const src = resolveMediaUrl(m);
       const poster = m.poster ? resolveMediaUrl(m.poster) : '';
       if (m.type === 'image') {
         return `<button class="gallery-thumb" data-gal-idx="${i}" aria-label="View ${esc(m.caption || 'photo ' + (i + 1))}">
@@ -1646,10 +1652,10 @@ function renderLightboxSlide() {
   const item = _galItems[_galIdx];
   const stage = $('#lb-stage');
   if (item.type === 'image') {
-    stage.innerHTML = `<img src="${esc(resolveMediaUrl(item.src))}" alt="${esc(item.caption || '')}" loading="eager">`;
+    stage.innerHTML = `<img src="${esc(resolveMediaUrl(item))}" alt="${esc(item.caption || '')}" loading="eager">`;
   } else {
     stage.innerHTML = `<video controls autoplay playsinline${item.poster ? ` poster="${esc(resolveMediaUrl(item.poster))}"` : ''}>
-      <source src="${esc(resolveMediaUrl(item.src))}">
+      <source src="${esc(resolveMediaUrl(item))}">
     </video>`;
   }
   $('#lb-caption').textContent = item.caption || '';

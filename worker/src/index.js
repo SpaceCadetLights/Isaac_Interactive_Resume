@@ -152,12 +152,10 @@ async function rowToProject(row, mediaRows) {
 
 function mediaAssetToLegacy(m) {
   if (m.file_type === 'link') return { type: 'link', url: m.public_url, label: m.caption };
-  const rel = m.r2_key.replace(/^portfolio\/projects\/[^/]+\//, '').replace(/^(hero|gallery|video|models|files)\//, '');
-  const src = m.r2_key.replace(/^portfolio\//, '');
   const item = {
     id: m.id,
     type: m.file_type === 'video' ? 'video' : m.file_type === 'pdf' ? 'link' : 'image',
-    src,
+    src: m.r2_key,
     publicUrl: m.public_url,
     caption: m.caption || m.alt_text,
     tags: [],
