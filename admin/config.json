@@ -1,0 +1,4 @@
+{
+  "apiBaseUrl": "",
+  "_comment": "Set to your Worker URL after deploy, e.g. https://isaac-portfolio-api.your-subdomain.workers.dev"
+}

@@ -1,0 +1,13 @@
+{
+  "name": "isaac-portfolio-api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:migrate": "wrangler d1 execute isaac-portfolio --file=./schema.sql"
+  },
+  "devDependencies": {
+    "wrangler": "^4.14.0"
+  }
+}

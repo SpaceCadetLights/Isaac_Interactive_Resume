@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import * as SEED from './data.js';
 import { getDataPackPath, siteUrl, isGitHubPagesRepo, REPO_NAME } from '../shared/site-paths.js';
+import { getApiBaseUrl, fetchPublicProjects, applyCmsProjects } from '../shared/cms-config.js';
 
 /* ==========================================================
    TUNING
@@ -195,7 +196,11 @@ function packToData(pack) {
   const r = (pack.resume) || {};
   const h = r.hero || {};
   const projects = Array.isArray(pack.projects) ? pack.projects : [];
-  const projectById = Object.fromEntries(projects.map(p => [p.id, p]));
+  const projectById = {};
+  projects.forEach(p => {
+    projectById[p.id] = p;
+    if (p.slug) projectById[p.slug] = p;
+  });
   return {
     config: pack.config || {},
     projects,
@@ -2274,6 +2279,12 @@ async function init() {
   const externalData = await fetchExternalData();
   if (externalData) {
     DATA = externalData;
+  }
+
+  const apiBase = getApiBaseUrl(DATA.config);
+  if (apiBase) {
+    const cmsPack = await fetchPublicProjects(apiBase);
+    if (cmsPack) DATA = applyCmsProjects(DATA, cmsPack);
   }
 
   renderAll();

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portfolio Admin</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <div id="view-login" class="view">
+    <div class="login-card glass">
+      <h1>Portfolio Admin</h1>
+      <p class="muted">Sign in to edit projects and upload media.</p>
+      <form id="login-form">
+        <label>Password<input type="password" id="login-password" autocomplete="current-password" required></label>
+        <button type="submit" class="btn primary">Sign in</button>
+      </form>
+      <p id="login-error" class="error" hidden></p>
+      <p class="muted small"><a href="../portfolio/">← Back to portfolio</a></p>
+    </div>
+  </div>
+
+  <div id="view-app" class="view" hidden>
+    <header class="admin-header">
+      <div>
+        <h1>Portfolio Admin</h1>
+        <p class="muted">Edit projects · upload to Cloudflare R2</p>
+      </div>
+      <div class="header-actions">
+        <a href="../portfolio/" class="btn ghost">View site</a>
+        <button type="button" id="btn-logout" class="btn ghost">Log out</button>
+      </div>
+    </header>
+    <main id="main"></main>
+  </div>
+</div>
+<script type="module" src="app.js"></script>
+</body>
+</html>

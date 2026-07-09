@@ -2,7 +2,8 @@
   "version": 2,
   "_comment": "CANONICAL DATA FILE — updates Portfolio, 3D Resume, and Standard Resume. Set config.mediaBaseUrl after R2 setup (see data/media/R2_SETUP.md).",
   "config": {
-    "mediaBaseUrl": ""
+    "mediaBaseUrl": "",
+    "apiBaseUrl": ""
   },
   "resume": {
     "profile": {

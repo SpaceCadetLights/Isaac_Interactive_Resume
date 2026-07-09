@@ -1,0 +1,19 @@
+name = "isaac-portfolio-api"
+main = "src/index.js"
+compatibility_date = "2024-08-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "isaac-portfolio"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "isaac-media"
+
+[vars]
+R2_PUBLIC_BASE_URL = "https://media.resume.spacecadetslighting.com"
+ALLOWED_ORIGINS = "https://resume.spacecadetslighting.com,http://localhost:8000,http://127.0.0.1:8000"
+
+# Set secrets via: wrangler secret put ADMIN_PASSWORD
+# Set secrets via: wrangler secret put SESSION_SECRET
