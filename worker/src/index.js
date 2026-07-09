@@ -27,7 +27,7 @@ function corsHeaders(origin, env) {
     'Access-Control-Allow-Origin': ok ? origin : allowed[0] || '*',
     'Access-Control-Allow-Credentials': 'true',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   };
 }
 
@@ -80,10 +80,18 @@ function sessionCookie(value, maxAge) {
   return `${SESSION_COOKIE}=${value}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=${maxAge}`;
 }
 
-async function requireAuth(request, env) {
+async function sessionTokenFromRequest(request, env) {
+  const auth = request.headers.get('Authorization') || '';
+  const bearer = auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';
+  if (bearer) return bearer;
   const cookie = request.headers.get('Cookie') || '';
   const match = cookie.match(new RegExp(`${SESSION_COOKIE}=([^;]+)`));
-  if (!match || !(await verifySession(match[1], env))) return null;
+  return match?.[1] || '';
+}
+
+async function requireAuth(request, env) {
+  const token = await sessionTokenFromRequest(request, env);
+  if (!token || !(await verifySession(token, env))) return null;
   return true;
 }
 
@@ -180,7 +188,7 @@ async function handleLogin(request, env, cors) {
     return json({ error: 'Invalid password' }, 401, cors);
   }
   const token = await signSession(env);
-  return json({ ok: true }, 200, {
+  return json({ ok: true, token }, 200, {
     ...cors,
     'Set-Cookie': sessionCookie(token, SESSION_DAYS * 86400),
   });

@@ -1,5 +1,17 @@
 let API_BASE = '';
 let MEDIA_BASE = '';
+const TOKEN_KEY = 'portfolio_admin_token';
+
+function getToken() {
+  try { return sessionStorage.getItem(TOKEN_KEY) || ''; } catch { return ''; }
+}
+
+function setToken(token) {
+  try {
+    if (token) sessionStorage.setItem(TOKEN_KEY, token);
+    else sessionStorage.removeItem(TOKEN_KEY);
+  } catch (_) {}
+}
 
 async function loadConfig() {
   try {
@@ -24,13 +36,18 @@ function mediaUrl(m) {
 
 async function api(path, opts = {}) {
   const url = `${API_BASE}${path}`;
+  const token = getToken();
   const res = await fetch(url, {
     credentials: 'include',
     ...opts,
-    headers: { ...(opts.body && !(opts.body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}), ...opts.headers },
+    headers: {
+      ...(opts.body && !(opts.body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...opts.headers,
+    },
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || res.statusText);
+  if (!res.ok) throw new Error(data.error || res.statusText || `Request failed (${res.status})`);
   return data;
 }
 
@@ -269,19 +286,30 @@ async function init() {
   document.getElementById('login-form').addEventListener('submit', async e => {
     e.preventDefault();
     const password = document.getElementById('login-password').value;
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const errEl = document.getElementById('login-error');
+    errEl.hidden = true;
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Signing in…'; }
     try {
-      await api('/api/auth/login', { method: 'POST', body: JSON.stringify({ password }) });
+      const res = await api('/api/auth/login', { method: 'POST', body: JSON.stringify({ password }) });
+      if (!res.token) throw new Error('Login succeeded but no session token was returned. Redeploy the Worker.');
+      setToken(res.token);
       const me = await api('/api/auth/me');
+      if (!me.authed) throw new Error('Session could not be established. Try again.');
       if (me.mediaBaseUrl) MEDIA_BASE = me.mediaBaseUrl;
       showApp();
       await navigate();
     } catch (err) {
+      setToken('');
       showLogin(err.message);
+    } finally {
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Sign in'; }
     }
   });
 
-  document.getElementById('btn-logout').addEventListener('click', async () => {
+  document.getElementById('btn-logout')?.addEventListener('click', async () => {
     await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
+    setToken('');
     showLogin();
   });
 
