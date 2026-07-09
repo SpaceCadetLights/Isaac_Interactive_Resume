@@ -21,8 +21,13 @@ async function loadConfig() {
       if (c.apiBaseUrl) API_BASE = c.apiBaseUrl.replace(/\/$/, '');
     }
   } catch (_) {}
-  if (!API_BASE && window.location.hostname === 'localhost') {
-    API_BASE = 'http://localhost:8787';
+  if (!API_BASE) {
+    const host = window.location.hostname;
+    if (host === 'localhost' || host === '127.0.0.1') {
+      API_BASE = 'http://localhost:8787';
+    } else if (host.endsWith('.workers.dev')) {
+      API_BASE = window.location.origin;
+    }
   }
 }
 
@@ -37,15 +42,20 @@ function mediaUrl(m) {
 async function api(path, opts = {}) {
   const url = `${API_BASE}${path}`;
   const token = getToken();
-  const res = await fetch(url, {
-    credentials: 'include',
-    ...opts,
-    headers: {
-      ...(opts.body && !(opts.body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...opts.headers,
-    },
-  });
+  let res;
+  try {
+    res = await fetch(url, {
+      credentials: 'include',
+      ...opts,
+      headers: {
+        ...(opts.body && !(opts.body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...opts.headers,
+      },
+    });
+  } catch {
+    throw new Error(`Could not reach API at ${API_BASE}`);
+  }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || res.statusText || `Request failed (${res.status})`);
   return data;
@@ -67,7 +77,13 @@ function showLogin(err) {
   document.getElementById('view-login').hidden = false;
   document.getElementById('view-app').hidden = true;
   const el = document.getElementById('login-error');
-  if (err) { el.textContent = err; el.hidden = false; } else el.hidden = true;
+  if (err) {
+    el.textContent = err;
+    el.hidden = false;
+  } else {
+    el.hidden = true;
+    el.textContent = '';
+  }
 }
 
 function showApp() {
@@ -269,7 +285,8 @@ async function navigate() {
     else await renderEdit(id);
   } catch (err) {
     if (err.message === 'Unauthorized' || err.message.includes('401')) {
-      showLogin();
+      setToken('');
+      showLogin('Session expired. Sign in again.');
       return;
     }
     document.getElementById('main').innerHTML = `<p class="error">${esc(err.message)}</p>`;
@@ -281,6 +298,14 @@ async function init() {
   if (!API_BASE) {
     showLogin('Set apiBaseUrl in admin/config.json after deploying the Worker.');
     return;
+  }
+
+  const canonical = document.getElementById('admin-canonical-link');
+  if (canonical && !window.location.hostname.endsWith('.workers.dev')) {
+    canonical.href = 'https://isaac-portfolio-api.spacecadets.workers.dev/';
+    canonical.textContent = 'isaac-portfolio-api.spacecadets.workers.dev';
+  } else if (canonical) {
+    canonical.parentElement.hidden = true;
   }
 
   document.getElementById('login-form').addEventListener('submit', async e => {
@@ -327,4 +352,4 @@ async function init() {
   }
 }
 
-init();
+init().catch(err => showLogin(err?.message || 'Admin failed to start.'));
