@@ -1641,11 +1641,6 @@ function openGalleryModal(entry) {
   modal.showModal();
   window.scrollTo({ top: savedScrollY, behavior: 'instant' });
   requestAnimationFrame(() => window.scrollTo({ top: savedScrollY, behavior: 'instant' }));
-
-  const orb = document.getElementById('cursor-orb');
-  if (orb?.hidePopover) {
-    try { orb.hidePopover(); orb.showPopover(); } catch (_) {}
-  }
 }
 
 function openLightbox(index) {
@@ -1695,6 +1690,7 @@ function closeGalleryModal() {
     if (window.location.hash.startsWith('#project=')) {
       try { history.replaceState(null, '', window.location.pathname + window.location.search); } catch (_) {}
     }
+    requestAnimationFrame(syncDialogCursor);
   };
   modal.classList.add('gallery-closing');
   modal.addEventListener('animationend', finish, { once: true });
@@ -2053,34 +2049,40 @@ async function syncProjectsToCloud(password) {
   return importData;
 }
 
+function syncDialogCursor() {
+  const open = $$('dialog').some(d => d.open);
+  document.documentElement.classList.toggle('modal-open', open);
+  const orb = document.getElementById('cursor-orb');
+  if (!orb || window.matchMedia('(hover: none), (pointer: coarse)').matches) return;
+  if (open) {
+    orb.classList.remove('is-visible');
+  } else {
+    orb.classList.add('is-visible');
+  }
+}
+
 function setupDialogCursor() {
-  const sync = () => {
-    const open = $$('dialog').some(d => d.open);
-    document.documentElement.classList.toggle('modal-open', !!open);
-    const orb = document.getElementById('cursor-orb');
-    if (!orb) return;
-    if (open) {
-      orb.classList.remove('is-visible');
-      try { orb.hidePopover(); } catch (_) {}
-    } else if (!window.matchMedia('(hover: none), (pointer: coarse)').matches) {
-      try { orb.showPopover(); } catch (_) {}
-    }
-  };
   $$('dialog').forEach(dialog => {
+    dialog.addEventListener('close', () => {
+      requestAnimationFrame(syncDialogCursor);
+    });
     const show = dialog.showModal.bind(dialog);
     dialog.showModal = function (...args) {
       const r = show(...args);
-      sync();
+      syncDialogCursor();
       return r;
     };
     const close = dialog.close.bind(dialog);
     dialog.close = function (...args) {
       const r = close(...args);
-      sync();
+      syncDialogCursor();
       return r;
     };
   });
-  sync();
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') requestAnimationFrame(syncDialogCursor);
+  });
+  syncDialogCursor();
 }
 
 function setupImport() {
@@ -2308,13 +2310,7 @@ function setupCursor() {
   const orb = document.getElementById('cursor-orb');
   if (!orb || window.matchMedia('(hover: none), (pointer: coarse)').matches) return;
 
-  /* Place cursor in the browser top layer so it renders above showModal()
-     dialogs. Falls back gracefully in browsers without Popover API.     */
-  try { orb.showPopover(); } catch (_) { /* no popover support — z-index fallback */ }
-
-  /* Position is set DIRECTLY from mousemove — zero lag, no lerp */
   let mx = -200, my = -200;
-  /* Scale only is lerped for smooth hover/click spring */
   let ts = 1.0, cs = 1.0;
   let isOverInteractive = false;
   let hasEntered = false;
@@ -2338,14 +2334,25 @@ function setupCursor() {
      unlike mousemove which is throttled to ~60 Hz by the browser.
      Apply transform directly in the handler — no rAF, no batching.    */
   document.addEventListener('pointermove', e => {
-    if (e.pointerType === 'touch') return; /* ignore touch events */
+    if (e.pointerType === 'touch') return;
     mx = e.clientX; my = e.clientY;
-    if (!hasEntered) { orb.classList.add('is-visible'); hasEntered = true; }
+    hasEntered = true;
+    if (!document.documentElement.classList.contains('modal-open')) {
+      orb.classList.add('is-visible');
+    }
     applyTransform();
   }, { passive: true });
 
-  document.addEventListener('mouseleave', () => orb.classList.remove('is-visible'));
-  document.addEventListener('mouseenter', () => { if (hasEntered) orb.classList.add('is-visible'); });
+  document.addEventListener('mouseleave', () => {
+    if (!document.documentElement.classList.contains('modal-open')) {
+      orb.classList.remove('is-visible');
+    }
+  });
+  document.addEventListener('mouseenter', () => {
+    if (hasEntered && !document.documentElement.classList.contains('modal-open')) {
+      orb.classList.add('is-visible');
+    }
+  });
 
   document.addEventListener('mousedown', () => { ts = 0.72; });
   document.addEventListener('mouseup',   () => { ts = isOverInteractive ? 1.35 : 1.0; });

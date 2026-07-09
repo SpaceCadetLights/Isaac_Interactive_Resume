@@ -58,7 +58,7 @@ html.modal-open #cursor-orb {
   /* Slightly taller than wide + asymmetric radius = subtle downward lens point */
   width: 22px; height: 24px;
   border-radius: 50% 50% 44% 50% / 50% 50% 57% 50%;
-  z-index: 99999;
+  z-index: 9000;
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.35s ease, box-shadow 0.25s ease;
