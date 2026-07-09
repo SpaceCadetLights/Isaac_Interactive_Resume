@@ -267,8 +267,6 @@ let _projCategory = 'all';
 let _galAllItems = [];
 let _galVisibleCount = GAL_PAGE_SIZE;
 let _galTagFilter = 'all';
-let _heroReelTimer = null;
-let _heroReelIdx = 0;
 let _coverMontageTimers = [];
 const COVER_MONTAGE_MS = 2000;
 
@@ -1125,57 +1123,6 @@ function renderHero() {
   $('#hero-headline').textContent = 'Designer · Engineer · Builder — explore work through light, motion, and hardware.';
   $('#hero-summary').textContent = DATA.profile.summary;
   $('#hero-chips').innerHTML = DATA.hero.chips.map(c => `<span class="chip">${esc(c)}</span>`).join('');
-  renderHeroReel();
-}
-
-function renderHeroReel() {
-  const el = $('#hero-reel');
-  if (!el) return;
-  if (_heroReelTimer) { clearInterval(_heroReelTimer); _heroReelTimer = null; }
-  const featured = (DATA.projects || []).filter(p => p.featured && projectCoverSlides(p).length);
-  if (!featured.length) { el.innerHTML = ''; return; }
-
-  if (featured.length === 1) {
-    const project = featured[0];
-    const slides = projectCoverSlides(project);
-    el.innerHTML = slides.length === 1 || PREFERS_REDUCED
-      ? `<img class="hero-reel-img active" src="${esc(slides[0])}" alt="">`
-      : slides.map((url, i) =>
-        `<img class="hero-reel-img${i === 0 ? ' active' : ''}" src="${esc(url)}" alt="">`
-      ).join('');
-    el.onclick = () => openGalleryModal(project);
-    if (slides.length > 1 && !PREFERS_REDUCED) {
-      _heroReelIdx = 0;
-      _heroReelTimer = setInterval(() => {
-        const imgs = el.querySelectorAll('.hero-reel-img');
-        imgs[_heroReelIdx]?.classList.remove('active');
-        _heroReelIdx = (_heroReelIdx + 1) % slides.length;
-        imgs[_heroReelIdx]?.classList.add('active');
-      }, COVER_MONTAGE_MS);
-    }
-    return;
-  }
-
-  if (PREFERS_REDUCED) {
-    el.innerHTML = `<img class="hero-reel-img active" src="${esc(projectCoverSlides(featured[0])[0])}" alt="">`;
-    return;
-  }
-  el.innerHTML = featured.map((p, i) =>
-    `<img class="hero-reel-img${i === 0 ? ' active' : ''}" data-proj-id="${esc(p.id)}" src="${esc(projectCoverSlides(p)[0])}" alt="${esc(p.title)}">`
-  ).join('');
-  _heroReelIdx = 0;
-  el.onclick = () => {
-    const active = featured[_heroReelIdx];
-    if (active) openGalleryModal(active);
-  };
-  if (featured.length > 1) {
-    _heroReelTimer = setInterval(() => {
-      const imgs = el.querySelectorAll('.hero-reel-img');
-      imgs[_heroReelIdx]?.classList.remove('active');
-      _heroReelIdx = (_heroReelIdx + 1) % featured.length;
-      imgs[_heroReelIdx]?.classList.add('active');
-    }, 7000);
-  }
 }
 
 function renderDiscover() {
