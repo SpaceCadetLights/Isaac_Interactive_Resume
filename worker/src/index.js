@@ -384,11 +384,20 @@ export default {
     }
 
     if (!path.startsWith('/api')) {
-      const assetUrl = (path === '/' || path === '')
-        ? new URL('/index.html', request.url)
-        : new URL(request.url);
-      const assetRes = await env.ASSETS.fetch(new Request(assetUrl, request));
-      if (assetRes.status !== 404 || path === '/' || path === '') return assetRes;
+      if ((path === '/' || path === '') && request.method === 'GET') {
+        const indexReq = new Request(new URL('/index.html', request.url), {
+          method: 'GET',
+          headers: request.headers,
+        });
+        const indexRes = await env.ASSETS.fetch(indexReq);
+        if (indexRes.status === 200) {
+          return new Response(indexRes.body, {
+            status: 200,
+            headers: { 'Content-Type': 'text/html;charset=utf-8', 'Cache-Control': 'no-cache' },
+          });
+        }
+      }
+      return env.ASSETS.fetch(request);
     }
 
     try {
