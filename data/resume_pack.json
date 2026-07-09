@@ -2,8 +2,8 @@
   "version": 2,
   "_comment": "CANONICAL DATA FILE — updates Portfolio, 3D Resume, and Standard Resume. Set config.mediaBaseUrl after R2 setup (see data/media/R2_SETUP.md).",
   "config": {
-    "mediaBaseUrl": "",
-    "apiBaseUrl": ""
+    "mediaBaseUrl": "https://pub-9455f05560ce4c5db9fe52a41513a7ce.r2.dev",
+    "apiBaseUrl": "https://isaac-portfolio-api.spacecadets.workers.dev"
   },
   "resume": {
     "profile": {
