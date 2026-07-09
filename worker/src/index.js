@@ -377,12 +377,19 @@ export default {
     const url = new URL(request.url);
     const origin = request.headers.get('Origin') || '';
     const cors = corsHeaders(origin, env);
+    const path = url.pathname.replace(/\/$/, '') || '/';
 
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: cors });
     }
 
-    const path = url.pathname.replace(/\/$/, '') || '/';
+    if (!path.startsWith('/api')) {
+      const assetUrl = (path === '/' || path === '')
+        ? new URL('/index.html', request.url)
+        : new URL(request.url);
+      const assetRes = await env.ASSETS.fetch(new Request(assetUrl, request));
+      if (assetRes.status !== 404 || path === '/' || path === '') return assetRes;
+    }
 
     try {
       /* Public */
