@@ -38,6 +38,17 @@
   .skill-node, .tl-entry, select, textarea, input { cursor: none !important; }
 }
 
+/* Restore normal cursor while a modal dialog is open */
+html.modal-open,
+html.modal-open * {
+  cursor: auto !important;
+}
+html.modal-open #cursor-orb {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
 #cursor-orb {
   /* Override popover UA stylesheet (it sets inset:0, margin:auto, border,
      padding, background — all must be explicitly reset here)            */

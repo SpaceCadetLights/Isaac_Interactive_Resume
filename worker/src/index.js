@@ -287,6 +287,71 @@ async function handleDeleteProject(env, cors, id) {
   return json({ ok: true }, 200, cors);
 }
 
+function normalizeImportProject(body) {
+  const slug = slugify(body.slug || body.id || body.title);
+  if (!slug) return null;
+  return {
+    title: body.title || 'Untitled',
+    slug,
+    subtitle: body.subtitle || body.summary || '',
+    description: body.description || body.details || '',
+    tags: Array.isArray(body.tags) ? body.tags : [],
+    role: body.role || '',
+    tools: Array.isArray(body.tools) ? body.tools : [],
+    year: body.year || null,
+    date: body.date || '',
+    category: body.category || 'engineering',
+    links: Array.isArray(body.links) ? body.links : [],
+    status: body.status === 'draft' ? 'draft' : 'published',
+    featured: body.featured ? 1 : 0,
+    sortOrder: body.sortOrder ?? 0,
+    timelineRef: body.timelineRef || body.timeline_ref || null,
+  };
+}
+
+async function handleImportProjects(request, env, cors) {
+  const body = await request.json();
+  const items = Array.isArray(body.projects) ? body.projects : [];
+  if (!items.length) return json({ error: 'projects array required' }, 400, cors);
+
+  let created = 0;
+  let updated = 0;
+  const ts = now();
+
+  for (const raw of items) {
+    const p = normalizeImportProject(raw);
+    if (!p) continue;
+    const existing = await env.DB.prepare('SELECT * FROM projects WHERE slug = ?').bind(p.slug).first();
+
+    if (existing) {
+      await env.DB.prepare(`
+        UPDATE projects SET title=?, subtitle=?, description=?, tags=?, role=?, tools=?,
+          year=?, date=?, category=?, links=?, status=?, featured=?, sort_order=?, timeline_ref=?,
+          updated_at=? WHERE slug=?
+      `).bind(
+        p.title, p.subtitle, p.description, JSON.stringify(p.tags), p.role, JSON.stringify(p.tools),
+        p.year, p.date, p.category, JSON.stringify(p.links), p.status, p.featured, p.sortOrder,
+        p.timelineRef, ts, p.slug
+      ).run();
+      updated++;
+    } else {
+      const id = uuid();
+      await env.DB.prepare(`
+        INSERT INTO projects (id, slug, title, subtitle, description, tags, role, tools, year, date,
+          category, links, status, featured, sort_order, timeline_ref, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        id, p.slug, p.title, p.subtitle, p.description, JSON.stringify(p.tags), p.role,
+        JSON.stringify(p.tools), p.year, p.date, p.category, JSON.stringify(p.links), p.status,
+        p.featured, p.sortOrder, p.timelineRef, ts, ts
+      ).run();
+      created++;
+    }
+  }
+
+  return json({ ok: true, created, updated, total: items.length }, 200, cors);
+}
+
 async function handleUpload(request, env, cors) {
   const form = await request.formData();
   const file = form.get('file');
@@ -425,6 +490,9 @@ export default {
       }
       if (path === '/api/projects' && request.method === 'POST') {
         return handleCreateProject(request, env, cors);
+      }
+      if (path === '/api/projects/import' && request.method === 'POST') {
+        return handleImportProjects(request, env, cors);
       }
 
       const projMatch = path.match(/^\/api\/projects\/([^/]+)$/);

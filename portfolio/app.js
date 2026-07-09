@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import * as SEED from './data.js';
 import { getDataPackPath, siteUrl, isGitHubPagesRepo, REPO_NAME } from '../shared/site-paths.js';
-import { getApiBaseUrl, fetchPublicProjects, applyCmsProjects } from '../shared/cms-config.js';
+import { getApiBaseUrl, fetchPublicProjects, applyCmsProjects, getAdminUrl } from '../shared/cms-config.js';
 
 /* ==========================================================
    TUNING
@@ -2008,14 +2008,79 @@ function applyImport(jsonText) {
     if (!pack || typeof pack !== 'object') throw new Error('Invalid JSON structure.');
     DATA = packToData(pack);
     localStorage.setItem(LS_KEY, JSON.stringify(pack));
-    renderAll();
-    ScrollTrigger.refresh();
-    statusEl.textContent = '\u2713 Import applied. Page content updated.';
-    statusEl.className = 'settings-status ok';
+    refreshCmsMerge().then(() => {
+      renderAll();
+      ScrollTrigger.refresh();
+      statusEl.textContent = '\u2713 Import applied. Page content updated.';
+      statusEl.className = 'settings-status ok';
+    });
   } catch (e) {
     statusEl.textContent = '\u2717 Error: ' + e.message;
     statusEl.className = 'settings-status err';
   }
+}
+
+async function refreshCmsMerge() {
+  const apiBase = getApiBaseUrl(DATA.config);
+  if (!apiBase) return;
+  const cmsPack = await fetchPublicProjects(apiBase);
+  if (cmsPack) DATA = applyCmsProjects(DATA, cmsPack);
+}
+
+async function syncProjectsToCloud(password) {
+  const apiBase = getApiBaseUrl(DATA.config);
+  if (!apiBase) throw new Error('Cloud API is not configured (apiBaseUrl in resume_pack.json).');
+  const projects = DATA.projects || [];
+  if (!projects.length) throw new Error('No projects in current data to sync.');
+  const loginRes = await fetch(`${apiBase}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password }),
+  });
+  const loginData = await loginRes.json().catch(() => ({}));
+  if (!loginRes.ok || !loginData.token) throw new Error(loginData.error || 'Admin login failed.');
+  const importRes = await fetch(`${apiBase}/api/projects/import`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${loginData.token}`,
+    },
+    body: JSON.stringify({ projects }),
+  });
+  const importData = await importRes.json().catch(() => ({}));
+  if (!importRes.ok) throw new Error(importData.error || 'Sync failed.');
+  await refreshCmsMerge();
+  return importData;
+}
+
+function setupDialogCursor() {
+  const sync = () => {
+    const open = $$('dialog').some(d => d.open);
+    document.documentElement.classList.toggle('modal-open', !!open);
+    const orb = document.getElementById('cursor-orb');
+    if (!orb) return;
+    if (open) {
+      orb.classList.remove('is-visible');
+      try { orb.hidePopover(); } catch (_) {}
+    } else if (!window.matchMedia('(hover: none), (pointer: coarse)').matches) {
+      try { orb.showPopover(); } catch (_) {}
+    }
+  };
+  $$('dialog').forEach(dialog => {
+    const show = dialog.showModal.bind(dialog);
+    dialog.showModal = function (...args) {
+      const r = show(...args);
+      sync();
+      return r;
+    };
+    const close = dialog.close.bind(dialog);
+    dialog.close = function (...args) {
+      const r = close(...args);
+      sync();
+      return r;
+    };
+  });
+  sync();
 }
 
 function setupImport() {
@@ -2031,13 +2096,44 @@ function setupImport() {
   const statusEl = $('#import-status');
   if (!modal || !openBtn) return;
 
-  openBtn.addEventListener('click', () => { statusEl.textContent = ''; statusEl.className = 'settings-status'; jsonArea.value = ''; modal.showModal(); });
+  const adminLink = $('#btn-open-admin');
+  const adminUrl = getAdminUrl(DATA.config) || siteUrl('admin/');
+  if (adminLink) adminLink.href = adminUrl;
+
+  openBtn.addEventListener('click', () => {
+    statusEl.textContent = '';
+    statusEl.className = 'settings-status';
+    jsonArea.value = '';
+    if (adminLink) adminLink.href = getAdminUrl(DATA.config) || siteUrl('admin/');
+    modal.showModal();
+  });
   closeBtn.addEventListener('click', () => modal.close());
   modal.addEventListener('click', e => { if (e.target === modal) modal.close(); });
   applyBtn.addEventListener('click', () => {
     const text = jsonArea.value.trim();
     if (!text) { statusEl.textContent = 'Paste JSON above first.'; statusEl.className = 'settings-status err'; return; }
     applyImport(text);
+  });
+  $('#btn-sync-cloud')?.addEventListener('click', async () => {
+    const password = ($('#sync-admin-password')?.value || '').trim();
+    if (!password) {
+      statusEl.textContent = 'Enter your admin password above, then click Sync.';
+      statusEl.className = 'settings-status err';
+      return;
+    }
+    statusEl.textContent = 'Syncing projects to cloud…';
+    statusEl.className = 'settings-status';
+    try {
+      const res = await syncProjectsToCloud(password);
+      renderAll();
+      ScrollTrigger.refresh();
+      statusEl.textContent = `\u2713 Synced ${res.created || 0} new, ${res.updated || 0} updated. Add media in Admin.`;
+      statusEl.className = 'settings-status ok';
+      $('#sync-admin-password').value = '';
+    } catch (err) {
+      statusEl.textContent = '\u2717 ' + err.message;
+      statusEl.className = 'settings-status err';
+    }
   });
   fileBtn.addEventListener('click', () => fileIn.click());
   fileIn.addEventListener('change', () => {
@@ -2229,6 +2325,7 @@ function setupCursor() {
     '.skill-node', '.tl-entry', '.tl-btn', '.tl-summary', '.gallery-thumb', '.gallery-link-btn', '.lb-nav', '.lb-close', 'select',
     '.hero-site-link', '.share-option', '#share-btn', '#share-facebook', '#share-sms',
     '.disc-tile', '.proj-card-hit', '.site-switch-link', '.gal-tag-filter', '#gal-load-more',
+    '#btn-open-admin', '#btn-sync-cloud', '#sync-admin-password',
   ].join(', ');
 
   function applyTransform() {
@@ -2323,6 +2420,7 @@ async function init() {
   setupShare();
   suppressTooltips();
   setupCursor();
+  setupDialogCursor();
   setupModal();
   setupGalleryModal();
   setupImport();

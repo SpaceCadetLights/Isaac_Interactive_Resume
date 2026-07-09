@@ -99,6 +99,13 @@ async function renderList() {
     <div class="toolbar">
       <a href="#/projects/new" class="btn primary">+ New project</a>
     </div>
+    <details class="glass" style="padding:14px;margin-bottom:16px">
+      <summary style="cursor:pointer;font-size:13px">Bulk import projects JSON</summary>
+      <p class="muted small" style="margin:10px 0">Paste a <code>projects</code> array or full <code>resume_pack.json</code>. Updates text by slug; keeps existing media.</p>
+      <textarea id="bulk-import-json" rows="8" style="width:100%;margin-top:8px;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.14);background:rgba(0,0,0,0.25);color:inherit;font-family:inherit"></textarea>
+      <button type="button" class="btn primary" id="btn-bulk-import" style="margin-top:10px">Import to database</button>
+      <p id="bulk-import-status" class="status"></p>
+    </details>
     <div class="project-list">
       ${projects.length ? projects.map(p => `
         <div class="project-row glass">
@@ -113,6 +120,23 @@ async function renderList() {
         </div>
       `).join('') : '<p class="muted">No projects yet. Create one to get started.</p>'}
     </div>`;
+
+  document.getElementById('btn-bulk-import')?.addEventListener('click', async () => {
+    const st = document.getElementById('bulk-import-status');
+    const raw = document.getElementById('bulk-import-json')?.value?.trim();
+    if (!raw) { st.textContent = 'Paste JSON first.'; return; }
+    try {
+      const parsed = JSON.parse(raw);
+      const projects = Array.isArray(parsed) ? parsed : (parsed.projects || []);
+      if (!projects.length) throw new Error('No projects found in JSON.');
+      st.textContent = 'Importing…';
+      const res = await api('/api/projects/import', { method: 'POST', body: JSON.stringify({ projects }) });
+      st.textContent = `Imported: ${res.created || 0} new, ${res.updated || 0} updated.`;
+      await renderList();
+    } catch (err) {
+      st.textContent = err.message;
+    }
+  });
 }
 
 async function renderEdit(id) {
