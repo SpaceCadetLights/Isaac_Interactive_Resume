@@ -269,6 +269,8 @@ let _galVisibleCount = GAL_PAGE_SIZE;
 let _galTagFilter = 'all';
 let _heroReelTimer = null;
 let _heroReelIdx = 0;
+let _coverMontageTimers = [];
+const COVER_MONTAGE_MS = 2000;
 
 function resolveMediaUrl(srcOrItem) {
   const item = srcOrItem && typeof srcOrItem === 'object' ? srcOrItem : null;
@@ -288,6 +290,56 @@ function projectHeroSrc(project) {
   if (project.hero && project.hero.src) return resolveMediaUrl(project.hero);
   const first = (project.media || []).find(m => (m.type === 'image' || m.type === 'video') && (m.src || m.publicUrl));
   return first ? resolveMediaUrl(first) : '';
+}
+
+function projectCoverSlides(project) {
+  if (!project) return [];
+  const slides = [];
+  const seen = new Set();
+  const add = (item) => {
+    const url = resolveMediaUrl(item);
+    if (url && !seen.has(url)) {
+      seen.add(url);
+      slides.push(url);
+    }
+  };
+  if (project.hero) add(project.hero);
+  (project.media || []).forEach(m => {
+    if (m.type === 'image' || m.type === 'video') add(m);
+  });
+  return slides;
+}
+
+function buildCoverMontageHtml(slides, placeholderClass = 'proj-card-placeholder') {
+  if (!slides.length) return `<div class="${placeholderClass}"></div>`;
+  if (slides.length === 1) {
+    return `<img src="${esc(slides[0])}" alt="" loading="lazy">`;
+  }
+  return `<div class="cover-montage" data-interval="${COVER_MONTAGE_MS}">${slides.map((url, i) =>
+    `<img class="cover-montage-img${i === 0 ? ' active' : ''}" src="${esc(url)}" alt="" loading="lazy">`
+  ).join('')}</div>`;
+}
+
+function stopCoverMontages() {
+  _coverMontageTimers.forEach(id => clearInterval(id));
+  _coverMontageTimers = [];
+}
+
+function initCoverMontages() {
+  stopCoverMontages();
+  if (PREFERS_REDUCED) return;
+  $$('.cover-montage').forEach(montage => {
+    const imgs = montage.querySelectorAll('.cover-montage-img');
+    if (imgs.length < 2) return;
+    let idx = 0;
+    const ms = Number(montage.dataset.interval) || COVER_MONTAGE_MS;
+    const id = setInterval(() => {
+      imgs[idx]?.classList.remove('active');
+      idx = (idx + 1) % imgs.length;
+      imgs[idx]?.classList.add('active');
+    }, ms);
+    _coverMontageTimers.push(id);
+  });
 }
 
 function getProject(id) {
@@ -1080,14 +1132,36 @@ function renderHeroReel() {
   const el = $('#hero-reel');
   if (!el) return;
   if (_heroReelTimer) { clearInterval(_heroReelTimer); _heroReelTimer = null; }
-  const featured = (DATA.projects || []).filter(p => p.featured && projectHeroSrc(p));
+  const featured = (DATA.projects || []).filter(p => p.featured && projectCoverSlides(p).length);
   if (!featured.length) { el.innerHTML = ''; return; }
+
+  if (featured.length === 1) {
+    const project = featured[0];
+    const slides = projectCoverSlides(project);
+    el.innerHTML = slides.length === 1 || PREFERS_REDUCED
+      ? `<img class="hero-reel-img active" src="${esc(slides[0])}" alt="">`
+      : slides.map((url, i) =>
+        `<img class="hero-reel-img${i === 0 ? ' active' : ''}" src="${esc(url)}" alt="">`
+      ).join('');
+    el.onclick = () => openGalleryModal(project);
+    if (slides.length > 1 && !PREFERS_REDUCED) {
+      _heroReelIdx = 0;
+      _heroReelTimer = setInterval(() => {
+        const imgs = el.querySelectorAll('.hero-reel-img');
+        imgs[_heroReelIdx]?.classList.remove('active');
+        _heroReelIdx = (_heroReelIdx + 1) % slides.length;
+        imgs[_heroReelIdx]?.classList.add('active');
+      }, COVER_MONTAGE_MS);
+    }
+    return;
+  }
+
   if (PREFERS_REDUCED) {
-    el.innerHTML = `<img class="hero-reel-img active" src="${esc(projectHeroSrc(featured[0]))}" alt="">`;
+    el.innerHTML = `<img class="hero-reel-img active" src="${esc(projectCoverSlides(featured[0])[0])}" alt="">`;
     return;
   }
   el.innerHTML = featured.map((p, i) =>
-    `<img class="hero-reel-img${i === 0 ? ' active' : ''}" data-proj-id="${esc(p.id)}" src="${esc(projectHeroSrc(p))}" alt="${esc(p.title)}">`
+    `<img class="hero-reel-img${i === 0 ? ' active' : ''}" data-proj-id="${esc(p.id)}" src="${esc(projectCoverSlides(p)[0])}" alt="${esc(p.title)}">`
   ).join('');
   _heroReelIdx = 0;
   el.onclick = () => {
@@ -1116,10 +1190,7 @@ function renderDiscover() {
   }
   grid.innerHTML = items.map(p => {
     const n = countMediaPics(p.media);
-    const hero = projectHeroSrc(p);
-    const thumb = hero
-      ? `<img src="${esc(hero)}" alt="" loading="lazy">`
-      : '<div class="disc-tile-placeholder"></div>';
+    const thumb = buildCoverMontageHtml(projectCoverSlides(p), 'disc-tile-placeholder');
     const tag = (p.tags || [])[0] || p.category || 'Project';
     return `<button type="button" class="disc-tile" data-proj-id="${esc(p.id)}" aria-label="Open ${esc(p.title)}">
       ${thumb}
@@ -1132,6 +1203,7 @@ function renderDiscover() {
       </div>
     </button>`;
   }).join('');
+  initCoverMontages();
 }
 
 function renderProjects(query) {
@@ -1153,10 +1225,7 @@ function renderProjects(query) {
   grid.innerHTML = items.map(p => {
     const pics = countMediaPics(p.media);
     const vids = (p.media || []).filter(m => m.type === 'video').length;
-    const hero = projectHeroSrc(p);
-    const thumb = hero
-      ? `<img src="${esc(hero)}" alt="" loading="lazy">`
-      : '<div class="proj-card-placeholder"></div>';
+    const thumb = buildCoverMontageHtml(projectCoverSlides(p), 'proj-card-placeholder');
     const meta = [pics ? `${pics} photo${pics !== 1 ? 's' : ''}` : '', vids ? `${vids} video${vids !== 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ') || 'Details & links';
     const timelineLink = p.timelineRef
       ? `<a href="${esc(siteUrl('3d-resume/'))}#ch-timeline" class="proj-timeline-link">View on career timeline &#x2197;</a>`
@@ -1174,6 +1243,7 @@ function renderProjects(query) {
       ${timelineLink}
     </article>`;
   }).join('');
+  initCoverMontages();
 }
 
 function renderSummary() {
