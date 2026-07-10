@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mountDiscoverRing, unmountDiscoverRing } from './discover-ring.js';
 import * as SEED from './data.js';
 import { getDataPackPath, siteUrl, isGitHubPagesRepo, REPO_NAME } from '../shared/site-paths.js';
 import { getApiBaseUrl, fetchPublicProjects, fetchPublicPack, applyCmsProjects, getAdminUrl } from '../shared/cms-config.js';
@@ -1205,16 +1206,34 @@ function renderHero() {
   $('#hero-chips').innerHTML = DATA.hero.chips.map(c => `<span class="chip">${esc(c)}</span>`).join('');
 }
 
-function renderDiscover() {
-  const grid = $('#discover-grid');
-  if (!grid) return;
-  let items = (DATA.projects || []).filter(p => p.featuredDiscover);
-  items.sort((a, b) => (b.sortOrder ?? 0) - (a.sortOrder ?? 0) || (b.date || '').localeCompare(a.date || ''));
-  if (!items.length) {
-    grid.innerHTML = '<p class="disc-empty">No Discover highlights yet. In Portfolio Admin, check <strong>Featured on Discover</strong> on individual projects.</p>';
-    return;
+function buildDiscoverRingItems(projects) {
+  const ringItems = [];
+  for (const p of projects) {
+    const slides = projectCoverSlides(p);
+    if (slides.length) {
+      slides.forEach((url) => {
+        ringItems.push({
+          projectId: p.id,
+          title: p.title,
+          subtitle: p.subtitle || '',
+          imageUrl: url,
+        });
+      });
+    } else {
+      ringItems.push({
+        projectId: p.id,
+        title: p.title,
+        subtitle: p.subtitle || '',
+        imageUrl: null,
+      });
+    }
   }
-  grid.innerHTML = items.map((p, i) => {
+  return ringItems;
+}
+
+function renderDiscoverFallbackGrid(grid, projects) {
+  grid.hidden = false;
+  grid.innerHTML = projects.map((p, i) => {
     const n = countMediaPics(p.media);
     const thumb = buildCoverMontageHtml(projectCoverSlides(p), 'disc-tile-placeholder');
     const org = p.organizationId ? getOrganization(p.organizationId) : null;
@@ -1234,6 +1253,48 @@ function renderDiscover() {
     </button>`;
   }).join('');
   initCoverMontages();
+}
+
+function renderDiscover() {
+  const wrap = $('#discover-ring-wrap');
+  const caption = $('#discover-ring-caption');
+  const grid = $('#discover-grid');
+  if (!wrap && !grid) return;
+
+  let projects = (DATA.projects || []).filter(p => p.featuredDiscover && p.status !== 'draft');
+  projects.sort((a, b) => (b.sortOrder ?? 0) - (a.sortOrder ?? 0) || (b.date || '').localeCompare(a.date || ''));
+
+  if (!projects.length) {
+    unmountDiscoverRing();
+    if (wrap) wrap.hidden = true;
+    if (caption) caption.hidden = true;
+    if (grid) {
+      grid.hidden = false;
+      grid.innerHTML = '<p class="disc-empty">No Discover highlights yet. In Portfolio Admin, check <strong>Featured on Discover</strong> on individual projects.</p>';
+    }
+    return;
+  }
+
+  const ringItems = buildDiscoverRingItems(projects);
+  const mounted = wrap && mountDiscoverRing(wrap, caption, ringItems, {
+    reducedMotion: PREFERS_REDUCED || reducedMotion,
+    onSelect: (projectId) => {
+      const p = getProject(projectId);
+      if (p) openGalleryModal(p);
+    },
+  });
+
+  if (mounted) {
+    wrap.hidden = false;
+    if (grid) {
+      grid.hidden = true;
+      grid.innerHTML = '';
+    }
+  } else if (grid) {
+    if (wrap) wrap.hidden = true;
+    if (caption) caption.hidden = true;
+    renderDiscoverFallbackGrid(grid, projects);
+  }
 }
 
 function renderCompanies() {
@@ -2301,6 +2362,7 @@ function setupControls() {
     if (motionIcon)  motionIcon.textContent  = reducedMotion ? '\u25CC' : '\u29BF';
     if (motionLabel) motionLabel.textContent  = reducedMotion ? 'Particle Motion: Off' : 'Particle Motion: On';
     if (motionBtn)   motionBtn.title          = reducedMotion ? 'Enable Particle Motion' : 'Disable Particle Motion';
+    renderDiscover();
   }
 
   function syncQuality() {
