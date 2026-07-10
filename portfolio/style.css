@@ -202,11 +202,58 @@ body {
   padding-right: clamp(16px, 4vw, 56px);
 }
 .chapter-inner.chapter-discover {
-  max-width: min(98vw, 1680px);
+  width: 100%;
+  max-width: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
 }
-.discover-panel {
-  padding: clamp(20px, 3vw, 36px);
+#ch-discover {
+  padding-top: clamp(8px, 1.5vh, 16px);
+  padding-bottom: clamp(16px, 2.5vh, 32px);
+  padding-left: 0;
+  padding-right: 0;
+  margin-top: clamp(-64px, -9vh, -36px);
+  min-height: auto;
   overflow: visible;
+}
+.discover-header {
+  text-align: center;
+  margin: 0;
+  padding: 0 clamp(12px, 3vw, 24px);
+  position: relative;
+  z-index: 4;
+  pointer-events: none;
+  transform: translateY(0);
+  margin-bottom: clamp(-28px, -4vh, -16px);
+}
+.discover-hero-title {
+  margin: 0;
+  font-size: clamp(34px, 6.8vw, 76px);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  background: linear-gradient(92deg, #7cf7ff 0%, #b48cff 48%, #ff7ae5 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 4px 28px rgba(124, 247, 255, 0.18));
+}
+.discover-viewer-column {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  overflow: visible;
+}
+
+#ch-projects {
+  padding-top: clamp(20px, 3vh, 32px);
 }
 
 /* Hero is slightly shorter than the full viewport — the tops of the two summary
@@ -385,29 +432,29 @@ body {
   z-index: -1;
 }
 
-.hero-orb {
-  width: 72px;
-  height: 72px;
+.hero-portrait {
+  width: clamp(200px, 26vw, 320px);
+  height: clamp(200px, 26vw, 320px);
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%,
-    rgba(255,255,255,0.55), rgba(255,255,255,0.04) 44%,
-    rgba(124,247,255,0.18) 60%, rgba(180,140,255,0.14) 80%);
-  box-shadow: 0 0 40px rgba(124,247,255,0.15), 0 0 80px rgba(180,140,255,0.08);
-  position: relative;
   overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  margin-bottom: 4px;
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.48),
+    0 8px 24px rgba(0, 0, 0, 0.32),
+    0 2px 8px rgba(0, 0, 0, 0.22);
+  border: 2px solid rgba(255, 255, 255, 0.14);
+  background: rgba(10, 14, 30, 0.5);
 }
 
-.hero-orb::after {
-  content: '';
-  position: absolute;
-  inset: -50%;
-  background: conic-gradient(from 0deg, transparent, rgba(124,247,255,0.25),
-    rgba(180,140,255,0.2), rgba(255,122,229,0.18), transparent);
-  animation: orb-spin 8s linear infinite;
-  filter: blur(8px);
+.hero-portrait-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 18%;
+  display: block;
 }
-
-@keyframes orb-spin { to { transform: rotate(360deg); } }
 
 .hero-name {
   font-size: clamp(36px, 8vw, 76px);
@@ -2763,7 +2810,7 @@ body {
   .ctrl-btn { width: 34px; height: 34px; font-size: 13px; border-radius: 10px; }
   .vfx-btn { min-width: 140px; font-size: 12px; padding: 8px 12px; }
   .hero-name { font-size: clamp(28px, 10vw, 48px); }
-  .hero-orb { width: 54px; height: 54px; }
+  .hero-portrait { width: clamp(168px, 42vw, 220px); height: clamp(168px, 42vw, 220px); }
   .hero-chips { gap: 6px; }
   .hero-chips .chip { font-size: 10px; padding: 3px 7px; }
   .section-title { font-size: 16px; }
@@ -2817,7 +2864,6 @@ body {
   #gallery-modal::backdrop,
   #gallery-modal.gallery-closing::backdrop,
   .cf-item,
-  .hero-orb::after,
   .scroll-hint,
   .scroll-arrow { animation: none !important; }
   /* Disable the hero blur on low-motion: backdrop-filter can cause jitter */
@@ -2837,7 +2883,6 @@ body {
 .reduced-motion #gallery-modal::before,
 .reduced-motion #gallery-modal,
 .reduced-motion #gallery-modal::backdrop,
-.reduced-motion .hero-orb::after,
 .reduced-motion .scroll-hint,
 .reduced-motion .scroll-arrow { animation: none !important; }
 
@@ -2939,16 +2984,68 @@ body {
 /* ===== Discover 3D ring ===== */
 .discover-ring-wrap {
   position: relative;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  height: clamp(360px, 54vh, 560px);
+  min-height: 340px;
+  margin-top: 0;
+  background: transparent;
+  border: none;
+  overflow: visible;
+  isolation: isolate;
+  touch-action: none;
+  cursor: grab;
+}
+.discover-ring-wrap.is-dragging {
+  cursor: grabbing;
+}
+.discover-ring-stage {
+  position: relative;
   width: 100%;
-  height: clamp(380px, 62vh, 680px);
-  margin-top: 6px;
-  border-radius: 16px;
-  overflow: hidden;
-  background:
-    radial-gradient(ellipse 80% 55% at 50% 72%, rgba(124, 247, 255, 0.06), transparent 65%),
-    radial-gradient(ellipse 60% 40% at 50% 100%, rgba(138, 96, 255, 0.08), transparent 70%),
-    rgba(6, 10, 22, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  height: 100%;
+  touch-action: none;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(0, 0, 0, 0.55) 4%,
+    black 14%,
+    black 86%,
+    rgba(0, 0, 0, 0.55) 96%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(0, 0, 0, 0.55) 4%,
+    black 14%,
+    black 86%,
+    rgba(0, 0, 0, 0.55) 96%,
+    transparent 100%
+  );
+}
+.discover-ring-fade {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: min(24vw, 300px);
+  pointer-events: none;
+  z-index: 3;
+}
+.discover-ring-fade--left {
+  left: 0;
+  background: linear-gradient(to right, rgba(8, 10, 24, 0.55), transparent 78%);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-mask-image: linear-gradient(to right, black 0%, black 32%, transparent 100%);
+  mask-image: linear-gradient(to right, black 0%, black 32%, transparent 100%);
+}
+.discover-ring-fade--right {
+  right: 0;
+  background: linear-gradient(to left, rgba(8, 10, 24, 0.55), transparent 78%);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-mask-image: linear-gradient(to left, black 0%, black 32%, transparent 100%);
+  mask-image: linear-gradient(to left, black 0%, black 32%, transparent 100%);
 }
 #discover-ring-canvas {
   display: block;
@@ -2956,35 +3053,32 @@ body {
   height: 100%;
   cursor: grab;
   touch-action: none;
+  background: transparent;
 }
 .discover-ring-wrap.is-dragging #discover-ring-canvas {
   cursor: grabbing;
 }
-.discover-ring-vignette {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(to bottom, rgba(8, 12, 24, 0.55) 0%, transparent 22%, transparent 62%, rgba(8, 12, 24, 0.72) 100%),
-    linear-gradient(to right, rgba(8, 12, 24, 0.35) 0%, transparent 18%, transparent 82%, rgba(8, 12, 24, 0.35) 100%);
-  z-index: 1;
-}
 .discover-ring-caption {
-  position: absolute;
-  left: 50%;
-  bottom: clamp(16px, 3vw, 28px);
-  transform: translateX(-50%);
-  z-index: 2;
+  position: relative;
+  left: auto;
+  bottom: auto;
+  transform: none;
+  z-index: 4;
   pointer-events: none;
   text-align: center;
-  max-width: min(92%, 520px);
-  padding: 12px 20px 14px;
-  border-radius: 14px;
-  background: rgba(8, 12, 26, 0.72);
-  border: 1px solid rgba(124, 247, 255, 0.18);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  max-width: min(92%, 560px);
+  padding: clamp(10px, 2vw, 14px) clamp(22px, 4.5vw, 36px) clamp(12px, 2.2vw, 16px);
+  border-radius: 9999px;
+  background: rgba(16, 18, 42, 0.4);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 0 0 1px rgba(124, 247, 255, 0.06) inset,
+    0 8px 28px rgba(0, 0, 0, 0.3);
+}
+.discover-ring-caption[hidden] {
+  display: none !important;
 }
 .discover-ring-caption-title {
   font-size: clamp(15px, 2.2vw, 18px);
@@ -2995,12 +3089,12 @@ body {
 .discover-ring-caption-sub {
   margin-top: 4px;
   font-size: 12px;
-  color: var(--muted2);
+  color: rgba(220, 228, 245, 0.9);
 }
 .discover-ring-caption-hint {
   margin-top: 8px;
   font-size: 11px;
-  color: rgba(124, 247, 255, 0.55);
+  color: rgba(124, 247, 255, 0.72);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }

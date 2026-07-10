@@ -1,6 +1,6 @@
 # Media Folder Conventions
 
-Photos and videos are hosted on **Cloudflare R2** (see [R2_SETUP.md](R2_SETUP.md)), not in git.
+Photos and videos are hosted on **Cloudflare R2** (see [R2_SETUP.md](R2_SETUP.md)), not in git — except the bundled hero portrait at `isaac-headshot.png` (served from this folder for GitHub Pages).
 
 ## Folder Structure (R2 bucket)
 

@@ -3,12 +3,19 @@
  * items: { projectId, title, subtitle, imageUrl|null }[]
  */
 import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
-const TILT_RAD = THREE.MathUtils.degToRad(24);
-const RING_RADIUS = 4.2;
-const CARD_W = 1.75;
-const CARD_H = 1.1;
-const CARD_THICK = 0.028;
+const TILT_RAD = THREE.MathUtils.degToRad(16);
+const RING_RADIUS = 3.4;
+const CARD_W = 1.7;
+const CARD_H = 1.08;
+const CARD_THICK = 0.092;
+const CARD_RADIUS = 0.11;
+const DRAG_SPIN = 0.0026;
+const SWIPE_COMMIT_PX = 36;
+const CAMERA_Z = 6.35;
+const CAMERA_Y = 0.28;
+const FOCUS_Y = 0.44;
 
 let instance = null;
 
@@ -32,9 +39,6 @@ function makePlaceholderTexture(title) {
   g.addColorStop(1, '#0d2840');
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, 640, 400);
-  ctx.strokeStyle = 'rgba(124,247,255,0.25)';
-  ctx.lineWidth = 2;
-  ctx.strokeRect(24, 24, 592, 352);
   ctx.fillStyle = 'rgba(255,255,255,0.92)';
   ctx.font = '600 26px system-ui, sans-serif';
   ctx.textAlign = 'center';
@@ -42,7 +46,7 @@ function makePlaceholderTexture(title) {
   const lines = String(title || 'Highlight').split(/\s+/);
   const mid = Math.ceil(lines.length / 2);
   ctx.fillText(lines.slice(0, mid).join(' '), 320, 188);
-  if (lines.length > 1) ctx.fillText(lines.slice(mid).join(' '), 320, 222);
+  if (lines.length > 1) ctx.fillText(lines.slice(mid).join(' '), 320, 220);
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
@@ -68,6 +72,57 @@ function loadTexture(url) {
   });
 }
 
+/** Rolling FPS governor — lowers quality when the device struggles. */
+class PerfGovernor {
+  constructor() {
+    this.tier = 'high';
+    this.samples = [];
+    this.lastTierChange = performance.now();
+  }
+
+  sample(frameMs) {
+    this.samples.push(frameMs);
+    if (this.samples.length > 90) this.samples.shift();
+    if (this.samples.length < 30) return;
+    const now = performance.now();
+    if (now - this.lastTierChange < 1800) return;
+
+    const avg = this.samples.reduce((a, b) => a + b, 0) / this.samples.length;
+    const fps = 1000 / avg;
+    const prev = this.tier;
+
+    if (fps < 22 && this.tier !== 'low') this.tier = 'low';
+    else if (fps < 34 && this.tier === 'high') this.tier = 'medium';
+    else if (fps > 52 && this.tier === 'low') this.tier = 'medium';
+    else if (fps > 58 && this.tier === 'medium') this.tier = 'high';
+
+    if (prev !== this.tier) {
+      this.lastTierChange = now;
+      this.samples = [];
+    }
+  }
+
+  get pixelRatioCap() {
+    return { high: 2, medium: 1.35, low: 1 }[this.tier];
+  }
+
+  get spinScale() {
+    return { high: 1, medium: 0.65, low: 0.35 }[this.tier];
+  }
+
+  get useDepthBlur() {
+    return false;
+  }
+
+  get useFog() {
+    return this.tier !== 'low';
+  }
+
+  get antialias() {
+    return this.tier === 'high';
+  }
+}
+
 class DiscoverRing {
   constructor(wrap, captionEl, items, options) {
     this.wrap = wrap;
@@ -82,21 +137,36 @@ class DiscoverRing {
     this.visible = true;
     this.isDragging = false;
     this.dragLastX = 0;
+    this.dragTotalX = 0;
+    this.dragStartIndex = 0;
+    this.dragStartRotation = 0;
     this.dragMoved = false;
-    this.spinVelocity = this.reducedMotion ? 0 : 0.22;
+    this.spinVelocity = 0;
     this.manualSpin = 0;
+    this.isSnapping = false;
+    this.snapTargetY = 0;
     this.focusIndex = 0;
     this.clock = new THREE.Clock();
     this.raycaster = new THREE.Raycaster();
     this.pointer = new THREE.Vector2();
     this._tmpVec = new THREE.Vector3();
+    this._tmpVec2 = new THREE.Vector3();
+    this._tmpQuat = new THREE.Quaternion();
+    this._parentQuat = new THREE.Quaternion();
+    this._worldQuat = new THREE.Quaternion();
+    this._tmpMat4 = new THREE.Matrix4();
+    this._tiltAxis = new THREE.Vector3(1, 0, 0);
+    this.perf = new PerfGovernor();
+    this._frameMs = 0;
+    this._pageScrollUntil = 0;
 
     this._initScene();
+    this.cardGeo = null;
     this._buildRing().then(() => {
-      this._initPost();
       this._bindEvents();
       this._observeVisibility();
       this._resize();
+      this._startSnapToIndex(0, true);
       this._animate();
       this._updateCaption();
     });
@@ -107,12 +177,11 @@ class DiscoverRing {
     const h = this.wrap.clientHeight || 480;
 
     this.scene = new THREE.Scene();
-    this.scene.fog = new THREE.FogExp2(0x080c18, 0.055);
     this.scene.background = null;
 
-    this.camera = new THREE.PerspectiveCamera(42, w / h, 0.1, 80);
-    this.camera.position.set(0, 0.85, 7.2);
-    this.camera.lookAt(0, -0.15, 0);
+    this.camera = new THREE.PerspectiveCamera(32, w / h, 0.1, 80);
+    this.camera.position.set(0, CAMERA_Y, CAMERA_Z);
+    this.camera.lookAt(0, FOCUS_Y, 0);
 
     this.renderer = new THREE.WebGLRenderer({
       canvas: this.canvas,
@@ -120,26 +189,68 @@ class DiscoverRing {
       antialias: true,
       powerPreference: 'high-performance',
     });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    this.renderer.setClearColor(0x000000, 0);
+    this._applyPixelRatio();
     this.renderer.setSize(w, h, false);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
-    this.ringGroup = new THREE.Group();
-    this.ringGroup.rotation.x = TILT_RAD;
-    this.scene.add(this.ringGroup);
+    this.ringPivot = new THREE.Group();
+    this.ringPivot.position.y = 1.02;
+    this.ringPivot.rotation.x = TILT_RAD;
+    this.scene.add(this.ringPivot);
 
-    const rimLight = new THREE.AmbientLight(0x8899cc, 0.35);
-    this.scene.add(rimLight);
-    const key = new THREE.DirectionalLight(0x7cf7ff, 0.45);
-    key.position.set(2, 4, 6);
-    this.scene.add(key);
+    this.ringGroup = new THREE.Group();
+    this.ringPivot.add(this.ringGroup);
+
+    this.scene.add(new THREE.HemisphereLight(0xb8c8e8, 0x1a2030, 0.95));
+    this.scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+
+    this.keyLight = new THREE.DirectionalLight(0xffffff, 0.85);
+    this.keyLight.position.set(0.5, 1.8, CAMERA_Z + 1);
+    this.scene.add(this.keyLight);
+
+    this.fillLight = new THREE.PointLight(0xffffff, 0.9, 22);
+    this.fillLight.position.set(0, 0.5, CAMERA_Z - 0.8);
+    this.scene.add(this.fillLight);
+
+    const rim = new THREE.DirectionalLight(0x9ce8ff, 0.28);
+    rim.position.set(-2.5, 0.8, 2);
+    this.scene.add(rim);
+  }
+
+  _applyPixelRatio() {
+    const cap = this.perf.pixelRatioCap;
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, cap));
+  }
+
+  _createCardMaterials(frontTexture) {
+    const edgeMat = new THREE.MeshStandardMaterial({
+      color: 0xd8e8f8,
+      roughness: 0.06,
+      metalness: 0.02,
+      transparent: false,
+      opacity: 1,
+    });
+
+    const frontMat = new THREE.MeshBasicMaterial({
+      map: frontTexture,
+    });
+
+    const backMat = new THREE.MeshStandardMaterial({
+      color: 0x9aa8c8,
+      roughness: 0.12,
+      metalness: 0.08,
+      transparent: false,
+      opacity: 1,
+    });
+
+    return [edgeMat, edgeMat, edgeMat, edgeMat, frontMat, backMat];
   }
 
   async _buildRing() {
     const n = this.items.length;
-    const planeGeo = new THREE.PlaneGeometry(CARD_W, CARD_H);
-    const backGeo = new THREE.PlaneGeometry(CARD_W, CARD_H);
-    const edgeGeo = new THREE.PlaneGeometry(CARD_W + 0.06, CARD_H + 0.06);
+    const cardGeo = new RoundedBoxGeometry(CARD_W, CARD_H, CARD_THICK, 6, CARD_RADIUS);
+    this.cardGeo = cardGeo;
 
     const textures = await Promise.all(
       this.items.map((item) => loadTexture(item.imageUrl)),
@@ -147,134 +258,82 @@ class DiscoverRing {
 
     for (let i = 0; i < n; i++) {
       const item = this.items[i];
-      const group = new THREE.Group();
       const angle = (i / n) * Math.PI * 2;
-      group.position.x = Math.sin(angle) * RING_RADIUS;
-      group.position.z = Math.cos(angle) * RING_RADIUS;
-      group.rotation.y = Math.PI / 2 - angle;
 
       const tex = textures[i] || makePlaceholderTexture(item.title);
-      const frontMat = new THREE.MeshBasicMaterial({
-        map: tex,
-        transparent: true,
-        opacity: 1,
-        side: THREE.FrontSide,
-        depthWrite: true,
-      });
-      const backMat = new THREE.MeshBasicMaterial({
-        color: 0x0a0e1c,
-        transparent: true,
-        opacity: 0.72,
-        side: THREE.FrontSide,
-      });
-      const edgeMat = new THREE.MeshBasicMaterial({
-        color: 0x1a2848,
-        transparent: true,
-        opacity: 0.85,
-        side: THREE.DoubleSide,
-      });
+      const materials = this._createCardMaterials(tex);
+      const mesh = new THREE.Mesh(cardGeo, materials);
 
-      const edge = new THREE.Mesh(edgeGeo, edgeMat);
-      edge.position.z = -CARD_THICK * 0.5 - 0.001;
-      group.add(edge);
+      mesh.userData = { projectId: item.projectId, pickable: true, baseAngle: angle };
 
-      const back = new THREE.Mesh(backGeo, backMat);
-      back.position.z = -CARD_THICK;
-      back.rotation.y = Math.PI;
-      group.add(back);
-
-      const front = new THREE.Mesh(planeGeo, frontMat);
-      front.position.z = 0.001;
-      front.userData = { projectId: item.projectId, pickable: true };
-      group.add(front);
-
-      const frame = new THREE.LineSegments(
-        new THREE.EdgesGeometry(new THREE.PlaneGeometry(CARD_W, CARD_H)),
-        new THREE.LineBasicMaterial({ color: 0x7cf7ff, transparent: true, opacity: 0.35 }),
-      );
-      frame.position.z = 0.002;
-      group.add(frame);
-
-      this.ringGroup.add(group);
+      this.scene.add(mesh);
       this.cards.push({
-        group,
-        front,
-        frontMat,
-        backMat,
-        edgeMat,
-        frame,
+        mesh,
+        frontMat: materials[4],
+        backMat: materials[5],
+        edgeMats: materials.slice(0, 4),
         item,
         baseAngle: angle,
       });
     }
   }
 
-  async _initPost() {
-    if (this.reducedMotion) return;
-    const isMobile = window.matchMedia('(max-width: 768px)').matches;
-    if (isMobile) return;
-
-    try {
-      const [ecm, rpm, bpm] = await Promise.all([
-        import('three/addons/postprocessing/EffectComposer.js'),
-        import('three/addons/postprocessing/RenderPass.js'),
-        import('three/addons/postprocessing/BokehPass.js'),
-      ]);
-      const w = this.wrap.clientWidth;
-      const h = this.wrap.clientHeight;
-      this.composer = new ecm.EffectComposer(this.renderer);
-      this.composer.addPass(new rpm.RenderPass(this.scene, this.camera));
-      this.bokehPass = new bpm.BokehPass(this.scene, this.camera, {
-        focus: 6.5,
-        aperture: 0.00012,
-        maxblur: 0.012,
-        width: w,
-        height: h,
-      });
-      this.composer.addPass(this.bokehPass);
-    } catch (e) {
-      console.warn('Discover ring DOF unavailable:', e.message);
-    }
+  _syncQualityTier() {
+    this._applyPixelRatio();
   }
 
   _bindEvents() {
     this._onResize = () => this._resize();
     window.addEventListener('resize', this._onResize);
 
+    this._resizeObserver = new ResizeObserver(() => this._resize());
+    this._resizeObserver.observe(this.wrap);
+
+    this._onPageScroll = () => {
+      this._pageScrollUntil = performance.now() + 160;
+    };
+    window.addEventListener('scroll', this._onPageScroll, { passive: true });
+
     this._onPointerDown = (e) => {
       if (e.button !== 0) return;
       this.isDragging = true;
+      this.isSnapping = false;
       this.dragMoved = false;
       this.dragLastX = e.clientX;
+      this.dragTotalX = 0;
+      this.dragStartIndex = this._getNearestCardIndex();
+      this.dragStartRotation = this.ringGroup.rotation.y;
       this.wrap.classList.add('is-dragging');
-      this.canvas.setPointerCapture(e.pointerId);
+      if (this.wrap.setPointerCapture) this.wrap.setPointerCapture(e.pointerId);
     };
     this._onPointerMove = (e) => {
       if (!this.isDragging) return;
+      e.preventDefault();
       const dx = e.clientX - this.dragLastX;
-      if (Math.abs(dx) > 3) this.dragMoved = true;
+      if (Math.abs(dx) > 2) this.dragMoved = true;
       this.dragLastX = e.clientX;
-      this.manualSpin += dx * 0.004;
+      this.dragTotalX += dx;
       this.spinVelocity = 0;
+      this._applyDragRotation();
     };
     this._onPointerUp = (e) => {
       if (!this.isDragging) return;
       this.isDragging = false;
       this.wrap.classList.remove('is-dragging');
-      try { this.canvas.releasePointerCapture(e.pointerId); } catch (_) {}
-      if (!this.reducedMotion) this.spinVelocity = 0.18;
+      try { this.wrap.releasePointerCapture(e.pointerId); } catch (_) {}
+      this._magneticSnapAfterDrag();
     };
     this._onClick = (e) => {
       if (this.dragMoved) {
         this.dragMoved = false;
         return;
       }
-      const rect = this.canvas.getBoundingClientRect();
+      const rect = this.wrap.getBoundingClientRect();
       this.pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       this.pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
       this.raycaster.setFromCamera(this.pointer, this.camera);
       const hits = this.raycaster.intersectObjects(
-        this.cards.map(c => c.front),
+        this.cards.map(c => c.mesh),
         false,
       );
       if (hits[0]?.object?.userData?.projectId) {
@@ -282,18 +341,15 @@ class DiscoverRing {
       }
     };
 
-    this.canvas.addEventListener('pointerdown', this._onPointerDown);
-    this.canvas.addEventListener('pointermove', this._onPointerMove);
-    this.canvas.addEventListener('pointerup', this._onPointerUp);
-    this.canvas.addEventListener('pointercancel', this._onPointerUp);
-    this.canvas.addEventListener('click', this._onClick);
-
-    this._onEnter = () => { if (!this.isDragging) this.spinVelocity = 0; };
-    this._onLeave = () => {
-      if (!this.isDragging && !this.reducedMotion) this.spinVelocity = 0.22;
+    this.wrap.addEventListener('pointerdown', this._onPointerDown);
+    this.wrap.addEventListener('pointermove', this._onPointerMove);
+    this.wrap.addEventListener('pointerup', this._onPointerUp);
+    this.wrap.addEventListener('pointercancel', this._onPointerUp);
+    this.wrap.addEventListener('click', this._onClick);
+    this._onTouchMove = (e) => {
+      if (this.isDragging) e.preventDefault();
     };
-    this.wrap.addEventListener('mouseenter', this._onEnter);
-    this.wrap.addEventListener('mouseleave', this._onLeave);
+    this.wrap.addEventListener('touchmove', this._onTouchMove, { passive: false });
   }
 
   _observeVisibility() {
@@ -309,23 +365,123 @@ class DiscoverRing {
     const h = this.wrap.clientHeight;
     if (!w || !h) return;
     this.camera.aspect = w / h;
+    this._centerRingFrame(h);
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h, false);
-    if (this.composer) this.composer.setSize(w, h);
-    if (this.bokehPass) {
-      this.bokehPass.uniforms.aspect.value = this.camera.aspect;
+  }
+
+  _centerRingFrame(h) {
+    const t = THREE.MathUtils.clamp((h - 300) / 220, 0, 1);
+    this.ringPivot.position.y = THREE.MathUtils.lerp(0.88, 1.02, t);
+    const focusY = THREE.MathUtils.lerp(0.36, 0.46, t);
+    this.camera.position.set(0, CAMERA_Y, CAMERA_Z);
+    this.camera.lookAt(0, focusY, 0);
+    this._focusY = focusY;
+  }
+
+  _normalizeAngle(angle) {
+    return ((angle % (Math.PI * 2)) + Math.PI * 3) % (Math.PI * 2) - Math.PI;
+  }
+
+  _rotationForCard(index) {
+    return -this.cards[index].baseAngle;
+  }
+
+  _getNearestCardIndex() {
+    const n = this.cards.length;
+    if (!n) return 0;
+    const step = (Math.PI * 2) / n;
+    const idx = Math.round(-this.ringGroup.rotation.y / step);
+    return ((idx % n) + n) % n;
+  }
+
+  _startSnapToIndex(index, immediate = false) {
+    if (!this.cards.length) return;
+    const n = this.cards.length;
+    const clamped = ((index % n) + n) % n;
+    this.snapTargetY = this._rotationForCard(clamped);
+    this.isSnapping = !immediate;
+    this.spinVelocity = 0;
+    this.manualSpin = 0;
+    if (immediate) {
+      this.ringGroup.rotation.y = this.snapTargetY;
+      this.isSnapping = false;
+    }
+    this.focusIndex = clamped;
+  }
+
+  _applyDragRotation() {
+    const n = this.cards.length;
+    if (!n) return;
+    const step = (Math.PI * 2) / n;
+    const maxOff = step * 0.96;
+    let off = this.dragTotalX * DRAG_SPIN;
+    off = THREE.MathUtils.clamp(off, -maxOff, maxOff);
+    this.ringGroup.rotation.y = this.dragStartRotation + off;
+  }
+
+  _magneticSnapAfterDrag() {
+    const n = this.cards.length;
+    if (!n) return;
+
+    let targetIndex = this.dragStartIndex;
+    if (Math.abs(this.dragTotalX) > SWIPE_COMMIT_PX) {
+      const dir = this.dragTotalX > 0 ? -1 : 1;
+      targetIndex = ((this.dragStartIndex + dir) % n + n) % n;
+    }
+
+    this._startSnapToIndex(targetIndex);
+    this.dragTotalX = 0;
+  }
+
+  _snapToTarget(dt) {
+    if (!this.isSnapping) return;
+
+    let delta = this._normalizeAngle(this.snapTargetY - this.ringGroup.rotation.y);
+    const step = delta * Math.min(1, dt * 11);
+    this.ringGroup.rotation.y += step;
+
+    if (Math.abs(delta) < 0.003) {
+      this.ringGroup.rotation.y = this.snapTargetY;
+      this.isSnapping = false;
     }
   }
 
+  _updateCardLayout() {
+    const spin = this.ringGroup.rotation.y;
+    const cam = this.camera.position;
+    const pivotY = this.ringPivot.position.y;
+
+    for (const card of this.cards) {
+      const mesh = card.mesh;
+      const angle = card.baseAngle + spin;
+      const x = Math.sin(angle) * RING_RADIUS;
+      const z = Math.cos(angle) * RING_RADIUS;
+
+      this._tmpVec.set(x, 0, z);
+      this._tmpVec.applyAxisAngle(this._tiltAxis, TILT_RAD);
+      this._tmpVec.y += pivotY;
+      mesh.position.copy(this._tmpVec);
+      const dx = cam.x - mesh.position.x;
+      const dz = cam.z - mesh.position.z;
+      mesh.rotation.set(0, Math.atan2(dx, dz), 0);
+    }
+  }
+
+  /** Front card = best alignment with camera view axis. */
   _getFocusCard() {
     let best = null;
-    let bestDist = Infinity;
+    let bestScore = -Infinity;
+
     for (let i = 0; i < this.cards.length; i++) {
       const card = this.cards[i];
-      card.group.getWorldPosition(this._tmpVec);
+      card.mesh.getWorldPosition(this._tmpVec);
       const dist = this.camera.position.distanceTo(this._tmpVec);
-      if (dist < bestDist) {
-        bestDist = dist;
+      const zCam = this._tmpVec.z;
+      const score = zCam - dist * 0.08;
+
+      if (score > bestScore) {
+        bestScore = score;
         best = { card, index: i, dist };
       }
     }
@@ -334,91 +490,89 @@ class DiscoverRing {
 
   _updateDepthStyles(focusDist) {
     for (const card of this.cards) {
-      card.group.getWorldPosition(this._tmpVec);
+      card.mesh.getWorldPosition(this._tmpVec);
       const dist = this.camera.position.distanceTo(this._tmpVec);
       const delta = Math.abs(dist - focusDist);
-      const t = Math.min(1, delta / 3.8);
-      const near = 1 - t;
+      const depthT = Math.min(1, delta / 2.2);
+      const zCam = this._tmpVec.z;
+      const frontness = Math.max(0, Math.min(1, (zCam + RING_RADIUS) / (RING_RADIUS * 2)));
+      const near = frontness * (1 - depthT * 0.5);
 
-      card.frontMat.opacity = 0.38 + near * 0.62;
-      card.backMat.opacity = 0.25 + near * 0.5;
-      card.edgeMat.opacity = 0.35 + near * 0.55;
-      if (card.frame?.material) card.frame.material.opacity = 0.12 + near * 0.55;
+      const scale = 0.9 + near * 0.14;
+      card.mesh.scale.setScalar(scale);
+    }
+  }
 
-      const scale = 0.78 + near * 0.28;
-      card.group.scale.set(scale, scale, scale);
-
-      const darken = 1 - t * 0.42;
-      card.frontMat.color.setScalar(darken);
+  _snapToFocus() {
+    if (this.isDragging || this.isSnapping || this.reducedMotion) return;
+    const nearest = this._getNearestCardIndex();
+    const delta = this._normalizeAngle(this._rotationForCard(nearest) - this.ringGroup.rotation.y);
+    if (Math.abs(delta) > 0.015) {
+      this._startSnapToIndex(nearest);
     }
   }
 
   _updateCaption() {
     if (!this.captionEl) return;
-    const focus = this._getFocusCard();
-    if (!focus) {
-      this.captionEl.hidden = true;
-      return;
-    }
-    const { title, subtitle } = focus.card.item;
-    this.captionEl.hidden = false;
-    this.captionEl.innerHTML = `
-      <div class="discover-ring-caption-title">${escapeHtml(title)}</div>
-      ${subtitle ? `<div class="discover-ring-caption-sub">${escapeHtml(subtitle)}</div>` : ''}
-      <div class="discover-ring-caption-hint">Click to open · drag to spin</div>`;
-    this.focusIndex = focus.index;
+    this.captionEl.hidden = true;
   }
 
   _animate() {
     this._raf = requestAnimationFrame(() => this._animate());
     if (!this.visible) return;
 
-    const dt = Math.min(this.clock.getDelta(), 0.05);
+    const pageScrolling = performance.now() < this._pageScrollUntil;
+    if (pageScrolling && !this.isDragging) return;
 
-    if (!this.reducedMotion && !this.isDragging) {
-      this.ringGroup.rotation.y += this.spinVelocity * dt;
+    const dt = Math.min(this.clock.getDelta(), 0.05);
+    const frameStart = performance.now();
+
+    if (this.isDragging) {
+      this._applyDragRotation();
+    } else {
+      this._snapToTarget(dt);
+      if (!this.isSnapping && !this.reducedMotion) {
+        this._snapToFocus();
+      }
     }
-    this.ringGroup.rotation.y += this.manualSpin;
-    this.manualSpin *= 0.92;
+
+    this._updateCardLayout();
 
     const focus = this._getFocusCard();
-    const focusDist = focus?.dist ?? 6.5;
+    const focusDist = focus?.dist ?? (CAMERA_Z - RING_RADIUS);
     this._updateDepthStyles(focusDist);
 
-    if (this.bokehPass) {
-      this.bokehPass.uniforms.focus.value = focusDist;
-    }
-
-    if (this.composer) this.composer.render();
-    else this.renderer.render(this.scene, this.camera);
+    this.renderer.render(this.scene, this.camera);
 
     if (focus && focus.index !== this.focusIndex) this._updateCaption();
+
+    this._frameMs = performance.now() - frameStart;
+    const prevTier = this.perf.tier;
+    this.perf.sample(this._frameMs);
+    if (prevTier !== this.perf.tier) this._syncQualityTier();
   }
 
   destroy() {
     cancelAnimationFrame(this._raf);
     window.removeEventListener('resize', this._onResize);
+    this._resizeObserver?.disconnect();
     this._observer?.disconnect();
-    this.canvas.removeEventListener('pointerdown', this._onPointerDown);
-    this.canvas.removeEventListener('pointermove', this._onPointerMove);
-    this.canvas.removeEventListener('pointerup', this._onPointerUp);
-    this.canvas.removeEventListener('pointercancel', this._onPointerUp);
-    this.canvas.removeEventListener('click', this._onClick);
-    this.wrap.removeEventListener('mouseenter', this._onEnter);
-    this.wrap.removeEventListener('mouseleave', this._onLeave);
+    window.removeEventListener('scroll', this._onPageScroll);
+    this.wrap.removeEventListener('pointerdown', this._onPointerDown);
+    this.wrap.removeEventListener('pointermove', this._onPointerMove);
+    this.wrap.removeEventListener('pointerup', this._onPointerUp);
+    this.wrap.removeEventListener('pointercancel', this._onPointerUp);
+    this.wrap.removeEventListener('click', this._onClick);
+    this.wrap.removeEventListener('touchmove', this._onTouchMove);
 
     for (const card of this.cards) {
-      card.frontMat.map?.dispose();
-      card.frontMat.dispose();
-      card.backMat.dispose();
-      card.edgeMat.dispose();
-      card.front.geometry.dispose();
-      card.back.geometry.dispose();
-      card.edge.geometry.dispose();
+      this.scene.remove(card.mesh);
+      const tex = card.frontMat.map;
+      tex?.dispose?.();
+      [card.frontMat, card.backMat, ...card.edgeMats].forEach((m) => m.dispose());
     }
+    this.cardGeo?.dispose();
     this.renderer.dispose();
-    this.composer = null;
-    this.bokehPass = null;
   }
 }
 

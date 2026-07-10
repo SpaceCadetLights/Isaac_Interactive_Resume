@@ -100,7 +100,9 @@
   <!-- Ch 0: Hero -->
   <section class="chapter" id="ch-hero">
     <div class="chapter-inner hero-inner">
-      <div class="hero-orb" aria-hidden="true"></div>
+      <div class="hero-portrait">
+        <img id="hero-portrait" class="hero-portrait-img" src="" alt="" width="320" height="320" loading="eager" decoding="async">
+      </div>
       <p class="hero-eyebrow">Portfolio</p>
       <h1 class="hero-name" id="hero-name"></h1>
       <p class="hero-headline" id="hero-headline"></p>
@@ -129,17 +131,20 @@
 
   <!-- Ch: Highlights -->
   <section class="chapter" id="ch-discover">
-    <div class="chapter-inner chapter-wide chapter-discover">
-      <div class="glass-panel discover-panel">
-        <h2 class="section-title">Explore My Highlights</h2>
-        <p class="section-subtitle">Hand-picked work, life moments, and galleries — the pieces I want front and center</p>
+    <div class="chapter-inner chapter-discover">
+      <header class="discover-header">
+        <h2 class="discover-hero-title">Explore My Highlights</h2>
+      </header>
+      <div class="discover-viewer-column">
         <div class="discover-ring-wrap" id="discover-ring-wrap">
-          <canvas id="discover-ring-canvas" aria-label="3D highlights gallery — drag to spin, click to open"></canvas>
-          <div class="discover-ring-vignette" aria-hidden="true"></div>
-          <div class="discover-ring-caption" id="discover-ring-caption" hidden></div>
+          <div class="discover-ring-stage">
+            <canvas id="discover-ring-canvas" aria-label="3D highlights gallery — drag to spin, click to open"></canvas>
+          </div>
+          <div class="discover-ring-fade discover-ring-fade--left" aria-hidden="true"></div>
+          <div class="discover-ring-fade discover-ring-fade--right" aria-hidden="true"></div>
         </div>
-        <div class="disc-grid discover-ring-fallback" id="discover-grid" hidden></div>
       </div>
+      <div class="disc-grid discover-ring-fallback" id="discover-grid" hidden></div>
     </div>
   </section>
 

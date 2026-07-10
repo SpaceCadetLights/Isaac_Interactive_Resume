@@ -535,8 +535,12 @@ let qualityLevel = IS_MOBILE ? 'low' : 'high';
 const NUM_CHAPTERS = 6;
 
 let scrollProgress = 0;
+let bgScrollProgress = 0;
 let scrollVelocity = 0;
 let lastScrollProgress = 0;
+let lastBgScrollProgress = 0;
+let scrollActiveUntil = 0;
+let scrollContentMax = 1;
 let currentRoll = 0;
 const camState = { x: 0, y: 0, z: 50, roll: 0 };
 
@@ -682,7 +686,12 @@ function initScene() {
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 500);
   camera.position.set(0, 0, 50);
-  renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: !IS_MOBILE });
+  renderer = new THREE.WebGLRenderer({
+    canvas,
+    alpha: true,
+    antialias: !IS_MOBILE,
+    powerPreference: 'high-performance',
+  });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, TUNING.dpr[qualityLevel]));
   clock = new THREE.Clock();
@@ -724,11 +733,29 @@ function createStarfield() {
   });
 }
 
+function measureScrollContent() {
+  const content = document.getElementById('content');
+  if (!content) return;
+  scrollContentMax = Math.max(1, content.scrollHeight - window.innerHeight);
+}
+
+function getImmediateScrollProgress() {
+  return THREE.MathUtils.clamp(window.scrollY / scrollContentMax, 0, 1);
+}
+
+function setupScrollPerformance() {
+  measureScrollContent();
+  window.addEventListener('scroll', () => {
+    scrollActiveUntil = performance.now() + 140;
+  }, { passive: true });
+  window.addEventListener('resize', measureScrollContent, { passive: true });
+}
+
 function updateStarfield(t, vel) {
   starLayers.forEach((layer, idx) => {
     layer.material.uniforms.uTime.value = t;
     layer.material.uniforms.uVel.value = vel;
-    layer.position.z = scrollProgress * layer.userData.speed * 55;
+    layer.position.z = bgScrollProgress * layer.userData.speed * 55;
     if (!reducedMotion) {
       layer.rotation.y = t * 0.0008 * (idx + 1);
       layer.rotation.x = t * 0.0004 * (idx + 1);
@@ -978,17 +1005,18 @@ async function initPostProcessing() {
 /* ==========================================================
    PARTICLE UPDATE
    ========================================================== */
-function updateParticles(t, dt) {
+function updateParticles(t, dt, fastScroll) {
   if (reducedMotion || !particles) return;
   particles.material.uniforms.uTime.value = t;
   const count = particlePositions.length / 3;
-  const raw = scrollProgress * (NUM_CHAPTERS - 1);
+  const raw = bgScrollProgress * (NUM_CHAPTERS - 1);
   const from = Math.min(NUM_CHAPTERS - 1, Math.floor(raw));
   const to = Math.min(NUM_CHAPTERS - 1, from + 1);
   const blend = raw - from;
   const fa = formationTargets[from], ta = formationTargets[to];
-  const lerpSpeed = Math.min(1, 2.2 * dt);
+  const lerpSpeed = Math.min(1, (fastScroll ? 4.2 : 2.2) * dt);
   const expansion = Math.sin(blend * Math.PI) * TUNING.phaseShift;
+  const ns = fastScroll ? 0 : 0.03;
   for (let i = 0; i < count; i++) {
     const i3 = i * 3;
     let tx = fa[i3]     + (ta[i3]     - fa[i3])     * blend;
@@ -1002,10 +1030,11 @@ function updateParticles(t, dt) {
     particlePositions[i3]     += (tx - particlePositions[i3])     * lerpSpeed;
     particlePositions[i3 + 1] += (ty - particlePositions[i3 + 1]) * lerpSpeed;
     particlePositions[i3 + 2] += (tz - particlePositions[i3 + 2]) * lerpSpeed;
-    const ns = 0.03;
-    particlePositions[i3]     += Math.sin(t * 0.5 + i * 0.037) * ns;
-    particlePositions[i3 + 1] += Math.cos(t * 0.4 + i * 0.029) * ns;
-    particlePositions[i3 + 2] += Math.sin(t * 0.3 + i * 0.043) * ns;
+    if (ns > 0) {
+      particlePositions[i3]     += Math.sin(t * 0.5 + i * 0.037) * ns;
+      particlePositions[i3 + 1] += Math.cos(t * 0.4 + i * 0.029) * ns;
+      particlePositions[i3 + 2] += Math.sin(t * 0.3 + i * 0.043) * ns;
+    }
   }
   particleGeo.attributes.position.needsUpdate = true;
 }
@@ -1033,12 +1062,13 @@ function updateCamera(t) {
    SCROLL ENGINE
    ========================================================== */
 function setupScroll() {
+  measureScrollContent();
   const tl = gsap.timeline({
     scrollTrigger: {
       trigger: '#content',
       start: 'top top',
       end: 'bottom bottom',
-      scrub: 2,
+      scrub: 0.45,
       onUpdate: self => { scrollProgress = self.progress; },
     },
   });
@@ -1199,11 +1229,28 @@ function $$(sel, root) { return Array.from((root || document).querySelectorAll(s
 /* ==========================================================
    RENDERERS
    ========================================================== */
+function profilePhotoUrl() {
+  const staticPath = isGitHubPagesRepo()
+    ? `/${REPO_NAME}/data/media/isaac-headshot.png`
+    : new URL('../data/media/isaac-headshot.png', window.location.href).pathname;
+  const photo = DATA.profile?.photo;
+  if (photo && photo !== 'isaac-headshot.png') {
+    const resolved = resolveMediaUrl(photo);
+    if (resolved) return resolved;
+  }
+  return staticPath;
+}
+
 function renderHero() {
   $('#hero-name').textContent = DATA.profile.name;
   $('#hero-headline').textContent = 'Designer · Engineer · Builder — explore work through light, motion, and hardware.';
   $('#hero-summary').textContent = DATA.profile.summary;
   $('#hero-chips').innerHTML = DATA.hero.chips.map(c => `<span class="chip">${esc(c)}</span>`).join('');
+  const portrait = $('#hero-portrait');
+  if (portrait) {
+    portrait.src = profilePhotoUrl();
+    portrait.alt = DATA.profile.name ? `${DATA.profile.name} — portrait` : 'Portrait';
+  }
 }
 
 function buildDiscoverRingItems(projects) {
@@ -2469,11 +2516,21 @@ function animate() {
   const dt = Math.min(clock.getDelta(), 0.1);
   time += dt;
   frameCount++;
-  const rawVel = (scrollProgress - lastScrollProgress) / Math.max(dt, 0.016);
-  scrollVelocity += (rawVel - scrollVelocity) * 0.08;
+
+  const immediateScroll = getImmediateScrollProgress();
+  const scrollBlend = performance.now() < scrollActiveUntil ? 0.55 : 0.28;
+  bgScrollProgress += (immediateScroll - bgScrollProgress) * scrollBlend;
+
+  const rawVel = (bgScrollProgress - lastBgScrollProgress) / Math.max(dt, 0.016);
+  scrollVelocity += (rawVel - scrollVelocity) * 0.12;
+  lastBgScrollProgress = bgScrollProgress;
   lastScrollProgress = scrollProgress;
+
+  const fastScroll = performance.now() < scrollActiveUntil
+    || Math.abs(scrollVelocity) > 0.012;
+
   updateCamera(time);
-  updateParticles(time, dt);
+  updateParticles(time, dt, fastScroll);
   updateStarfield(time, scrollVelocity);
   if (ambientParticles && !reducedMotion) {
     ambientParticles.material.uniforms.uTime.value = time;
@@ -2481,8 +2538,11 @@ function animate() {
     ambientParticles.rotation.x = Math.sin(time * 0.003) * 0.015;
   }
   nebulaPlanes.forEach(m => { m.material.uniforms.uTime.value = time; });
-  if (!reducedMotion) updateConstellationLines();
-  if (frameCount % 6 === 0) document.documentElement.style.setProperty('--scroll-progress', scrollProgress.toFixed(3));
+  if (!reducedMotion && !fastScroll) updateConstellationLines();
+  if (frameCount % 8 === 0) {
+    document.documentElement.style.setProperty('--scroll-progress', bgScrollProgress.toFixed(3));
+  }
+
   if (composer) composer.render();
   else renderer.render(scene, camera);
 }
@@ -2705,7 +2765,12 @@ async function init() {
   }
 
   renderAll();
+  setupScrollPerformance();
   setupScroll();
+  requestAnimationFrame(() => {
+    measureScrollContent();
+    ScrollTrigger.refresh();
+  });
   setupNav();
   setupDiscoverFilters();
   setupCompanies();
