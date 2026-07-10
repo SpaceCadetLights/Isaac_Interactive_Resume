@@ -1,5 +1,15 @@
+import {
+  buildResumeAiPrompt,
+  getAdminCategories,
+  collectAllTags,
+  categoryLabel,
+  slugifyCategory,
+  DEFAULT_CATEGORIES,
+} from './resume-pack-schema.js';
+
 let API_BASE = '';
 let MEDIA_BASE = '';
+let PORTFOLIO_URL = '';
 const TOKEN_KEY = 'portfolio_admin_token';
 
 function getToken() {
@@ -19,16 +29,156 @@ async function loadConfig() {
     if (r.ok) {
       const c = await r.json();
       if (c.apiBaseUrl) API_BASE = c.apiBaseUrl.replace(/\/$/, '');
+      if (c.portfolioUrl) PORTFOLIO_URL = c.portfolioUrl;
     }
   } catch (_) {}
   if (!API_BASE) {
     const host = window.location.hostname;
     if (host === 'localhost' || host === '127.0.0.1') {
       API_BASE = 'http://localhost:8787';
+      if (!PORTFOLIO_URL) PORTFOLIO_URL = 'http://localhost:8000/portfolio/';
     } else if (host.endsWith('.workers.dev')) {
       API_BASE = window.location.origin;
     }
   }
+  if (!PORTFOLIO_URL) PORTFOLIO_URL = 'https://resume.spacecadetslighting.com/portfolio/';
+}
+
+function wireSiteLinks(url) {
+  const portfolioUrl = url || PORTFOLIO_URL;
+  if (!portfolioUrl) return;
+  PORTFOLIO_URL = portfolioUrl;
+  for (const id of ['link-view-site', 'link-back-portfolio']) {
+    const el = document.getElementById(id);
+    if (el) {
+      el.href = portfolioUrl;
+      if (id === 'link-view-site') el.textContent = 'View site';
+    }
+  }
+}
+
+function renderImportReport(container, data) {
+  if (!container || !data?.analysis) return;
+  const a = data.analysis;
+  const s = a.summary || {};
+  const lines = [];
+  lines.push(`<p><strong>Summary:</strong> ${s.incoming || 0} incoming · ${s.created || 0} new · ${s.updated || 0} text updates · ${s.unchanged || 0} unchanged · ${s.orphaned || 0} not in JSON</p>`);
+
+  if (data.resume?.willReplace) {
+    lines.push('<p class="muted small">Resume + timeline JSON will replace cloud copy. Project <em>photos</em> stay in the database by <code>slug</code>.</p>');
+  }
+
+  if (a.orphaned?.length) {
+    lines.push('<p class="warn-title">Projects in cloud but missing from JSON</p><ul class="report-list">');
+    a.orphaned.forEach(o => {
+      lines.push(`<li><code>${esc(o.slug)}</code> — ${esc(o.title)} · ${o.mediaCount} media · ${esc(o.status)}</li>`);
+    });
+    lines.push('</ul>');
+  }
+
+  if (a.slugConflicts?.length) {
+    lines.push('<p class="warn-title">Slug / media association warnings</p><ul class="report-list">');
+    a.slugConflicts.forEach(w => lines.push(`<li>${esc(w.message)}</li>`));
+    lines.push('</ul>');
+  }
+
+  if (a.timelineIssues?.length) {
+    lines.push('<p class="warn-title">Timeline link issues</p><ul class="report-list">');
+    a.timelineIssues.forEach(w => lines.push(`<li><code>${esc(w.slug)}</code>: ${esc(w.message)}</li>`));
+    lines.push('</ul>');
+  }
+
+  if (a.mediaNotes?.length) {
+    lines.push('<p class="muted small" style="margin-top:10px"><strong>Media notes</strong></p><ul class="report-list compact">');
+    a.mediaNotes.forEach(n => lines.push(`<li><code>${esc(n.slug)}</code>: ${esc(n.message)}</li>`));
+    lines.push('</ul>');
+  }
+
+  if (a.updated?.length) {
+    lines.push('<p class="muted small" style="margin-top:10px"><strong>Text updates</strong></p><ul class="report-list compact">');
+    a.updated.forEach(u => lines.push(`<li><code>${esc(u.slug)}</code> — ${esc(u.fieldsChanged?.join(', ') || 'changed')}${u.mediaCount ? ` · ${u.mediaCount} media kept` : ''}</li>`));
+    lines.push('</ul>');
+  }
+
+  container.innerHTML = lines.join('');
+  container.hidden = false;
+}
+
+async function fetchProjectMeta() {
+  const { projects } = await api('/api/projects');
+  let pack = {};
+  try {
+    const res = await api('/api/pack');
+    pack = res.pack || {};
+  } catch (_) {}
+  return {
+    categories: getAdminCategories(projects),
+    tags: collectAllTags({ projects, timeline: pack.timeline, resume: pack.resume }),
+  };
+}
+
+function renderCategoryField(current, categories) {
+  const isCustom = current && !categories.includes(current);
+  const opts = categories.map(c => {
+    const label = categoryLabel(c);
+    const hint = DEFAULT_CATEGORIES.includes(c) ? ` (${c})` : '';
+    return `<option value="${esc(c)}" ${(!isCustom && current === c) ? 'selected' : ''}>${esc(label)}${esc(hint)}</option>`;
+  }).join('');
+  return `
+    <label>Category <span class="muted small">synced with portfolio Discover filters</span>
+      <select name="category" id="category-select">
+        ${opts}
+        <option value="__custom__" ${isCustom ? 'selected' : ''}>+ New category…</option>
+      </select>
+      <input name="category-custom" id="category-custom" value="${isCustom ? esc(current) : ''}"
+        placeholder="e.g. installation" class="category-custom-input" ${isCustom ? '' : 'hidden'}>
+    </label>`;
+}
+
+function renderTagField(tagsStr, allTags) {
+  const datalist = allTags.map(t => `<option value="${esc(t)}">`).join('');
+  const chips = allTags.slice(0, 48).map(t =>
+    `<button type="button" class="tag-chip" data-tag="${esc(t)}">${esc(t)}</button>`
+  ).join('');
+  return `
+    <label>Tags <span class="muted small">comma-separated · click suggestions to add</span>
+      <input name="tags" id="tags-input" value="${esc(tagsStr)}" list="tags-datalist" placeholder="LED, ESP32, Sculpture">
+      <datalist id="tags-datalist">${datalist}</datalist>
+      ${allTags.length ? `<div class="tag-suggestions" id="tag-suggestions">${chips}</div>` : ''}
+    </label>`;
+}
+
+function wireCategoryField() {
+  const sel = document.getElementById('category-select');
+  const custom = document.getElementById('category-custom');
+  if (!sel || !custom) return;
+  sel.addEventListener('change', () => {
+    const isCustom = sel.value === '__custom__';
+    custom.hidden = !isCustom;
+    if (isCustom) custom.focus();
+  });
+}
+
+function wireTagSuggestions() {
+  document.getElementById('tag-suggestions')?.addEventListener('click', e => {
+    const chip = e.target.closest('[data-tag]');
+    if (!chip) return;
+    const input = document.getElementById('tags-input');
+    if (!input) return;
+    const tag = chip.dataset.tag;
+    const parts = input.value.split(',').map(s => s.trim()).filter(Boolean);
+    if (!parts.includes(tag)) parts.push(tag);
+    input.value = parts.join(', ');
+  });
+}
+
+function resolveCategoryFromForm(fd) {
+  const sel = fd.get('category');
+  if (sel === '__custom__') {
+    const custom = String(fd.get('category-custom') || '').trim();
+    return slugifyCategory(custom) || 'engineering';
+  }
+  return sel || 'engineering';
 }
 
 function mediaUrl(m) {
@@ -64,9 +214,16 @@ async function api(path, opts = {}) {
 function route() {
   const hash = location.hash.replace(/^#\/?/, '') || 'projects';
   const parts = hash.split('/');
+  if (parts[0] === 'data') return { view: 'data' };
   if (parts[0] === 'projects' && parts[1] === 'new') return { view: 'edit', id: null };
   if (parts[0] === 'projects' && parts[2] === 'edit') return { view: 'edit', id: parts[1] };
   return { view: 'list' };
+}
+
+function updateNavActive(view) {
+  document.querySelectorAll('#admin-nav a').forEach(a => {
+    a.classList.toggle('active', a.dataset.nav === (view === 'data' ? 'data' : 'projects'));
+  });
 }
 
 function esc(s) {
@@ -91,6 +248,219 @@ function showApp() {
   document.getElementById('view-app').hidden = false;
 }
 
+async function renderData() {
+  const main = document.getElementById('main');
+  main.innerHTML = '<p class="muted">Loading…</p>';
+  let pack = { version: 2, config: {}, projects: [] };
+  try {
+    const res = await api('/api/pack');
+    if (res.pack) pack = res.pack;
+  } catch (_) {}
+
+  main.innerHTML = `
+    <div class="glass data-panel workflow-panel">
+      <h2>How this fits together</h2>
+      <ol class="workflow-steps">
+        <li><strong>AI Assistant</strong> — copy the prompt, describe updates in your AI tool, paste JSON back here.</li>
+        <li><strong>Resume Data</strong> — batch import resume, timeline, skills, and project <em>text</em>. Projects match by <code>slug</code>; uploaded photos stay attached.</li>
+        <li><strong>Projects</strong> — edit one project, upload gallery media, set category/tags, publish.</li>
+        <li><strong>Live site</strong> — <a href="${esc(PORTFOLIO_URL)}" target="_blank" rel="noopener">portfolio</a> reads cloud data automatically.</li>
+      </ol>
+    </div>
+
+    <div class="glass data-panel ai-panel">
+      <h2>AI Update Assistant</h2>
+      <p class="muted">Copy the prompt into ChatGPT, Claude, or any AI tool. Tell it what changed in your career or projects. Paste the model's <strong>JSON-only</strong> response below to update everything.</p>
+      <label class="field-label">System prompt <span class="muted small">includes your current full package</span>
+        <textarea id="ai-prompt" class="mono" rows="14" readonly></textarea>
+      </label>
+      <div class="toolbar">
+        <button type="button" class="btn primary" id="btn-copy-prompt">Copy prompt</button>
+      </div>
+      <label class="field-label" style="margin-top:14px">Paste AI JSON output here
+        <textarea id="ai-output" class="mono" rows="12" placeholder='{"version":2,"resume":{...},"timeline":[...],"projects":[...]}'></textarea>
+      </label>
+      <div class="toolbar">
+        <button type="button" class="btn primary" id="btn-ai-preview">Check AI output</button>
+        <button type="button" class="btn primary" id="btn-ai-apply">Apply AI output to cloud</button>
+      </div>
+      <div id="ai-report" class="import-report" hidden></div>
+      <p id="ai-status" class="status"></p>
+    </div>
+
+    <div class="glass data-panel">
+      <h2>Resume Data</h2>
+      <p class="muted">Import a full package. Use <strong>Check for issues</strong> before saving to see slug mismatches, orphaned projects, and media association notes.</p>
+      <textarea id="pack-json" rows="14" placeholder='{"version":2,"resume":{...},"timeline":[...],"projects":[...]}'></textarea>
+      <div class="import-options">
+        <label class="orphan-label">Projects in cloud but not in JSON
+          <select id="orphan-action">
+            <option value="keep">Keep as-is (default)</option>
+            <option value="draft">Unpublish (move to draft)</option>
+            <option value="delete">Delete (removes media too)</option>
+          </select>
+        </label>
+      </div>
+      <div class="toolbar">
+        <button type="button" class="btn primary" id="btn-pack-preview">Check for issues</button>
+        <button type="button" class="btn primary" id="btn-pack-apply">Apply &amp; Save to Cloud</button>
+        <button type="button" class="btn" id="btn-pack-file">Import File…</button>
+        <input type="file" id="pack-file-input" accept=".json" hidden>
+        <button type="button" class="btn" id="btn-pack-export">Export JSON</button>
+        <button type="button" class="btn" id="btn-pack-load">Reload from Cloud</button>
+      </div>
+      <div id="pack-report" class="import-report" hidden></div>
+      <p id="pack-status" class="status"></p>
+    </div>`;
+
+  const area = document.getElementById('pack-json');
+  area.value = JSON.stringify(pack, null, 2);
+
+  const aiPrompt = document.getElementById('ai-prompt');
+  if (aiPrompt) aiPrompt.value = buildResumeAiPrompt(pack);
+
+  const setAiStatus = (msg, ok) => {
+    const st = document.getElementById('ai-status');
+    if (!st) return;
+    st.textContent = msg;
+    st.className = ok ? 'status ok' : 'status err';
+  };
+
+  document.getElementById('btn-copy-prompt')?.addEventListener('click', async () => {
+    const text = aiPrompt?.value || '';
+    try {
+      await navigator.clipboard.writeText(text);
+      setAiStatus('Prompt copied — paste it into your AI tool, then describe your updates.', true);
+    } catch {
+      aiPrompt?.select();
+      setAiStatus('Select the prompt and copy manually (⌘C).', false);
+    }
+  });
+
+  const applyAiJson = async (previewOnly) => {
+    const raw = document.getElementById('ai-output')?.value?.trim();
+    if (!raw) { setAiStatus('Paste AI JSON output first.', false); return; }
+    try {
+      const parsed = JSON.parse(raw);
+      const orphanAction = document.getElementById('orphan-action')?.value || 'keep';
+      if (previewOnly) {
+        setAiStatus('Checking…', true);
+        const res = await api('/api/pack/preview', { method: 'POST', body: JSON.stringify(parsed) });
+        renderImportReport(document.getElementById('ai-report'), res);
+        area.value = JSON.stringify(parsed, null, 2);
+        aiPrompt.value = buildResumeAiPrompt(parsed);
+        const w = res.analysis?.summary?.warnings || 0;
+        const o = res.analysis?.summary?.orphaned || 0;
+        setAiStatus(w || o ? `Issues found: ${w} warning(s), ${o} orphaned.` : 'AI output looks good — click Apply when ready.', !w && !o);
+        return;
+      }
+      if (orphanAction === 'delete') {
+        const preview = await api('/api/pack/preview', { method: 'POST', body: JSON.stringify(parsed) });
+        const n = preview.analysis?.orphaned?.length || 0;
+        if (n && !confirm(`Delete ${n} project(s) not in JSON (and all their media)?`)) return;
+      }
+      setAiStatus('Saving…', true);
+      const res = await api('/api/pack/import', { method: 'POST', body: JSON.stringify({ ...parsed, orphanAction }) });
+      renderImportReport(document.getElementById('ai-report'), res);
+      area.value = JSON.stringify(parsed, null, 2);
+      aiPrompt.value = buildResumeAiPrompt(parsed);
+      setAiStatus(`Applied. Projects: ${res.created || 0} new, ${res.updated || 0} updated.`, true);
+      const packReport = document.getElementById('pack-report');
+      if (packReport) packReport.hidden = true;
+    } catch (err) {
+      setAiStatus(err.message, false);
+    }
+  };
+
+  document.getElementById('btn-ai-preview')?.addEventListener('click', () => applyAiJson(true));
+  document.getElementById('btn-ai-apply')?.addEventListener('click', () => applyAiJson(false));
+
+  const setStatus = (msg, ok) => {
+    const st = document.getElementById('pack-status');
+    st.textContent = msg;
+    st.className = ok ? 'status ok' : 'status err';
+  };
+
+  document.getElementById('btn-pack-preview')?.addEventListener('click', async () => {
+    const raw = area.value.trim();
+    if (!raw) { setStatus('Paste JSON first.', false); return; }
+    try {
+      const parsed = JSON.parse(raw);
+      setStatus('Checking…', true);
+      const res = await api('/api/pack/preview', { method: 'POST', body: JSON.stringify(parsed) });
+      renderImportReport(document.getElementById('pack-report'), res);
+      const w = res.analysis?.summary?.warnings || 0;
+      const o = res.analysis?.summary?.orphaned || 0;
+      setStatus(w || o ? `Found ${w} warning(s) and ${o} orphaned project(s). Review before applying.` : 'No issues found — safe to apply.', !w && !o);
+    } catch (err) {
+      setStatus(err.message, false);
+    }
+  });
+
+  document.getElementById('btn-pack-apply')?.addEventListener('click', async () => {
+    const raw = area.value.trim();
+    if (!raw) { setStatus('Paste JSON first.', false); return; }
+    try {
+      const parsed = JSON.parse(raw);
+      const orphanAction = document.getElementById('orphan-action')?.value || 'keep';
+      if (orphanAction === 'delete') {
+        const preview = await api('/api/pack/preview', { method: 'POST', body: JSON.stringify(parsed) });
+        const n = preview.analysis?.orphaned?.length || 0;
+        if (n && !confirm(`Delete ${n} project(s) not in JSON (and all their media)?`)) return;
+      }
+      setStatus('Saving…', true);
+      const res = await api('/api/pack/import', { method: 'POST', body: JSON.stringify({ ...parsed, orphanAction }) });
+      renderImportReport(document.getElementById('pack-report'), res);
+      const orphanMsg = res.orphans?.deleted ? ` · ${res.orphans.deleted} deleted` : res.orphans?.drafted ? ` · ${res.orphans.drafted} unpublished` : '';
+      setStatus(`Saved. Projects: ${res.created || 0} new, ${res.updated || 0} updated${orphanMsg}.`, true);
+    } catch (err) {
+      setStatus(err.message, false);
+    }
+  });
+
+  document.getElementById('btn-pack-load')?.addEventListener('click', async () => {
+    try {
+      const res = await api('/api/pack');
+      area.value = JSON.stringify(res.pack || {}, null, 2);
+      if (aiPrompt) aiPrompt.value = buildResumeAiPrompt(res.pack || {});
+      setStatus('Reloaded from cloud.', true);
+    } catch (err) {
+      setStatus(err.message, false);
+    }
+  });
+
+  document.getElementById('btn-pack-export')?.addEventListener('click', () => {
+    try {
+      const parsed = JSON.parse(area.value);
+      const blob = new Blob([JSON.stringify(parsed, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'resume_pack.json';
+      a.click();
+      URL.revokeObjectURL(url);
+      setStatus('Exported.', true);
+    } catch (err) {
+      setStatus('Invalid JSON in editor: ' + err.message, false);
+    }
+  });
+
+  document.getElementById('btn-pack-file')?.addEventListener('click', () => {
+    document.getElementById('pack-file-input')?.click();
+  });
+  document.getElementById('pack-file-input')?.addEventListener('change', e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      area.value = ev.target.result;
+      document.getElementById('pack-report').hidden = true;
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  });
+}
+
 async function renderList() {
   const main = document.getElementById('main');
   main.innerHTML = '<p class="muted">Loading…</p>';
@@ -98,20 +468,15 @@ async function renderList() {
   main.innerHTML = `
     <div class="toolbar">
       <a href="#/projects/new" class="btn primary">+ New project</a>
+      <a href="#/data" class="btn">Import resume JSON</a>
     </div>
-    <details class="glass" style="padding:14px;margin-bottom:16px">
-      <summary style="cursor:pointer;font-size:13px">Bulk import projects JSON</summary>
-      <p class="muted small" style="margin:10px 0">Paste a <code>projects</code> array or full <code>resume_pack.json</code>. Updates text by slug; keeps existing media.</p>
-      <textarea id="bulk-import-json" rows="8" style="width:100%;margin-top:8px;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.14);background:rgba(0,0,0,0.25);color:inherit;font-family:inherit"></textarea>
-      <button type="button" class="btn primary" id="btn-bulk-import" style="margin-top:10px">Import to database</button>
-      <p id="bulk-import-status" class="status"></p>
-    </details>
+    <p class="muted small" style="margin-bottom:16px">Upload photos per project via <strong>Edit</strong>. Batch resume/timeline import lives under <a href="#/data">Resume Data</a>.</p>
     <div class="project-list">
       ${projects.length ? projects.map(p => `
         <div class="project-row glass">
           <div>
             <h3>${esc(p.title)}</h3>
-            <p class="muted small">${esc(p.slug)} · ${p.media?.length || 0} media</p>
+            <p class="muted small">${esc(p.slug)} · ${esc(categoryLabel(p.category))} · ${p.media?.length || 0} media</p>
           </div>
           <div style="display:flex;gap:8px;align-items:center">
             <span class="badge ${p.status === 'published' ? 'published' : ''}">${esc(p.status)}</span>
@@ -121,27 +486,13 @@ async function renderList() {
       `).join('') : '<p class="muted">No projects yet. Create one to get started.</p>'}
     </div>`;
 
-  document.getElementById('btn-bulk-import')?.addEventListener('click', async () => {
-    const st = document.getElementById('bulk-import-status');
-    const raw = document.getElementById('bulk-import-json')?.value?.trim();
-    if (!raw) { st.textContent = 'Paste JSON first.'; return; }
-    try {
-      const parsed = JSON.parse(raw);
-      const projects = Array.isArray(parsed) ? parsed : (parsed.projects || []);
-      if (!projects.length) throw new Error('No projects found in JSON.');
-      st.textContent = 'Importing…';
-      const res = await api('/api/projects/import', { method: 'POST', body: JSON.stringify({ projects }) });
-      st.textContent = `Imported: ${res.created || 0} new, ${res.updated || 0} updated.`;
-      await renderList();
-    } catch (err) {
-      st.textContent = err.message;
-    }
-  });
+  /* list only — import is on Resume Data tab */
 }
 
 async function renderEdit(id) {
   const main = document.getElementById('main');
   main.innerHTML = '<p class="muted">Loading…</p>';
+  const meta = await fetchProjectMeta();
   let project = {
     title: '', slug: '', subtitle: '', description: '', tags: [], role: '', tools: [],
     year: new Date().getFullYear(), date: '', category: 'engineering', links: [],
@@ -159,20 +510,18 @@ async function renderEdit(id) {
     <p><a href="#/projects">← All projects</a></p>
     <form id="project-form" class="form-grid glass" style="padding:20px;margin-top:12px">
       <label>Title<input name="title" value="${esc(project.title)}" required></label>
-      <label>Slug<input name="slug" value="${esc(project.slug)}" placeholder="auto-from-title"></label>
+      <label>Slug <span class="muted small">stable key for photos — avoid changing after upload</span>
+        <input name="slug" value="${esc(project.slug)}" placeholder="auto-from-title"></label>
       <label>Subtitle<input name="subtitle" value="${esc(project.subtitle || '')}"></label>
       <label>Description<textarea name="description">${esc(project.description || project.details || '')}</textarea></label>
-      <label>Tags (comma-separated)<input name="tags" value="${esc(tagsStr)}"></label>
+      ${renderTagField(tagsStr, meta.tags)}
       <label>Role<input name="role" value="${esc(project.role || '')}"></label>
       <label>Tools (comma-separated)<input name="tools" value="${esc(toolsStr)}"></label>
       <label>Year<input name="year" type="number" value="${project.year || ''}"></label>
       <label>Date (YYYY-MM)<input name="date" value="${esc(project.date || '')}"></label>
-      <label>Category
-        <select name="category">
-          ${['venture','engineering','community','art'].map(c =>
-            `<option value="${c}" ${project.category === c ? 'selected' : ''}>${c}</option>`).join('')}
-        </select>
-      </label>
+      ${renderCategoryField(project.category || 'engineering', meta.categories)}
+      <label>Timeline ref <span class="muted small">matches timeline entry id</span>
+        <input name="timelineRef" value="${esc(project.timelineRef || '')}" placeholder="2017-03-gorilla-machines"></label>
       <label>Status
         <select name="status">
           <option value="draft" ${project.status === 'draft' ? 'selected' : ''}>draft</option>
@@ -210,6 +559,9 @@ async function renderEdit(id) {
     ` : '<p class="muted" style="margin-top:16px">Save the project first, then upload media.</p>'}
   `;
 
+  wireCategoryField();
+  wireTagSuggestions();
+
   document.getElementById('project-form').addEventListener('submit', async e => {
     e.preventDefault();
     const fd = new FormData(e.target);
@@ -223,7 +575,8 @@ async function renderEdit(id) {
       tools: String(fd.get('tools')).split(',').map(s => s.trim()).filter(Boolean),
       year: Number(fd.get('year')) || null,
       date: fd.get('date'),
-      category: fd.get('category'),
+      category: resolveCategoryFromForm(fd),
+      timelineRef: fd.get('timelineRef') || null,
       status: fd.get('status'),
       featured: !!fd.get('featured'),
       sortOrder: Number(fd.get('sortOrder')) || 0,
@@ -304,8 +657,10 @@ async function refreshMediaGrid(projectId) {
 
 async function navigate() {
   const { view, id } = route();
+  updateNavActive(view);
   try {
-    if (view === 'list') await renderList();
+    if (view === 'data') await renderData();
+    else if (view === 'list') await renderList();
     else await renderEdit(id);
   } catch (err) {
     if (err.message === 'Unauthorized' || err.message.includes('401')) {
@@ -319,10 +674,66 @@ async function navigate() {
 
 async function init() {
   await loadConfig();
+  wireSiteLinks();
+
+  function bindLoginForm() {
+    const form = document.getElementById('login-form');
+    if (!form || form.dataset.bound) return;
+    form.dataset.bound = '1';
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const password = document.getElementById('login-password').value;
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      const errEl = document.getElementById('login-error');
+      errEl.hidden = true;
+      if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Signing in…'; }
+      try {
+        if (!API_BASE) throw new Error('API not configured. Check admin/config.json.');
+        const res = await api('/api/auth/login', { method: 'POST', body: JSON.stringify({ password: password.trim() }) });
+        if (!res.token) throw new Error('Login succeeded but no session token was returned. Redeploy the Worker.');
+        setToken(res.token);
+        const me = await api('/api/auth/me');
+        if (!me.authed) {
+          throw new Error('Session could not be verified. Try: cd worker && npx wrangler secret put SESSION_SECRET');
+        }
+        if (me.mediaBaseUrl) MEDIA_BASE = me.mediaBaseUrl;
+        if (me.portfolioUrl) wireSiteLinks(me.portfolioUrl);
+        showApp();
+        await navigate();
+      } catch (err) {
+        setToken('');
+        const msg = err.message || 'Login failed';
+        if (msg.includes('Invalid password')) {
+          showLogin('Invalid password. If you forgot it, reset with: wrangler secret put ADMIN_PASSWORD');
+        } else {
+          showLogin(msg);
+        }
+      } finally {
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Sign in'; }
+      }
+    });
+  }
+
+  bindLoginForm();
+
+  try {
+    const me = await api('/api/auth/me');
+    if (me.portfolioUrl) wireSiteLinks(me.portfolioUrl);
+    if (me.mediaBaseUrl) MEDIA_BASE = me.mediaBaseUrl;
+  } catch (_) {}
+
   if (!API_BASE) {
     showLogin('Set apiBaseUrl in admin/config.json after deploying the Worker.');
     return;
   }
+
+  try {
+    const status = await fetch(`${API_BASE}/api/auth/status`).then(r => r.json());
+    if (!status.loginConfigured) {
+      showLogin('Server admin password is not configured. Run: wrangler secret put ADMIN_PASSWORD');
+      return;
+    }
+  } catch (_) {}
 
   const canonical = document.getElementById('admin-canonical-link');
   if (canonical && !window.location.hostname.endsWith('.workers.dev')) {
@@ -331,30 +742,6 @@ async function init() {
   } else if (canonical) {
     canonical.parentElement.hidden = true;
   }
-
-  document.getElementById('login-form').addEventListener('submit', async e => {
-    e.preventDefault();
-    const password = document.getElementById('login-password').value;
-    const submitBtn = e.target.querySelector('button[type="submit"]');
-    const errEl = document.getElementById('login-error');
-    errEl.hidden = true;
-    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Signing in…'; }
-    try {
-      const res = await api('/api/auth/login', { method: 'POST', body: JSON.stringify({ password }) });
-      if (!res.token) throw new Error('Login succeeded but no session token was returned. Redeploy the Worker.');
-      setToken(res.token);
-      const me = await api('/api/auth/me');
-      if (!me.authed) throw new Error('Session could not be established. Try again.');
-      if (me.mediaBaseUrl) MEDIA_BASE = me.mediaBaseUrl;
-      showApp();
-      await navigate();
-    } catch (err) {
-      setToken('');
-      showLogin(err.message);
-    } finally {
-      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Sign in'; }
-    }
-  });
 
   document.getElementById('btn-logout')?.addEventListener('click', async () => {
     await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
@@ -367,12 +754,13 @@ async function init() {
   try {
     const me = await api('/api/auth/me');
     if (me.mediaBaseUrl) MEDIA_BASE = me.mediaBaseUrl;
+    if (me.portfolioUrl) wireSiteLinks(me.portfolioUrl);
     if (me.authed) {
       showApp();
       await navigate();
     } else showLogin();
   } catch {
-    showLogin(API_BASE ? '' : 'API not configured.');
+    showLogin('');
   }
 }
 

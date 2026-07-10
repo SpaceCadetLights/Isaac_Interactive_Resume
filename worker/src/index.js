@@ -50,30 +50,55 @@ function now() {
   return new Date().toISOString();
 }
 
+function sessionSecret(env) {
+  const trimmed = String(env.SESSION_SECRET || '').trim();
+  return trimmed || 'change-me-dev-only';
+}
+
+function adminPassword(env) {
+  return String(env.ADMIN_PASSWORD || '').trim();
+}
+
+function bytesToBase64(bytes) {
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+
+function base64ToBytes(b64) {
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
 async function signSession(env) {
   const exp = Date.now() + SESSION_DAYS * 864e5;
   const payload = new TextEncoder().encode(String(exp));
   const key = await crypto.subtle.importKey(
-    'raw', new TextEncoder().encode(env.SESSION_SECRET || 'change-me'),
+    'raw', new TextEncoder().encode(sessionSecret(env)),
     { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
   );
   const sig = await crypto.subtle.sign('HMAC', key, payload);
-  const sigB64 = btoa(String.fromCharCode(...new Uint8Array(sig)));
-  return `${exp}.${sigB64}`;
+  return `${exp}.${bytesToBase64(new Uint8Array(sig))}`;
 }
 
-async function verifySession(cookie, env) {
-  if (!cookie || !env.SESSION_SECRET) return false;
-  const [expStr, sigB64] = cookie.split('.');
+async function verifySession(token, env) {
+  if (!token) return false;
+  const [expStr, sigB64] = token.split('.');
   if (!expStr || !sigB64) return false;
   if (Date.now() > Number(expStr)) return false;
-  const payload = new TextEncoder().encode(expStr);
-  const key = await crypto.subtle.importKey(
-    'raw', new TextEncoder().encode(env.SESSION_SECRET),
-    { name: 'HMAC', hash: 'SHA-256' }, false, ['verify']
-  );
-  const sig = Uint8Array.from(atob(sigB64), c => c.charCodeAt(0));
-  return crypto.subtle.verify('HMAC', key, sig, payload);
+  try {
+    const payload = new TextEncoder().encode(expStr);
+    const key = await crypto.subtle.importKey(
+      'raw', new TextEncoder().encode(sessionSecret(env)),
+      { name: 'HMAC', hash: 'SHA-256' }, false, ['verify']
+    );
+    const sig = base64ToBytes(sigB64);
+    return crypto.subtle.verify('HMAC', key, sig, payload);
+  } catch {
+    return false;
+  }
 }
 
 function sessionCookie(value, maxAge) {
@@ -182,7 +207,12 @@ async function getProjectMedia(db, projectId) {
 
 async function handleLogin(request, env, cors) {
   const { password } = await request.json();
-  if (!password || password !== env.ADMIN_PASSWORD) {
+  const pwd = String(password || '').trim();
+  const expected = adminPassword(env);
+  if (!expected) {
+    return json({ error: 'Admin password not configured on server. Run: wrangler secret put ADMIN_PASSWORD' }, 503, cors);
+  }
+  if (!pwd || pwd !== expected) {
     return json({ error: 'Invalid password' }, 401, cors);
   }
   const token = await signSession(env);
@@ -190,6 +220,13 @@ async function handleLogin(request, env, cors) {
     ...cors,
     'Set-Cookie': sessionCookie(token, SESSION_DAYS * 86400),
   });
+}
+
+async function handleAuthStatus(env, cors) {
+  return json({
+    loginConfigured: !!adminPassword(env),
+    sessionConfigured: !!String(env.SESSION_SECRET || '').trim(),
+  }, 200, cors);
 }
 
 async function handleLogout(cors) {
@@ -201,9 +238,13 @@ async function handleLogout(cors) {
 
 async function handleMe(request, env, cors) {
   const authed = await requireAuth(request, env);
+  const siteFromOrigins = (env.ALLOWED_ORIGINS || '').split(',')
+    .map(s => s.trim())
+    .find(o => o && !o.includes('workers.dev') && !o.includes('localhost') && !o.includes('127.0.0.1'));
   return json({
     authed: !!authed,
     mediaBaseUrl: env.R2_PUBLIC_BASE_URL || '',
+    portfolioUrl: env.PORTFOLIO_SITE_URL || (siteFromOrigins ? `${siteFromOrigins}/portfolio/` : ''),
   }, 200, cors);
 }
 
@@ -278,12 +319,9 @@ async function handleUpdateProject(request, env, cors, id) {
 }
 
 async function handleDeleteProject(env, cors, id) {
-  const media = await getProjectMedia(env.DB, id);
-  for (const m of media) {
-    try { await env.MEDIA.delete(m.r2_key); } catch (_) {}
-  }
-  await env.DB.prepare('DELETE FROM media_assets WHERE project_id = ?').bind(id).run();
-  await env.DB.prepare('DELETE FROM projects WHERE id = ?').bind(id).run();
+  const row = await env.DB.prepare('SELECT id FROM projects WHERE id = ?').bind(id).first();
+  if (!row) return json({ error: 'Not found' }, 404, cors);
+  await deleteProjectById(env, id);
   return json({ ok: true }, 200, cors);
 }
 
@@ -293,6 +331,7 @@ function normalizeImportProject(body) {
   return {
     title: body.title || 'Untitled',
     slug,
+    sourceId: body.id ? slugify(String(body.id)) : null,
     subtitle: body.subtitle || body.summary || '',
     description: body.description || body.details || '',
     tags: Array.isArray(body.tags) ? body.tags : [],
@@ -306,34 +345,234 @@ function normalizeImportProject(body) {
     featured: body.featured ? 1 : 0,
     sortOrder: body.sortOrder ?? 0,
     timelineRef: body.timelineRef || body.timeline_ref || null,
+    incomingMediaCount: Array.isArray(body.media) ? body.media.length : 0,
   };
 }
 
-async function handleImportProjects(request, env, cors) {
-  const body = await request.json();
-  const items = Array.isArray(body.projects) ? body.projects : [];
-  if (!items.length) return json({ error: 'projects array required' }, 400, cors);
+function projectFieldChanges(existing, incoming) {
+  const changes = [];
+  const cmp = (field, a, b) => {
+    const left = JSON.stringify(a ?? '');
+    const right = JSON.stringify(b ?? '');
+    if (left !== right) changes.push(field);
+  };
+  cmp('title', existing.title, incoming.title);
+  cmp('subtitle', existing.subtitle, incoming.subtitle);
+  cmp('description', existing.description, incoming.description);
+  cmp('tags', parseJsonField(existing.tags, []), incoming.tags);
+  cmp('role', existing.role, incoming.role);
+  cmp('tools', parseJsonField(existing.tools, []), incoming.tools);
+  cmp('year', existing.year, incoming.year);
+  cmp('date', existing.date, incoming.date);
+  cmp('category', existing.category, incoming.category);
+  cmp('links', parseJsonField(existing.links, []), incoming.links);
+  cmp('status', existing.status, incoming.status);
+  cmp('featured', !!existing.featured, !!incoming.featured);
+  cmp('sortOrder', existing.sort_order, incoming.sortOrder);
+  cmp('timelineRef', existing.timeline_ref, incoming.timelineRef);
+  return changes;
+}
 
+function timelineRefIndex(pack) {
+  const ids = new Set();
+  (pack?.timeline || []).forEach(t => {
+    if (t?.id) ids.add(String(t.id));
+    if (t?.slug) ids.add(String(t.slug));
+    if (t?.date) ids.add(String(t.date));
+  });
+  return ids;
+}
+
+async function countMediaForProject(db, projectId) {
+  const row = await db.prepare('SELECT COUNT(*) as c FROM media_assets WHERE project_id = ?').bind(projectId).first();
+  return row?.c || 0;
+}
+
+async function analyzeProjectImport(env, items, pack = null) {
+  const { results: allDb } = await env.DB.prepare('SELECT * FROM projects').all();
+  const dbBySlug = Object.fromEntries((allDb || []).map(r => [r.slug, r]));
+  const mediaCounts = {};
+  for (const row of allDb || []) {
+    mediaCounts[row.id] = await countMediaForProject(env.DB, row.id);
+  }
+
+  const incoming = [];
+  const skipped = [];
+  for (const raw of items) {
+    const p = normalizeImportProject(raw);
+    if (!p) {
+      skipped.push({ title: raw?.title || '(invalid)', reason: 'Missing title/slug' });
+      continue;
+    }
+    incoming.push({ raw, p });
+  }
+
+  const incomingSlugs = new Set(incoming.map(i => i.p.slug));
+  const created = [];
+  const updated = [];
+  const unchanged = [];
+  const mediaNotes = [];
+  const slugConflicts = [];
+  const timelineIssues = [];
+  const timelineIds = pack ? timelineRefIndex(pack) : null;
+
+  for (const { raw, p } of incoming) {
+    let existing = dbBySlug[p.slug];
+    let matchedBy = existing ? 'slug' : null;
+
+    if (!existing && p.sourceId && p.sourceId !== p.slug && dbBySlug[p.sourceId]) {
+      existing = dbBySlug[p.sourceId];
+      matchedBy = 'id';
+      slugConflicts.push({
+        type: 'slug-rename',
+        previousSlug: p.sourceId,
+        newSlug: p.slug,
+        title: p.title,
+        mediaCount: mediaCounts[existing.id] || 0,
+        message: `JSON id "${p.sourceId}" maps to existing project, but slug changed to "${p.slug}". Media stays on the old slug unless you edit the project manually — keep slugs stable to preserve R2 uploads.`,
+      });
+    }
+
+    const cloudMedia = existing ? (mediaCounts[existing.id] || 0) : 0;
+
+    if (p.incomingMediaCount > 0) {
+      mediaNotes.push({
+        slug: p.slug,
+        title: p.title,
+        jsonMediaRefs: p.incomingMediaCount,
+        cloudMedia,
+        message: cloudMedia
+          ? `JSON lists ${p.incomingMediaCount} media path(s); ${cloudMedia} uploaded file(s) in cloud are kept (paths in JSON are not re-imported).`
+          : `JSON lists ${p.incomingMediaCount} media path(s) but none are uploaded yet — add photos in Projects → Edit.`,
+      });
+    } else if (existing && cloudMedia > 0) {
+      mediaNotes.push({
+        slug: p.slug,
+        title: p.title,
+        jsonMediaRefs: 0,
+        cloudMedia,
+        message: `${cloudMedia} uploaded file(s) stay attached via slug "${p.slug}".`,
+      });
+    }
+
+    if (timelineIds && p.timelineRef && !timelineIds.has(String(p.timelineRef))) {
+      timelineIssues.push({
+        slug: p.slug,
+        title: p.title,
+        timelineRef: p.timelineRef,
+        message: `timelineRef "${p.timelineRef}" not found in incoming timeline array.`,
+      });
+    }
+
+    if (!existing) {
+      created.push({ slug: p.slug, title: p.title, matchedBy: null });
+      continue;
+    }
+
+    const changes = projectFieldChanges(existing, p);
+    const entry = {
+      slug: p.slug,
+      title: p.title,
+      mediaCount: cloudMedia,
+      matchedBy,
+      fieldsChanged: changes,
+    };
+    if (changes.length) updated.push(entry);
+    else unchanged.push({ slug: p.slug, title: p.title, mediaCount: cloudMedia, matchedBy });
+  }
+
+  const orphaned = (allDb || [])
+    .filter(r => !incomingSlugs.has(r.slug))
+    .map(r => ({
+      id: r.id,
+      slug: r.slug,
+      title: r.title,
+      status: r.status,
+      mediaCount: mediaCounts[r.id] || 0,
+    }));
+
+  return {
+    summary: {
+      incoming: incoming.length,
+      created: created.length,
+      updated: updated.length,
+      unchanged: unchanged.length,
+      orphaned: orphaned.length,
+      skipped: skipped.length,
+      warnings: slugConflicts.length + mediaNotes.filter(n => n.jsonMediaRefs && !n.cloudMedia).length + timelineIssues.length,
+    },
+    created,
+    updated,
+    unchanged,
+    orphaned,
+    skipped,
+    slugConflicts,
+    mediaNotes,
+    timelineIssues,
+  };
+}
+
+async function deleteProjectById(env, id) {
+  const media = await getProjectMedia(env.DB, id);
+  for (const m of media) {
+    try { await env.MEDIA.delete(m.r2_key); } catch (_) {}
+  }
+  await env.DB.prepare('DELETE FROM media_assets WHERE project_id = ?').bind(id).run();
+  await env.DB.prepare('DELETE FROM projects WHERE id = ?').bind(id).run();
+}
+
+async function applyOrphanAction(env, orphaned, action) {
+  let drafted = 0;
+  let deleted = 0;
+  if (!action || action === 'keep' || !orphaned?.length) return { drafted, deleted };
+
+  for (const row of orphaned) {
+    if (action === 'draft') {
+      await env.DB.prepare("UPDATE projects SET status = 'draft', updated_at = ? WHERE id = ?")
+        .bind(now(), row.id).run();
+      drafted++;
+    } else if (action === 'delete') {
+      await deleteProjectById(env, row.id);
+      deleted++;
+    }
+  }
+  return { drafted, deleted };
+}
+
+async function importProjectsFromList(env, items, options = {}) {
+  const ts = now();
+  const analysis = await analyzeProjectImport(env, items, options.pack || null);
   let created = 0;
   let updated = 0;
-  const ts = now();
 
   for (const raw of items) {
     const p = normalizeImportProject(raw);
     if (!p) continue;
-    const existing = await env.DB.prepare('SELECT * FROM projects WHERE slug = ?').bind(p.slug).first();
+
+    let existing = await env.DB.prepare('SELECT * FROM projects WHERE slug = ?').bind(p.slug).first();
+    if (!existing && p.sourceId && p.sourceId !== p.slug) {
+      existing = await env.DB.prepare('SELECT * FROM projects WHERE slug = ?').bind(p.sourceId).first();
+      if (existing) {
+        await env.DB.prepare('UPDATE projects SET slug = ?, updated_at = ? WHERE id = ?')
+          .bind(p.slug, ts, existing.id).run();
+        existing = { ...existing, slug: p.slug };
+      }
+    }
 
     if (existing) {
-      await env.DB.prepare(`
-        UPDATE projects SET title=?, subtitle=?, description=?, tags=?, role=?, tools=?,
-          year=?, date=?, category=?, links=?, status=?, featured=?, sort_order=?, timeline_ref=?,
-          updated_at=? WHERE slug=?
-      `).bind(
-        p.title, p.subtitle, p.description, JSON.stringify(p.tags), p.role, JSON.stringify(p.tools),
-        p.year, p.date, p.category, JSON.stringify(p.links), p.status, p.featured, p.sortOrder,
-        p.timelineRef, ts, p.slug
-      ).run();
-      updated++;
+      const changes = projectFieldChanges(existing, p);
+      if (changes.length || existing.slug !== p.slug) {
+        await env.DB.prepare(`
+          UPDATE projects SET slug=?, title=?, subtitle=?, description=?, tags=?, role=?, tools=?,
+            year=?, date=?, category=?, links=?, status=?, featured=?, sort_order=?, timeline_ref=?,
+            updated_at=? WHERE id=?
+        `).bind(
+          p.slug, p.title, p.subtitle, p.description, JSON.stringify(p.tags), p.role, JSON.stringify(p.tools),
+          p.year, p.date, p.category, JSON.stringify(p.links), p.status, p.featured, p.sortOrder,
+          p.timelineRef, ts, existing.id
+        ).run();
+        updated++;
+      }
     } else {
       const id = uuid();
       await env.DB.prepare(`
@@ -349,7 +588,112 @@ async function handleImportProjects(request, env, cors) {
     }
   }
 
-  return json({ ok: true, created, updated, total: items.length }, 200, cors);
+  const incomingSlugs = new Set(items.map(raw => normalizeImportProject(raw)?.slug).filter(Boolean));
+  const { results: allDb } = await env.DB.prepare('SELECT * FROM projects').all();
+  const toOrphan = (allDb || []).filter(r => !incomingSlugs.has(r.slug)).map(r => ({
+    id: r.id, slug: r.slug, title: r.title, status: r.status,
+  }));
+  const orphanResult = await applyOrphanAction(env, toOrphan, options.orphanAction);
+
+  return {
+    created,
+    updated,
+    total: items.length,
+    analysis,
+    orphans: { ...orphanResult, kept: toOrphan.length - orphanResult.drafted - orphanResult.deleted },
+  };
+}
+
+async function handleImportProjects(request, env, cors) {
+  const body = await request.json();
+  const items = Array.isArray(body.projects) ? body.projects : [];
+  if (!items.length) return json({ error: 'projects array required' }, 400, cors);
+  const result = await importProjectsFromList(env, items, {
+    orphanAction: body.orphanAction || 'keep',
+    pack: body.pack || null,
+  });
+  return json({ ok: true, ...result }, 200, cors);
+}
+
+async function handlePreviewProjects(request, env, cors) {
+  const body = await request.json();
+  const items = Array.isArray(body.projects) ? body.projects : [];
+  if (!items.length) return json({ error: 'projects array required' }, 400, cors);
+  const analysis = await analyzeProjectImport(env, items, body.pack || null);
+  return json({ ok: true, analysis }, 200, cors);
+}
+
+async function handlePreviewPack(request, env, cors) {
+  const body = await request.json();
+  const pack = body.pack && typeof body.pack === 'object' ? body.pack : body;
+  if (!pack || typeof pack !== 'object') return json({ error: 'Invalid pack JSON' }, 400, cors);
+  const projects = Array.isArray(pack.projects) ? pack.projects : [];
+  const analysis = projects.length
+    ? await analyzeProjectImport(env, projects, pack)
+    : { summary: { incoming: 0, created: 0, updated: 0, unchanged: 0, orphaned: 0, skipped: 0, warnings: 0 },
+        created: [], updated: [], unchanged: [], orphaned: [], skipped: [], slugConflicts: [], mediaNotes: [], timelineIssues: [] };
+  const stored = await getStoredPack(env);
+  return json({
+    ok: true,
+    resume: {
+      hasIncoming: !!(pack.resume || pack.timeline || pack.skills_markdown),
+      hasStored: !!(stored?.resume || stored?.timeline),
+      willReplace: !!(pack.resume || pack.timeline || pack.skills_markdown),
+    },
+    analysis,
+  }, 200, cors);
+}
+
+async function getStoredPack(env) {
+  const row = await env.DB.prepare('SELECT json FROM site_pack WHERE id = ?').bind('main').first();
+  if (!row?.json) return null;
+  try { return JSON.parse(row.json); } catch { return null; }
+}
+
+async function buildPackResponse(env, publishedOnly) {
+  const stored = await getStoredPack(env);
+  const projects = await listProjects(env.DB, publishedOnly);
+  const base = stored && typeof stored === 'object' ? stored : { version: 2 };
+  return {
+    ...base,
+    version: base.version || 2,
+    config: {
+      ...(base.config || {}),
+      mediaBaseUrl: env.R2_PUBLIC_BASE_URL || base.config?.mediaBaseUrl || '',
+    },
+    projects,
+  };
+}
+
+async function handlePublicPack(env, cors) {
+  const pack = await buildPackResponse(env, true);
+  return json(pack, 200, cors);
+}
+
+async function handleGetPack(env, cors) {
+  const pack = await buildPackResponse(env, false);
+  return json({ pack }, 200, cors);
+}
+
+async function handleImportPack(request, env, cors) {
+  const body = await request.json();
+  const pack = body.pack && typeof body.pack === 'object' ? body.pack : body;
+  if (!pack || typeof pack !== 'object') return json({ error: 'Invalid pack JSON' }, 400, cors);
+  const orphanAction = body.orphanAction || 'keep';
+
+  const ts = now();
+  const packForStore = { ...pack };
+  await env.DB.prepare(`
+    INSERT INTO site_pack (id, json, updated_at) VALUES ('main', ?, ?)
+    ON CONFLICT(id) DO UPDATE SET json = excluded.json, updated_at = excluded.updated_at
+  `).bind(JSON.stringify(packForStore), ts).run();
+
+  let projectResult = { created: 0, updated: 0, total: 0, analysis: null, orphans: { drafted: 0, deleted: 0, kept: 0 } };
+  if (Array.isArray(pack.projects) && pack.projects.length) {
+    projectResult = await importProjectsFromList(env, pack.projects, { orphanAction, pack });
+  }
+
+  return json({ ok: true, resumeSaved: true, orphanAction, ...projectResult }, 200, cors);
 }
 
 async function handleUpload(request, env, cors) {
@@ -468,6 +812,12 @@ export default {
       if (path === '/api/public/projects' && request.method === 'GET') {
         return handlePublicProjects(env, cors);
       }
+      if (path === '/api/public/pack' && request.method === 'GET') {
+        return handlePublicPack(env, cors);
+      }
+      if (path === '/api/auth/status' && request.method === 'GET') {
+        return handleAuthStatus(env, cors);
+      }
 
       /* Auth */
       if (path === '/api/auth/login' && request.method === 'POST') {
@@ -493,6 +843,18 @@ export default {
       }
       if (path === '/api/projects/import' && request.method === 'POST') {
         return handleImportProjects(request, env, cors);
+      }
+      if (path === '/api/projects/preview' && request.method === 'POST') {
+        return handlePreviewProjects(request, env, cors);
+      }
+      if (path === '/api/pack' && request.method === 'GET') {
+        return handleGetPack(env, cors);
+      }
+      if (path === '/api/pack/preview' && request.method === 'POST') {
+        return handlePreviewPack(request, env, cors);
+      }
+      if (path === '/api/pack/import' && request.method === 'POST') {
+        return handleImportPack(request, env, cors);
       }
 
       const projMatch = path.match(/^\/api\/projects\/([^/]+)$/);

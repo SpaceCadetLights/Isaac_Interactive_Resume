@@ -34,13 +34,15 @@ Do these steps **once** after pulling the latest code. The public site keeps wor
    ```
    with your real ID.
 
-5. From the repo root, run the schema:
+5. From the repo root, run the schema (safe to re-run when new tables are added):
 
 ```bash
 cd worker
 npm install
 npx wrangler d1 execute isaac-portfolio --file=schema.sql
 ```
+
+Re-run after updates that add **Resume Data** cloud storage (`site_pack` table).
 
 ---
 
@@ -105,10 +107,25 @@ If you use another preview URL, add it to `ALLOWED_ORIGINS` (comma-separated) an
 
 ## 6. Use the admin
 
-1. Open **`https://resume.spacecadetslighting.com/admin/`**
+### Resume Data vs Projects
+
+| Tab | Purpose |
+|-----|---------|
+| **Resume Data** | Batch import resume, timeline, skills, and project **text** from JSON |
+| **Projects** | Edit one project, upload gallery media, publish/feature |
+
+**Slug is the join key** — uploaded photos stay on the database row whose `slug` matches. JSON `media: [...]` paths are not re-imported; upload files under Projects → Edit.
+
+Before saving a new package, use **Check for issues** to preview orphans, slug warnings, and timeline link problems. Choose what to do with cloud projects missing from JSON: keep, unpublish, or delete.
+
+**View site** opens `https://resume.spacecadetslighting.com/portfolio/` (`portfolioUrl` in `admin/config.json` or `PORTFOLIO_SITE_URL` in `wrangler.toml`).
+
+### Day-to-day
+
+1. Open **`https://resume.spacecadetslighting.com/admin/`** (or the Worker admin URL)
 2. Sign in with the password you set in step 3
-3. **New project** → fill title, slug, description, set status to **published** when ready
-4. **Upload** images/video (stored in R2 under `portfolio/projects/{slug}/…`)
+3. **Resume Data** — import or update full resume JSON when content changes in bulk
+4. **Projects** → **New project** or **Edit** — fill text, upload images (R2 path `portfolio/projects/{slug}/…`)
 5. Reload the public portfolio — published projects load from the API automatically
 
 ### Migrating stub projects

@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import * as SEED from './data.js';
 import { getDataPackPath, siteUrl, isGitHubPagesRepo, REPO_NAME } from '../shared/site-paths.js';
-import { getApiBaseUrl, fetchPublicProjects, applyCmsProjects, getAdminUrl } from '../shared/cms-config.js';
+import { getApiBaseUrl, fetchPublicProjects, fetchPublicPack, applyCmsProjects, getAdminUrl } from '../shared/cms-config.js';
+import { getCategoryFilters, categoryLabel } from '../shared/resume-pack-schema.js';
 
 /* ==========================================================
    TUNING
@@ -261,12 +262,16 @@ let DATA = resolveFromLocalStorage() || {
 /* ==========================================================
    MEDIA + PROJECT HELPERS
    ========================================================== */
-const GAL_PAGE_SIZE = 30;
 let _discCategory = 'all';
 let _projCategory = 'all';
 let _galAllItems = [];
-let _galVisibleCount = GAL_PAGE_SIZE;
 let _galTagFilter = 'all';
+let _coverflowIdx = 0;
+let _lbZoom = 1;
+let _lbPanX = 0;
+let _lbPanY = 0;
+let _lbPanning = false;
+let _lbPanStart = null;
 let _coverMontageTimers = [];
 const COVER_MONTAGE_MS = 2000;
 
@@ -1488,6 +1493,7 @@ function renderContact() {
 }
 
 function renderAll() {
+  syncCategoryFilterUI();
   renderHero();
   renderDiscover();
   renderProjects($('#projects-search') ? $('#projects-search').value : '');
@@ -1530,40 +1536,80 @@ function collectGalleryTags(items) {
   return [...tags].sort();
 }
 
-function renderGalleryGrid() {
-  const grid = $('#gal-grid');
-  const loadMore = $('#gal-load-more');
-  if (!grid) return;
+function renderGalleryCoverflow() {
+  const track = $('#cf-track');
+  const wrap = $('#gal-coverflow-wrap');
+  const hint = $('#cf-hint');
+  if (!track) return;
+
   let items = _galAllItems;
   if (_galTagFilter !== 'all') {
     items = items.filter(m => (m.tags || []).includes(_galTagFilter));
   }
   _galItems = items;
-  const visible = items.slice(0, _galVisibleCount);
-  if (visible.length) {
-    grid.innerHTML = visible.map((m, i) => {
-      const src = resolveMediaUrl(m);
-      const poster = m.poster ? resolveMediaUrl(m.poster) : '';
-      if (m.type === 'image') {
-        return `<button class="gallery-thumb" data-gal-idx="${i}" aria-label="View ${esc(m.caption || 'photo ' + (i + 1))}">
-          <img src="${esc(src)}" alt="${esc(m.caption || '')}" loading="lazy">
-          ${m.caption ? `<div class="gallery-thumb-caption">${esc(m.caption)}</div>` : ''}
-        </button>`;
-      }
-      return `<button class="gallery-thumb gallery-thumb-video" data-gal-idx="${i}" aria-label="Play ${esc(m.caption || 'video ' + (i + 1))}">
-        ${poster ? `<img src="${esc(poster)}" alt="" loading="lazy">` : '<div class="gallery-thumb-noposter"></div>'}
-        <div class="gallery-thumb-play-icon" aria-hidden="true">&#9654;</div>
-        ${m.caption ? `<div class="gallery-thumb-caption">${esc(m.caption)}</div>` : ''}
+  _coverflowIdx = Math.min(_coverflowIdx, Math.max(0, items.length - 1));
+
+  if (wrap) wrap.hidden = !items.length;
+  if (hint) hint.hidden = !items.length;
+
+  if (!items.length) {
+    track.innerHTML = '';
+    return;
+  }
+
+  track.innerHTML = items.map((m, i) => {
+    const src = resolveMediaUrl(m);
+    const poster = m.poster ? resolveMediaUrl(m.poster) : '';
+    const label = esc(m.caption || (m.type === 'video' ? 'Video' : 'Photo') + ' ' + (i + 1));
+    if (m.type === 'image') {
+      return `<button type="button" class="cf-item" data-gal-idx="${i}" aria-label="View ${label}">
+        <div class="cf-item-inner">
+          <img src="${esc(src)}" alt="${label}" loading="lazy" draggable="false">
+          ${m.caption ? `<div class="cf-caption">${esc(m.caption)}</div>` : ''}
+        </div>
       </button>`;
-    }).join('');
-  } else {
-    grid.innerHTML = '<p class="gallery-empty">No photos in this filter.<br>Upload media to R2 and reference paths in <code>resume_pack.json</code>.</p>';
-  }
-  if (loadMore) {
-    const more = items.length > _galVisibleCount;
-    loadMore.hidden = !more;
-    loadMore.textContent = `Load more (${items.length - _galVisibleCount} remaining)`;
-  }
+    }
+    return `<button type="button" class="cf-item cf-item-video" data-gal-idx="${i}" aria-label="Play ${label}">
+      <div class="cf-item-inner">
+        ${poster ? `<img src="${esc(poster)}" alt="" loading="lazy" draggable="false">` : '<div class="cf-noposter"></div>'}
+        <div class="cf-play-icon" aria-hidden="true">&#9654;</div>
+        ${m.caption ? `<div class="cf-caption">${esc(m.caption)}</div>` : ''}
+      </div>
+    </button>`;
+  }).join('');
+
+  updateCoverflowTransforms();
+}
+
+function updateCoverflowTransforms() {
+  const items = $$('.cf-item');
+  const n = _galItems.length;
+  items.forEach(el => {
+    const i = parseInt(el.dataset.galIdx, 10);
+    const offset = i - _coverflowIdx;
+    const abs = Math.abs(offset);
+    const rot = offset * -52;
+    const x = offset * 168;
+    const z = -abs * 140;
+    const scale = offset === 0 ? 1 : Math.max(0.58, 1 - abs * 0.14);
+    const opacity = abs > 4 ? 0 : Math.max(0.35, 1 - abs * 0.18);
+    el.style.transform = `translateX(${x}px) translateZ(${z}px) rotateY(${rot}deg) scale(${scale})`;
+    el.style.opacity = opacity;
+    el.style.zIndex = String(100 - abs);
+    el.classList.toggle('cf-active', offset === 0);
+    el.tabIndex = offset === 0 ? 0 : -1;
+  });
+
+  const prev = $('#cf-prev');
+  const next = $('#cf-next');
+  if (prev) prev.disabled = _coverflowIdx <= 0;
+  if (next) next.disabled = _coverflowIdx >= n - 1;
+}
+
+function setCoverflowIndex(idx) {
+  if (!_galItems.length) return;
+  _coverflowIdx = Math.max(0, Math.min(idx, _galItems.length - 1));
+  updateCoverflowTransforms();
 }
 
 function openGalleryModal(entry) {
@@ -1591,8 +1637,8 @@ function openGalleryModal(entry) {
   }
 
   _galAllItems = (ctx.media || []).filter(m => m.type === 'image' || m.type === 'video');
-  _galVisibleCount = GAL_PAGE_SIZE;
   _galTagFilter = 'all';
+  _coverflowIdx = 0;
 
   const tagFilters = $('#gal-tag-filters');
   const galTags = collectGalleryTags(_galAllItems);
@@ -1608,7 +1654,7 @@ function openGalleryModal(entry) {
     }
   }
 
-  renderGalleryGrid();
+  renderGalleryCoverflow();
 
   const links = ctx.links || [];
   const linksEl = $('#gal-links');
@@ -1643,8 +1689,34 @@ function openGalleryModal(entry) {
   requestAnimationFrame(() => window.scrollTo({ top: savedScrollY, behavior: 'instant' }));
 }
 
+function resetLbZoom() {
+  _lbZoom = 1;
+  _lbPanX = 0;
+  _lbPanY = 0;
+  applyLbTransform();
+  updateLbZoomLabel();
+}
+
+function applyLbTransform() {
+  const img = $('#lb-img');
+  if (img) img.style.transform = `translate(${_lbPanX}px, ${_lbPanY}px) scale(${_lbZoom})`;
+}
+
+function updateLbZoomLabel() {
+  const el = $('#lb-zoom-level');
+  if (el) el.textContent = `${Math.round(_lbZoom * 100)}%`;
+}
+
+function setLbZoom(next) {
+  _lbZoom = Math.min(6, Math.max(1, next));
+  if (_lbZoom === 1) { _lbPanX = 0; _lbPanY = 0; }
+  applyLbTransform();
+  updateLbZoomLabel();
+}
+
 function openLightbox(index) {
   _galIdx = index;
+  resetLbZoom();
   const lb = $('#gallery-lightbox');
   if (lb) lb.removeAttribute('hidden');
   renderLightboxSlide();
@@ -1655,6 +1727,7 @@ function closeLightbox() {
   if (!lb || lb.hasAttribute('hidden')) return;
   const v = lb.querySelector('video');
   if (v) { v.pause(); v.removeAttribute('src'); v.load(); }
+  resetLbZoom();
   lb.setAttribute('hidden', '');
 }
 
@@ -1663,9 +1736,21 @@ function renderLightboxSlide() {
   _galIdx = ((_galIdx % _galItems.length) + _galItems.length) % _galItems.length;
   const item = _galItems[_galIdx];
   const stage = $('#lb-stage');
+  const toolbar = $('#lb-zoom-toolbar');
+  resetLbZoom();
+
   if (item.type === 'image') {
-    stage.innerHTML = `<img src="${esc(resolveMediaUrl(item))}" alt="${esc(item.caption || '')}" loading="eager">`;
+    stage.innerHTML = `<div class="lb-zoom-wrap" id="lb-zoom-wrap">
+      <img id="lb-img" src="${esc(resolveMediaUrl(item))}" alt="${esc(item.caption || '')}" loading="eager" draggable="false">
+    </div>`;
+    if (toolbar) toolbar.hidden = false;
+    const img = $('#lb-img');
+    if (img) img.ondblclick = e => {
+      e.preventDefault();
+      setLbZoom(_lbZoom > 1.2 ? 1 : 2.5);
+    };
   } else {
+    if (toolbar) toolbar.hidden = true;
     stage.innerHTML = `<video controls autoplay playsinline${item.poster ? ` poster="${esc(resolveMediaUrl(item.poster))}"` : ''}>
       <source src="${esc(resolveMediaUrl(item))}">
     </video>`;
@@ -1674,6 +1759,45 @@ function renderLightboxSlide() {
   $('#lb-counter').textContent = `${_galIdx + 1} / ${_galItems.length}`;
   $('#lb-prev').style.display = _galItems.length > 1 ? '' : 'none';
   $('#lb-next').style.display = _galItems.length > 1 ? '' : 'none';
+  setCoverflowIndex(_galIdx);
+}
+
+function setupLbStageInteractions() {
+  const stage = $('#lb-stage');
+  if (!stage || stage.dataset.lbBound) return;
+  stage.dataset.lbBound = '1';
+
+  stage.addEventListener('wheel', e => {
+    if ($('#gallery-lightbox').hasAttribute('hidden')) return;
+    const item = _galItems[_galIdx];
+    if (!item || item.type !== 'image') return;
+    e.preventDefault();
+    const delta = e.deltaY < 0 ? 0.18 : -0.18;
+    setLbZoom(_lbZoom + delta);
+  }, { passive: false });
+
+  stage.addEventListener('pointerdown', e => {
+    if (_lbZoom <= 1 || e.button !== 0) return;
+    _lbPanning = true;
+    _lbPanStart = { x: e.clientX - _lbPanX, y: e.clientY - _lbPanY };
+    stage.classList.add('lb-panning');
+    stage.setPointerCapture(e.pointerId);
+  });
+
+  stage.addEventListener('pointermove', e => {
+    if (!_lbPanning || !_lbPanStart) return;
+    _lbPanX = e.clientX - _lbPanStart.x;
+    _lbPanY = e.clientY - _lbPanStart.y;
+    applyLbTransform();
+  });
+
+  const endPan = () => {
+    _lbPanning = false;
+    _lbPanStart = null;
+    stage.classList.remove('lb-panning');
+  };
+  stage.addEventListener('pointerup', endPan);
+  stage.addEventListener('pointercancel', endPan);
 }
 
 /* Animated close — adds .gallery-closing, waits for the outro to finish,
@@ -1701,39 +1825,37 @@ function setupGalleryModal() {
   const modal = $('#gallery-modal');
   if (!modal) return;
 
-  /* Close button & click-outside */
   $('#gallery-close').addEventListener('click', closeGalleryModal);
   modal.addEventListener('click', e => { if (e.target === modal) closeGalleryModal(); });
 
-  /* Lightbox controls */
   $('#lb-close').addEventListener('click', closeLightbox);
   $('#lb-prev').addEventListener('click', () => { _galIdx--; renderLightboxSlide(); });
   $('#lb-next').addEventListener('click', () => { _galIdx++; renderLightboxSlide(); });
+  $('#lb-zoom-in')?.addEventListener('click', () => setLbZoom(_lbZoom + 0.35));
+  $('#lb-zoom-out')?.addEventListener('click', () => setLbZoom(_lbZoom - 0.35));
+  $('#lb-zoom-reset')?.addEventListener('click', () => resetLbZoom());
+  setupLbStageInteractions();
 
-  /* Touch swipe in lightbox */
   let _touchX = null;
   const lb = $('#gallery-lightbox');
   lb.addEventListener('touchstart', e => { _touchX = e.touches[0].clientX; }, { passive: true });
   lb.addEventListener('touchend', e => {
-    if (_touchX === null) return;
+    if (_touchX === null || _lbZoom > 1) return;
     const dx = e.changedTouches[0].clientX - _touchX;
     if (Math.abs(dx) > 44) { _galIdx += (dx < 0 ? 1 : -1); renderLightboxSlide(); }
     _touchX = null;
   }, { passive: true });
 
-  /* Grid click → open lightbox */
-  $('#gal-grid').addEventListener('click', e => {
+  $('#cf-track')?.addEventListener('click', e => {
     const btn = e.target.closest('[data-gal-idx]');
-    if (btn) openLightbox(parseInt(btn.dataset.galIdx, 10));
+    if (!btn) return;
+    const idx = parseInt(btn.dataset.galIdx, 10);
+    if (idx === _coverflowIdx) openLightbox(idx);
+    else setCoverflowIndex(idx);
   });
 
-  const loadMore = $('#gal-load-more');
-  if (loadMore) {
-    loadMore.addEventListener('click', () => {
-      _galVisibleCount += GAL_PAGE_SIZE;
-      renderGalleryGrid();
-    });
-  }
+  $('#cf-prev')?.addEventListener('click', () => setCoverflowIndex(_coverflowIdx - 1));
+  $('#cf-next')?.addEventListener('click', () => setCoverflowIndex(_coverflowIdx + 1));
 
   const tagFilters = $('#gal-tag-filters');
   if (tagFilters) {
@@ -1741,30 +1863,51 @@ function setupGalleryModal() {
       const btn = e.target.closest('[data-gal-tag]');
       if (!btn) return;
       _galTagFilter = btn.dataset.galTag;
-      _galVisibleCount = GAL_PAGE_SIZE;
+      _coverflowIdx = 0;
       tagFilters.querySelectorAll('.gal-tag-filter').forEach(b => b.classList.toggle('active', b === btn));
-      renderGalleryGrid();
+      renderGalleryCoverflow();
     });
   }
 
-  /* Keyboard nav inside modal */
   modal.addEventListener('keydown', e => {
     const lbOpen = !$('#gallery-lightbox').hasAttribute('hidden');
     if (lbOpen) {
       if (e.key === 'ArrowLeft')  { e.preventDefault(); _galIdx--; renderLightboxSlide(); }
       if (e.key === 'ArrowRight') { e.preventDefault(); _galIdx++; renderLightboxSlide(); }
       if (e.key === 'Escape')     { e.preventDefault(); closeLightbox(); }
+      if (e.key === '+' || e.key === '=') { e.preventDefault(); setLbZoom(_lbZoom + 0.25); }
+      if (e.key === '-') { e.preventDefault(); setLbZoom(_lbZoom - 0.25); }
+      if (e.key === '0') { e.preventDefault(); resetLbZoom(); }
+    } else if (_galItems.length) {
+      if (e.key === 'ArrowLeft')  { e.preventDefault(); setCoverflowIndex(_coverflowIdx - 1); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); setCoverflowIndex(_coverflowIdx + 1); }
+      if (e.key === 'Enter')      { e.preventDefault(); openLightbox(_coverflowIdx); }
     }
   });
 
-  /* Intercept the browser's native Escape-to-close so the outro animation plays */
   modal.addEventListener('cancel', e => {
     e.preventDefault();
     closeGalleryModal();
   });
 
-  /* Clean up video on modal close */
   modal.addEventListener('close', closeLightbox);
+}
+
+function syncCategoryFilterUI() {
+  const cats = getCategoryFilters(DATA.projects);
+  const build = (wrapId, attr, btnClass, active) => {
+    const wrap = document.getElementById(wrapId);
+    if (!wrap) return;
+    const btns = [
+      `<button type="button" class="glass-btn ${btnClass}${active === 'all' ? ' active' : ''}" data-${attr}="all">All</button>`,
+      ...cats.map(c =>
+        `<button type="button" class="glass-btn ${btnClass}${active === c ? ' active' : ''}" data-${attr}="${esc(c)}">${esc(categoryLabel(c))}</button>`
+      ),
+    ];
+    wrap.innerHTML = btns.join('');
+  };
+  build('discover-filters', 'disc-cat', 'disc-filter', _discCategory);
+  build('projects-filters', 'proj-cat', 'proj-filter', _projCategory);
 }
 
 function setupDiscoverFilters() {
@@ -1970,85 +2113,6 @@ function setupControls() {
   });
 }
 
-/* ==========================================================
-   IMPORT / EXPORT
-   ========================================================== */
-function buildCurrentPack() {
-  return {
-    version: 2,
-    config: DATA.config || {},
-    projects: DATA.projects || [],
-    resume: {
-      profile: DATA.profile,
-      hero: {
-        primary_domains: DATA.hero.primaryDomains.join(' \u2022 '),
-        focus: DATA.hero.focus.join(' \u2022 '),
-        style: DATA.hero.style.join(' \u2022 '),
-        chips: DATA.hero.chips,
-      },
-      mvv: DATA.mvv,
-      jobs: DATA.jobs,
-      education: DATA.education,
-      passions: DATA.passions,
-      capabilities: DATA.capabilities,
-    },
-    timeline: DATA.timeline,
-    skills_markdown: null,
-  };
-}
-
-function applyImport(jsonText) {
-  const statusEl = $('#import-status');
-  try {
-    const pack = JSON.parse(jsonText);
-    if (!pack || typeof pack !== 'object') throw new Error('Invalid JSON structure.');
-    DATA = packToData(pack);
-    localStorage.setItem(LS_KEY, JSON.stringify(pack));
-    refreshCmsMerge().then(() => {
-      renderAll();
-      ScrollTrigger.refresh();
-      statusEl.textContent = '\u2713 Import applied. Page content updated.';
-      statusEl.className = 'settings-status ok';
-    });
-  } catch (e) {
-    statusEl.textContent = '\u2717 Error: ' + e.message;
-    statusEl.className = 'settings-status err';
-  }
-}
-
-async function refreshCmsMerge() {
-  const apiBase = getApiBaseUrl(DATA.config);
-  if (!apiBase) return;
-  const cmsPack = await fetchPublicProjects(apiBase);
-  if (cmsPack) DATA = applyCmsProjects(DATA, cmsPack);
-}
-
-async function syncProjectsToCloud(password) {
-  const apiBase = getApiBaseUrl(DATA.config);
-  if (!apiBase) throw new Error('Cloud API is not configured (apiBaseUrl in resume_pack.json).');
-  const projects = DATA.projects || [];
-  if (!projects.length) throw new Error('No projects in current data to sync.');
-  const loginRes = await fetch(`${apiBase}/api/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ password }),
-  });
-  const loginData = await loginRes.json().catch(() => ({}));
-  if (!loginRes.ok || !loginData.token) throw new Error(loginData.error || 'Admin login failed.');
-  const importRes = await fetch(`${apiBase}/api/projects/import`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${loginData.token}`,
-    },
-    body: JSON.stringify({ projects }),
-  });
-  const importData = await importRes.json().catch(() => ({}));
-  if (!importRes.ok) throw new Error(importData.error || 'Sync failed.');
-  await refreshCmsMerge();
-  return importData;
-}
-
 function syncDialogCursor() {
   const open = $$('dialog').some(d => d.open);
   document.documentElement.classList.toggle('modal-open', open);
@@ -2085,82 +2149,26 @@ function setupDialogCursor() {
   syncDialogCursor();
 }
 
-function setupImport() {
+function setupSettings() {
   const modal    = $('#settings-modal');
   const openBtn  = $('#btn-import');
   const closeBtn = $('#settings-close');
-  const applyBtn = $('#btn-import-apply');
-  const fileBtn  = $('#btn-import-file');
-  const fileIn   = $('#import-file-input');
-  const exportBtn= $('#btn-export');
-  const resetBtn = $('#btn-reset-data');
-  const jsonArea = $('#import-json');
-  const statusEl = $('#import-status');
   if (!modal || !openBtn) return;
 
-  const adminLink = $('#btn-open-admin');
-  const adminUrl = getAdminUrl(DATA.config) || siteUrl('admin/');
-  if (adminLink) adminLink.href = adminUrl;
+  const adminLink = $('#settings-admin-link');
+  const setAdminHref = () => {
+    const base = getAdminUrl(DATA.config) || siteUrl('admin/');
+    const url = base.replace(/\/?$/, '/') + '#/data';
+    if (adminLink) adminLink.href = url;
+  };
+  setAdminHref();
 
   openBtn.addEventListener('click', () => {
-    statusEl.textContent = '';
-    statusEl.className = 'settings-status';
-    jsonArea.value = '';
-    if (adminLink) adminLink.href = getAdminUrl(DATA.config) || siteUrl('admin/');
+    setAdminHref();
     modal.showModal();
   });
   closeBtn.addEventListener('click', () => modal.close());
   modal.addEventListener('click', e => { if (e.target === modal) modal.close(); });
-  applyBtn.addEventListener('click', () => {
-    const text = jsonArea.value.trim();
-    if (!text) { statusEl.textContent = 'Paste JSON above first.'; statusEl.className = 'settings-status err'; return; }
-    applyImport(text);
-  });
-  $('#btn-sync-cloud')?.addEventListener('click', async () => {
-    const password = ($('#sync-admin-password')?.value || '').trim();
-    if (!password) {
-      statusEl.textContent = 'Enter your admin password above, then click Sync.';
-      statusEl.className = 'settings-status err';
-      return;
-    }
-    statusEl.textContent = 'Syncing projects to cloud…';
-    statusEl.className = 'settings-status';
-    try {
-      const res = await syncProjectsToCloud(password);
-      renderAll();
-      ScrollTrigger.refresh();
-      statusEl.textContent = `\u2713 Synced ${res.created || 0} new, ${res.updated || 0} updated. Add media in Admin.`;
-      statusEl.className = 'settings-status ok';
-      $('#sync-admin-password').value = '';
-    } catch (err) {
-      statusEl.textContent = '\u2717 ' + err.message;
-      statusEl.className = 'settings-status err';
-    }
-  });
-  fileBtn.addEventListener('click', () => fileIn.click());
-  fileIn.addEventListener('change', () => {
-    const file = fileIn.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = e => { jsonArea.value = e.target.result; applyImport(e.target.result); };
-    reader.readAsText(file);
-    fileIn.value = '';
-  });
-  exportBtn.addEventListener('click', () => {
-    const blob = new Blob([JSON.stringify(buildCurrentPack(), null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'resume_pack.json'; a.click();
-    URL.revokeObjectURL(url);
-    statusEl.textContent = '\u2713 Exported.'; statusEl.className = 'settings-status ok';
-  });
-  resetBtn.addEventListener('click', () => {
-    if (!confirm('Reset all resume data to defaults? This cannot be undone.')) return;
-    localStorage.removeItem(LS_KEY);
-    DATA = { profile: SEED.profile, hero: SEED.hero, mvv: SEED.mvv, jobs: SEED.jobs, education: SEED.education, passions: SEED.passions, capabilities: SEED.capabilities, timeline: SEED.timeline, skillsTree: SEED.skillsTree };
-    renderAll(); ScrollTrigger.refresh();
-    statusEl.textContent = '\u2713 Reset to defaults.'; statusEl.className = 'settings-status ok';
-  });
 }
 
 /* ==========================================================
@@ -2318,10 +2326,10 @@ function setupCursor() {
   const INTERACTIVE = [
     'a', 'button', '[role="button"]', 'label', 'summary',
     '.ctrl-btn', '.snav-btn', '.theme-swatch', '.glass-btn',
-    '.skill-node', '.tl-entry', '.tl-btn', '.tl-summary', '.gallery-thumb', '.gallery-link-btn', '.lb-nav', '.lb-close', 'select',
+    '.skill-node', '.tl-entry', '.tl-btn', '.tl-summary', '.cf-item', '.gallery-link-btn', '.lb-nav', '.lb-close', '.lb-zoom-btn', 'select',
     '.hero-site-link', '.share-option', '#share-btn', '#share-facebook', '#share-sms',
-    '.disc-tile', '.proj-card-hit', '.site-switch-link', '.gal-tag-filter', '#gal-load-more',
-    '#btn-open-admin', '#btn-sync-cloud', '#sync-admin-password',
+    '.disc-tile', '.proj-card-hit', '.site-switch-link', '.gal-tag-filter', '.cf-nav',
+    '#settings-admin-link',
   ].join(', ');
 
   function applyTransform() {
@@ -2410,8 +2418,15 @@ async function init() {
 
   const apiBase = getApiBaseUrl(DATA.config);
   if (apiBase) {
-    const cmsPack = await fetchPublicProjects(apiBase);
-    if (cmsPack) DATA = applyCmsProjects(DATA, cmsPack);
+    const cloudPack = await fetchPublicPack(apiBase);
+    if (cloudPack?.resume || cloudPack?.timeline) {
+      DATA = packToData(cloudPack);
+    } else if (cloudPack?.projects?.length) {
+      DATA = applyCmsProjects(DATA, cloudPack);
+    } else {
+      const cmsPack = await fetchPublicProjects(apiBase);
+      if (cmsPack) DATA = applyCmsProjects(DATA, cmsPack);
+    }
   }
 
   renderAll();
@@ -2430,7 +2445,7 @@ async function init() {
   setupDialogCursor();
   setupModal();
   setupGalleryModal();
-  setupImport();
+  setupSettings();
   openProjectFromHash();
   window.addEventListener('hashchange', openProjectFromHash);
   window.addEventListener('resize', onResize);

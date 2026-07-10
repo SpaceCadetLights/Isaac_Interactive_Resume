@@ -118,10 +118,6 @@
         <p class="section-subtitle">Explore work through photos, video, and installations</p>
         <div class="disc-filters" id="discover-filters" role="group" aria-label="Filter by category">
           <button type="button" class="glass-btn disc-filter active" data-disc-cat="all">All</button>
-          <button type="button" class="glass-btn disc-filter" data-disc-cat="venture">Products</button>
-          <button type="button" class="glass-btn disc-filter" data-disc-cat="engineering">Engineering</button>
-          <button type="button" class="glass-btn disc-filter" data-disc-cat="community">Community</button>
-          <button type="button" class="glass-btn disc-filter" data-disc-cat="art">Art</button>
         </div>
         <div class="disc-grid" id="discover-grid"></div>
       </div>
@@ -143,10 +139,6 @@
           </div>
           <div class="proj-filters" id="projects-filters" role="group" aria-label="Filter projects">
             <button type="button" class="glass-btn proj-filter active" data-proj-cat="all">All</button>
-            <button type="button" class="glass-btn proj-filter" data-proj-cat="venture">Products</button>
-            <button type="button" class="glass-btn proj-filter" data-proj-cat="engineering">Engineering</button>
-            <button type="button" class="glass-btn proj-filter" data-proj-cat="community">Community</button>
-            <button type="button" class="glass-btn proj-filter" data-proj-cat="art">Art</button>
           </div>
         </div>
         <div class="proj-grid" id="projects-grid"></div>
@@ -304,12 +296,12 @@
   <div class="modal-body" id="modal-body"></div>
 </dialog>
 
-<!-- Settings / Import modal -->
+<!-- Settings modal -->
 <dialog id="settings-modal">
   <div class="modal-head">
     <div>
-      <div class="modal-title">Import &amp; Export Resume Data</div>
-      <div class="modal-meta">Portfolio, 3D resume, and standard resume share the same data store</div>
+      <div class="modal-title">Appearance &amp; Effects</div>
+      <div class="modal-meta">Resume &amp; AI import: <a href="#" id="settings-admin-link" target="_blank" rel="noopener">Portfolio Admin → Resume Data</a></div>
     </div>
     <button class="modal-close" id="settings-close" aria-label="Close">&#x2715;</button>
   </div>
@@ -356,45 +348,6 @@
         </button>
       </div>
     </div>
-
-    <div class="settings-divider"></div>
-
-    <!-- Cloud admin -->
-    <div class="settings-section">
-      <h3 class="settings-section-label">Cloud &amp; Admin</h3>
-      <p class="settings-hint">
-        Import project <strong>text</strong> via JSON above, then sync to the cloud. Add photos later in Admin per project.
-      </p>
-      <div class="settings-actions">
-        <a class="glass-btn" id="btn-open-admin" href="#" target="_blank" rel="noopener">Open Portfolio Admin</a>
-        <button type="button" class="glass-btn" id="btn-sync-cloud">Sync Projects to Cloud</button>
-      </div>
-      <label class="settings-hint" style="display:block;margin-top:10px">
-        Admin password (only used when you click Sync)
-        <input type="password" id="sync-admin-password" autocomplete="current-password" placeholder="Admin password" style="width:100%;margin-top:6px;padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.14);background:rgba(0,0,0,0.25);color:inherit">
-      </label>
-    </div>
-
-    <div class="settings-divider"></div>
-
-    <!-- Data import / export -->
-    <div class="settings-section">
-      <h3 class="settings-section-label">Resume Data</h3>
-      <p class="settings-hint">
-        Paste a <strong>Unified Profile Package</strong> JSON to update all resume content.<br>
-        Or drop a <code>resume_pack.json</code> file in the <code>data/</code> folder &mdash; both pages auto-load it on startup.
-      </p>
-      <textarea id="import-json" rows="7" placeholder='{"version":1,"resume":{...},"timeline":[...],"skills_markdown":"..."}'></textarea>
-      <div class="settings-actions">
-        <button class="glass-btn" id="btn-import-apply">Apply Import</button>
-        <button class="glass-btn" id="btn-import-file">Import File&hellip;</button>
-        <input type="file" id="import-file-input" accept=".json,.md,.txt" style="display:none" aria-hidden="true">
-        <button class="glass-btn" id="btn-export">Export JSON</button>
-        <button class="glass-btn" id="btn-reset-data">Reset to Default</button>
-      </div>
-    </div>
-
-    <p class="settings-status" id="import-status"></p>
   </div>
 </dialog>
 
@@ -412,8 +365,16 @@
     <div class="gallery-body" id="gallery-body">
       <p class="gallery-details" id="gal-details"></p>
       <div class="gallery-tag-filters" id="gal-tag-filters" hidden></div>
-      <div class="gallery-grid" id="gal-grid"></div>
-      <button type="button" class="glass-btn gallery-load-more" id="gal-load-more" hidden>Load more</button>
+      <div class="gallery-coverflow-wrap" id="gal-coverflow-wrap">
+        <button type="button" class="cf-nav cf-prev" id="cf-prev" aria-label="Previous photo">&#8249;</button>
+        <div class="cf-viewport">
+          <div class="cf-track" id="cf-track"></div>
+          <div class="cf-floor" aria-hidden="true"></div>
+          <div class="cf-reflection" aria-hidden="true"></div>
+        </div>
+        <button type="button" class="cf-nav cf-next" id="cf-next" aria-label="Next photo">&#8250;</button>
+      </div>
+      <p class="cf-hint" id="cf-hint">Click the center photo to view full size · drag or use arrows to browse</p>
       <div class="gallery-links" id="gal-links"></div>
     </div>
   </div>
@@ -422,6 +383,12 @@
     <button class="lb-nav lb-prev" id="lb-prev" aria-label="Previous photo">&#8249;</button>
     <div class="lb-stage" id="lb-stage"></div>
     <button class="lb-nav lb-next" id="lb-next" aria-label="Next photo">&#8250;</button>
+    <div class="lb-zoom-toolbar" id="lb-zoom-toolbar">
+      <button type="button" class="lb-zoom-btn" id="lb-zoom-out" aria-label="Zoom out">&#8722;</button>
+      <span class="lb-zoom-level" id="lb-zoom-level">100%</span>
+      <button type="button" class="lb-zoom-btn" id="lb-zoom-in" aria-label="Zoom in">+</button>
+      <button type="button" class="lb-zoom-btn lb-zoom-reset" id="lb-zoom-reset">Fit</button>
+    </div>
     <div class="lb-info">
       <span class="lb-caption" id="lb-caption"></span>
       <span class="lb-counter" id="lb-counter"></span>

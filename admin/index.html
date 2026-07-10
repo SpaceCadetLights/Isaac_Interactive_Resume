@@ -17,8 +17,8 @@
         <button type="submit" class="btn primary">Sign in</button>
       </form>
       <p id="login-error" class="error" hidden></p>
-      <p class="muted small" id="login-hint">Primary admin URL: <a id="admin-canonical-link" href="#">Worker admin</a></p>
-      <p class="muted small"><a href="../portfolio/">← Back to portfolio</a></p>
+      <p class="muted small" id="login-hint">Use the Worker admin URL for the latest UI: <a id="admin-canonical-link" href="https://isaac-portfolio-api.spacecadets.workers.dev/">isaac-portfolio-api.spacecadets.workers.dev</a></p>
+      <p class="muted small"><a href="#" id="link-back-portfolio">← Back to portfolio</a></p>
     </div>
   </div>
 
@@ -26,10 +26,14 @@
     <header class="admin-header">
       <div>
         <h1>Portfolio Admin</h1>
-        <p class="muted">Edit projects · upload to Cloudflare R2</p>
+        <p class="muted">Edit projects · upload media · manage resume data</p>
+        <nav class="admin-nav" id="admin-nav">
+          <a href="#/projects" data-nav="projects">Projects</a>
+          <a href="#/data" data-nav="data">Resume Data</a>
+        </nav>
       </div>
       <div class="header-actions">
-        <a href="../portfolio/" class="btn ghost">View site</a>
+        <a href="#" id="link-view-site" class="btn ghost" target="_blank" rel="noopener">View site</a>
         <button type="button" id="btn-logout" class="btn ghost">Log out</button>
       </div>
     </header>

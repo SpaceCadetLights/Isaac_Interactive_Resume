@@ -22,6 +22,20 @@ export async function fetchPublicProjects(apiBase) {
   }
 }
 
+/** Full resume pack from cloud (resume, timeline, projects, config). */
+export async function fetchPublicPack(apiBase) {
+  if (!apiBase) return null;
+  try {
+    const r = await fetch(`${apiBase}/api/public/pack`, { cache: 'no-store' });
+    if (!r.ok) return null;
+    const pack = await r.json();
+    if (!pack || typeof pack !== 'object') return null;
+    return pack;
+  } catch {
+    return null;
+  }
+}
+
 /** Merge CMS projects (media + live edits) with JSON stubs by slug. */
 export function applyCmsProjects(data, cmsPack) {
   if (!data || !cmsPack) return data;

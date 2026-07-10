@@ -38,3 +38,9 @@ CREATE TABLE IF NOT EXISTS media_assets (
 
 CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status);
 CREATE INDEX IF NOT EXISTS idx_media_project ON media_assets(project_id);
+
+CREATE TABLE IF NOT EXISTS site_pack (
+  id TEXT PRIMARY KEY DEFAULT 'main',
+  json TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
