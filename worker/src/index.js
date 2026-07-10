@@ -147,9 +147,10 @@ function parseJsonField(val, fallback) {
   try { return JSON.parse(val || ''); } catch { return fallback; }
 }
 
-async function rowToProject(row, mediaRows) {
+async function rowToProject(row, mediaRows, orgSlugById) {
   const media = (mediaRows || []).filter(m => m.project_id === row.id).sort((a, b) => a.sort_order - b.sort_order);
   const hero = media.find(m => m.id === row.hero_media_id) || media.find(m => m.slot === 'hero');
+  const orgSlug = row.organization_id ? (orgSlugById?.[row.organization_id] || null) : null;
   return {
     id: row.id,
     slug: row.slug,
@@ -167,7 +168,9 @@ async function rowToProject(row, mediaRows) {
     links: parseJsonField(row.links, []),
     status: row.status,
     featured: !!row.featured,
+    featuredDiscover: !!row.featured_discover,
     sortOrder: row.sort_order,
+    organizationId: orgSlug || row.organization_id || null,
     timelineRef: row.timeline_ref,
     hero: hero ? mediaAssetToLegacy(hero) : null,
     media: media.map(mediaAssetToLegacy),
@@ -203,6 +206,157 @@ async function getProjectMedia(db, projectId) {
     'SELECT * FROM media_assets WHERE project_id = ? ORDER BY sort_order ASC'
   ).bind(projectId).all();
   return results || [];
+}
+
+function rowToOrganization(row) {
+  return {
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+    subtitle: row.subtitle,
+    description: row.description,
+    tags: parseJsonField(row.tags, []),
+    website: row.website || '',
+    date: row.date || '',
+    category: row.category,
+    links: parseJsonField(row.links, []),
+    status: row.status,
+    featured: !!row.featured,
+    sortOrder: row.sort_order,
+    timelineRef: row.timeline_ref,
+    updatedAt: row.updated_at,
+  };
+}
+
+async function listOrganizations(db, publishedOnly) {
+  const q = publishedOnly
+    ? "SELECT * FROM organizations WHERE status = 'published' ORDER BY sort_order ASC, updated_at DESC"
+    : 'SELECT * FROM organizations ORDER BY sort_order ASC, updated_at DESC';
+  const { results } = await db.prepare(q).all();
+  return (results || []).map(rowToOrganization);
+}
+
+async function getOrganization(db, id) {
+  const row = await db.prepare('SELECT * FROM organizations WHERE id = ? OR slug = ?').bind(id, id).first();
+  if (!row) return null;
+  return rowToOrganization(row);
+}
+
+async function handleAdminOrganizations(env, cors) {
+  const organizations = await listOrganizations(env.DB, false);
+  return json({ organizations }, 200, cors);
+}
+
+async function handleCreateOrganization(request, env, cors) {
+  const body = await request.json();
+  const id = uuid();
+  const slug = slugify(body.slug || body.title) || id.slice(0, 8);
+  const ts = now();
+  await env.DB.prepare(`
+    INSERT INTO organizations (id, slug, title, subtitle, description, tags, website, date,
+      category, links, status, featured, sort_order, timeline_ref, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).bind(
+    id, slug, body.title || 'Untitled', body.subtitle || '', body.description || '',
+    JSON.stringify(body.tags || []), body.website || '', body.date || '',
+    body.category || 'venture', JSON.stringify(body.links || []),
+    body.status || 'draft', body.featured ? 1 : 0, body.sortOrder ?? 0,
+    body.timelineRef || null, ts, ts
+  ).run();
+  const organization = await getOrganization(env.DB, id);
+  return json({ organization }, 201, cors);
+}
+
+async function handleUpdateOrganization(request, env, cors, id) {
+  const body = await request.json();
+  const existing = await env.DB.prepare('SELECT id FROM organizations WHERE id = ?').bind(id).first();
+  if (!existing) return json({ error: 'Not found' }, 404, cors);
+  const ts = now();
+  await env.DB.prepare(`
+    UPDATE organizations SET slug=?, title=?, subtitle=?, description=?, tags=?, website=?, date=?,
+      category=?, links=?, status=?, featured=?, sort_order=?, timeline_ref=?, updated_at=? WHERE id=?
+  `).bind(
+    slugify(body.slug || body.title), body.title, body.subtitle || '', body.description || '',
+    JSON.stringify(body.tags || []), body.website || '', body.date || '',
+    body.category || 'venture', JSON.stringify(body.links || []),
+    body.status || 'draft', body.featured ? 1 : 0, body.sortOrder ?? 0,
+    body.timelineRef || null, ts, id
+  ).run();
+  const organization = await getOrganization(env.DB, id);
+  return json({ organization }, 200, cors);
+}
+
+async function handleDeleteOrganization(env, cors, id) {
+  const row = await env.DB.prepare('SELECT id FROM organizations WHERE id = ?').bind(id).first();
+  if (!row) return json({ error: 'Not found' }, 404, cors);
+  const child = await env.DB.prepare('SELECT COUNT(*) as c FROM projects WHERE organization_id = ?').bind(id).first();
+  if (child?.c > 0) {
+    return json({ error: 'Cannot delete organization with linked projects. Reassign or delete projects first.' }, 400, cors);
+  }
+  await env.DB.prepare('DELETE FROM organizations WHERE id = ?').bind(id).run();
+  return json({ ok: true }, 200, cors);
+}
+
+function normalizeImportOrganization(body) {
+  const slug = slugify(body.slug || body.id || body.title);
+  if (!slug) return null;
+  return {
+    title: body.title || 'Untitled',
+    slug,
+    sourceId: body.id ? slugify(String(body.id)) : null,
+    subtitle: body.subtitle || body.summary || '',
+    description: body.description || body.details || '',
+    tags: Array.isArray(body.tags) ? body.tags : [],
+    website: body.website || '',
+    date: body.date || '',
+    category: body.category || 'venture',
+    links: Array.isArray(body.links) ? body.links : [],
+    status: body.status === 'draft' ? 'draft' : 'published',
+    featured: body.featured ? 1 : 0,
+    sortOrder: body.sortOrder ?? 0,
+    timelineRef: body.timelineRef || body.timeline_ref || null,
+  };
+}
+
+async function importOrganizationsFromList(env, items) {
+  const ts = now();
+  let created = 0;
+  let updated = 0;
+  for (const raw of items) {
+    const o = normalizeImportOrganization(raw);
+    if (!o) continue;
+    let existing = await env.DB.prepare('SELECT * FROM organizations WHERE slug = ?').bind(o.slug).first();
+    if (!existing && o.sourceId && o.sourceId !== o.slug) {
+      existing = await env.DB.prepare('SELECT * FROM organizations WHERE slug = ?').bind(o.sourceId).first();
+      if (existing) {
+        await env.DB.prepare('UPDATE organizations SET slug = ?, updated_at = ? WHERE id = ?')
+          .bind(o.slug, ts, existing.id).run();
+        existing = { ...existing, slug: o.slug };
+      }
+    }
+    if (existing) {
+      await env.DB.prepare(`
+        UPDATE organizations SET slug=?, title=?, subtitle=?, description=?, tags=?, website=?, date=?,
+          category=?, links=?, status=?, featured=?, sort_order=?, timeline_ref=?, updated_at=? WHERE id=?
+      `).bind(
+        o.slug, o.title, o.subtitle, o.description, JSON.stringify(o.tags), o.website, o.date,
+        o.category, JSON.stringify(o.links), o.status, o.featured, o.sortOrder, o.timelineRef, ts, existing.id
+      ).run();
+      updated++;
+    } else {
+      const id = uuid();
+      await env.DB.prepare(`
+        INSERT INTO organizations (id, slug, title, subtitle, description, tags, website, date,
+          category, links, status, featured, sort_order, timeline_ref, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        id, o.slug, o.title, o.subtitle, o.description, JSON.stringify(o.tags), o.website, o.date,
+        o.category, JSON.stringify(o.links), o.status, o.featured, o.sortOrder, o.timelineRef, ts, ts
+      ).run();
+      created++;
+    }
+  }
+  return { created, updated, total: items.length };
 }
 
 async function handleLogin(request, env, cors) {
@@ -254,14 +408,18 @@ async function listProjects(db, publishedOnly) {
     : 'SELECT * FROM projects ORDER BY sort_order ASC, updated_at DESC';
   const { results: projects } = await db.prepare(q).all();
   const { results: allMedia } = await db.prepare('SELECT * FROM media_assets ORDER BY sort_order ASC').all();
-  return Promise.all((projects || []).map(p => rowToProject(p, allMedia)));
+  const { results: orgs } = await db.prepare('SELECT id, slug FROM organizations').all();
+  const orgSlugById = Object.fromEntries((orgs || []).map(o => [o.id, o.slug]));
+  return Promise.all((projects || []).map(p => rowToProject(p, allMedia, orgSlugById)));
 }
 
 async function getProject(db, id) {
   const row = await db.prepare('SELECT * FROM projects WHERE id = ?').bind(id).first();
   if (!row) return null;
   const media = await getProjectMedia(db, id);
-  return rowToProject(row, media);
+  const { results: orgs } = await db.prepare('SELECT id, slug FROM organizations').all();
+  const orgSlugById = Object.fromEntries((orgs || []).map(o => [o.id, o.slug]));
+  return rowToProject(row, media, orgSlugById);
 }
 
 async function handlePublicProjects(env, cors) {
@@ -278,21 +436,29 @@ async function handleAdminProjects(request, env, cors) {
   return json({ projects }, 200, cors);
 }
 
+async function resolveOrganizationId(db, organizationIdOrSlug) {
+  if (!organizationIdOrSlug) return null;
+  const row = await db.prepare('SELECT id FROM organizations WHERE id = ? OR slug = ?')
+    .bind(organizationIdOrSlug, organizationIdOrSlug).first();
+  return row?.id || null;
+}
+
 async function handleCreateProject(request, env, cors) {
   const body = await request.json();
   const id = uuid();
   const slug = slugify(body.slug || body.title) || id.slice(0, 8);
   const ts = now();
+  const orgId = await resolveOrganizationId(env.DB, body.organizationId);
   await env.DB.prepare(`
     INSERT INTO projects (id, slug, title, subtitle, description, tags, role, tools, year, date,
-      category, links, status, featured, sort_order, timeline_ref, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      category, links, status, featured, featured_discover, sort_order, organization_id, timeline_ref, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).bind(
     id, slug, body.title || 'Untitled', body.subtitle || '', body.description || '',
     JSON.stringify(body.tags || []), body.role || '', JSON.stringify(body.tools || []),
     body.year || null, body.date || '', body.category || 'engineering',
     JSON.stringify(body.links || []), body.status || 'draft', body.featured ? 1 : 0,
-    body.sortOrder ?? 0, body.timelineRef || null, ts, ts
+    body.featuredDiscover ? 1 : 0, body.sortOrder ?? 0, orgId, body.timelineRef || null, ts, ts
   ).run();
   const project = await getProject(env.DB, id);
   return json({ project }, 201, cors);
@@ -303,16 +469,18 @@ async function handleUpdateProject(request, env, cors, id) {
   const existing = await env.DB.prepare('SELECT id FROM projects WHERE id = ?').bind(id).first();
   if (!existing) return json({ error: 'Not found' }, 404, cors);
   const ts = now();
+  const orgId = await resolveOrganizationId(env.DB, body.organizationId);
   await env.DB.prepare(`
     UPDATE projects SET slug=?, title=?, subtitle=?, description=?, tags=?, role=?, tools=?,
-      year=?, date=?, category=?, links=?, status=?, featured=?, sort_order=?, timeline_ref=?,
-      hero_media_id=?, updated_at=? WHERE id=?
+      year=?, date=?, category=?, links=?, status=?, featured=?, featured_discover=?, sort_order=?,
+      organization_id=?, timeline_ref=?, hero_media_id=?, updated_at=? WHERE id=?
   `).bind(
     slugify(body.slug || body.title), body.title, body.subtitle || '', body.description || '',
     JSON.stringify(body.tags || []), body.role || '', JSON.stringify(body.tools || []),
     body.year || null, body.date || '', body.category || 'engineering',
     JSON.stringify(body.links || []), body.status || 'draft', body.featured ? 1 : 0,
-    body.sortOrder ?? 0, body.timelineRef || null, body.heroMediaId || null, ts, id
+    body.featuredDiscover ? 1 : 0, body.sortOrder ?? 0, orgId, body.timelineRef || null,
+    body.heroMediaId || null, ts, id
   ).run();
   const project = await getProject(env.DB, id);
   return json({ project }, 200, cors);
@@ -343,7 +511,9 @@ function normalizeImportProject(body) {
     links: Array.isArray(body.links) ? body.links : [],
     status: body.status === 'draft' ? 'draft' : 'published',
     featured: body.featured ? 1 : 0,
+    featuredDiscover: body.featuredDiscover ? 1 : 0,
     sortOrder: body.sortOrder ?? 0,
+    organizationId: body.organizationId || body.organization_id || null,
     timelineRef: body.timelineRef || body.timeline_ref || null,
     incomingMediaCount: Array.isArray(body.media) ? body.media.length : 0,
   };
@@ -368,7 +538,9 @@ function projectFieldChanges(existing, incoming) {
   cmp('links', parseJsonField(existing.links, []), incoming.links);
   cmp('status', existing.status, incoming.status);
   cmp('featured', !!existing.featured, !!incoming.featured);
+  cmp('featuredDiscover', !!existing.featured_discover, !!incoming.featuredDiscover);
   cmp('sortOrder', existing.sort_order, incoming.sortOrder);
+  cmp('organizationId', existing.organization_id, incoming.organizationId);
   cmp('timelineRef', existing.timeline_ref, incoming.timelineRef);
   return changes;
 }
@@ -561,28 +733,30 @@ async function importProjectsFromList(env, items, options = {}) {
 
     if (existing) {
       const changes = projectFieldChanges(existing, p);
+      const orgId = await resolveOrganizationId(env.DB, p.organizationId);
       if (changes.length || existing.slug !== p.slug) {
         await env.DB.prepare(`
           UPDATE projects SET slug=?, title=?, subtitle=?, description=?, tags=?, role=?, tools=?,
-            year=?, date=?, category=?, links=?, status=?, featured=?, sort_order=?, timeline_ref=?,
-            updated_at=? WHERE id=?
+            year=?, date=?, category=?, links=?, status=?, featured=?, featured_discover=?, sort_order=?,
+            organization_id=?, timeline_ref=?, updated_at=? WHERE id=?
         `).bind(
           p.slug, p.title, p.subtitle, p.description, JSON.stringify(p.tags), p.role, JSON.stringify(p.tools),
-          p.year, p.date, p.category, JSON.stringify(p.links), p.status, p.featured, p.sortOrder,
-          p.timelineRef, ts, existing.id
+          p.year, p.date, p.category, JSON.stringify(p.links), p.status, p.featured, p.featuredDiscover,
+          p.sortOrder, orgId, p.timelineRef, ts, existing.id
         ).run();
         updated++;
       }
     } else {
       const id = uuid();
+      const orgId = await resolveOrganizationId(env.DB, p.organizationId);
       await env.DB.prepare(`
         INSERT INTO projects (id, slug, title, subtitle, description, tags, role, tools, year, date,
-          category, links, status, featured, sort_order, timeline_ref, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          category, links, status, featured, featured_discover, sort_order, organization_id, timeline_ref, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).bind(
         id, p.slug, p.title, p.subtitle, p.description, JSON.stringify(p.tags), p.role,
         JSON.stringify(p.tools), p.year, p.date, p.category, JSON.stringify(p.links), p.status,
-        p.featured, p.sortOrder, p.timelineRef, ts, ts
+        p.featured, p.featuredDiscover, p.sortOrder, orgId, p.timelineRef, ts, ts
       ).run();
       created++;
     }
@@ -653,6 +827,7 @@ async function getStoredPack(env) {
 async function buildPackResponse(env, publishedOnly) {
   const stored = await getStoredPack(env);
   const projects = await listProjects(env.DB, publishedOnly);
+  const organizations = await listOrganizations(env.DB, publishedOnly);
   const base = stored && typeof stored === 'object' ? stored : { version: 2 };
   return {
     ...base,
@@ -661,6 +836,7 @@ async function buildPackResponse(env, publishedOnly) {
       ...(base.config || {}),
       mediaBaseUrl: env.R2_PUBLIC_BASE_URL || base.config?.mediaBaseUrl || '',
     },
+    organizations,
     projects,
   };
 }
@@ -689,11 +865,15 @@ async function handleImportPack(request, env, cors) {
   `).bind(JSON.stringify(packForStore), ts).run();
 
   let projectResult = { created: 0, updated: 0, total: 0, analysis: null, orphans: { drafted: 0, deleted: 0, kept: 0 } };
+  let orgResult = { created: 0, updated: 0, total: 0 };
+  if (Array.isArray(pack.organizations) && pack.organizations.length) {
+    orgResult = await importOrganizationsFromList(env, pack.organizations);
+  }
   if (Array.isArray(pack.projects) && pack.projects.length) {
     projectResult = await importProjectsFromList(env, pack.projects, { orphanAction, pack });
   }
 
-  return json({ ok: true, resumeSaved: true, orphanAction, ...projectResult }, 200, cors);
+  return json({ ok: true, resumeSaved: true, orphanAction, organizations: orgResult, ...projectResult }, 200, cors);
 }
 
 async function handleUpload(request, env, cors) {
@@ -815,6 +995,10 @@ export default {
       if (path === '/api/public/pack' && request.method === 'GET') {
         return handlePublicPack(env, cors);
       }
+      if (path === '/api/public/organizations' && request.method === 'GET') {
+        const organizations = await listOrganizations(env.DB, true);
+        return json({ organizations }, 200, cors);
+      }
       if (path === '/api/auth/status' && request.method === 'GET') {
         return handleAuthStatus(env, cors);
       }
@@ -840,6 +1024,12 @@ export default {
       }
       if (path === '/api/projects' && request.method === 'POST') {
         return handleCreateProject(request, env, cors);
+      }
+      if (path === '/api/organizations' && request.method === 'GET') {
+        return handleAdminOrganizations(env, cors);
+      }
+      if (path === '/api/organizations' && request.method === 'POST') {
+        return handleCreateOrganization(request, env, cors);
       }
       if (path === '/api/projects/import' && request.method === 'POST') {
         return handleImportProjects(request, env, cors);
@@ -868,6 +1058,19 @@ export default {
       }
       if (projMatch && request.method === 'DELETE') {
         return handleDeleteProject(env, cors, projMatch[1]);
+      }
+
+      const orgMatch = path.match(/^\/api\/organizations\/([^/]+)$/);
+      if (orgMatch && request.method === 'GET') {
+        const o = await getOrganization(env.DB, orgMatch[1]);
+        if (!o) return json({ error: 'Not found' }, 404, cors);
+        return json({ organization: o }, 200, cors);
+      }
+      if (orgMatch && request.method === 'PUT') {
+        return handleUpdateOrganization(request, env, cors, orgMatch[1]);
+      }
+      if (orgMatch && request.method === 'DELETE') {
+        return handleDeleteOrganization(env, cors, orgMatch[1]);
       }
 
       if (path === '/api/media/upload' && request.method === 'POST') {

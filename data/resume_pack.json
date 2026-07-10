@@ -164,7 +164,7 @@
       }
     ]
   },
-  "projects": [
+  "organizations": [
     {
       "id": "space-cadets-lighting",
       "slug": "space-cadets-lighting",
@@ -172,21 +172,12 @@
       "subtitle": "Interactive LED products and installations",
       "category": "venture",
       "featured": true,
-      "hero": null,
+      "status": "published",
       "tags": ["LED", "ESP32", "Product", "Interactive"],
       "date": "2020-03",
-      "summary": "Sound-reactive, Wi-Fi connected LED fixtures and installations — full-stack hardware from electronics to field deployment.",
-      "details": "Founded Space Cadets Lighting: interactive LED products and installations. Full-stack hardware ownership — electronics, firmware, CAD, additive manufacturing, assembly, and testing.",
-      "media": [
-        {
-          "type": "link",
-          "url": "https://spacecadetslighting.com",
-          "label": "spacecadetslighting.com"
-        }
-      ],
-      "links": [
-        { "url": "https://spacecadetslighting.com", "label": "Website" }
-      ],
+      "website": "https://spacecadetslighting.com",
+      "description": "Founded Space Cadets Lighting: interactive LED products and installations. Full-stack hardware ownership — electronics, firmware, CAD, additive manufacturing, assembly, and testing.",
+      "links": [{ "url": "https://spacecadetslighting.com", "label": "Website" }],
       "timelineRef": "2020-03-space-cadets"
     },
     {
@@ -196,29 +187,23 @@
       "subtitle": "CNC plasma cutting machines",
       "category": "engineering",
       "featured": true,
-      "hero": null,
+      "status": "published",
       "tags": ["CNC", "Controls", "Manufacturing", "Motion Systems"],
       "date": "2017-03",
-      "summary": "End-to-end design and manufacture of CNC plasma platforms — ~100–150 units deployed.",
-      "details": "Designed and manufactured CNC plasma cutting machines end-to-end. Led flagship platform redesign and manufacturing improvements.",
-      "media": [],
-      "links": [],
+      "description": "Designed and manufactured CNC plasma cutting machines end-to-end. Led flagship platform redesign and manufacturing improvements.",
       "timelineRef": "2017-03-gorilla-machines"
     },
     {
-      "id": "dimension-3-fabrication",
-      "slug": "dimension-3-fabrication",
-      "title": "Dimension 3 Multi-Function Machine",
-      "subtitle": "3D print + CNC + laser integration",
+      "id": "dimension-3",
+      "slug": "dimension-3",
+      "title": "Dimension 3 Fabrication",
+      "subtitle": "Multi-function fabrication studio",
       "category": "engineering",
       "featured": false,
-      "hero": null,
+      "status": "published",
       "tags": ["EE", "ME", "CNC", "3D Printing"],
       "date": "2016-12",
-      "summary": "A single platform combining additive, CNC engraving, and laser workflows.",
-      "details": "Designed a multi-function machine combining 3D printing, CNC engraving, and laser engraving from concept through production.",
-      "media": [],
-      "links": [],
+      "description": "Electrical and mechanical engineering for integrated fabrication systems.",
       "timelineRef": "2016-12-dimension-3"
     },
     {
@@ -228,14 +213,47 @@
       "subtitle": "Community maker lab operations",
       "category": "community",
       "featured": false,
-      "hero": null,
+      "status": "published",
       "tags": ["3D Printing", "Teaching", "Community"],
       "date": "2014-01",
-      "summary": "Ran a public-facing 3D print lab with weekly community education.",
-      "details": "Ran the Mojo 3D Print Lab: operations, repair, management, and community education. Taught weekly public classes on 3D printing and design workflows.",
+      "description": "Ran the Mojo 3D Print Lab: operations, repair, management, and community education.",
+      "timelineRef": "2014-01-mojo-lab"
+    }
+  ],
+  "projects": [
+    {
+      "id": "nebula-app",
+      "slug": "nebula-app",
+      "title": "Nebula App",
+      "subtitle": "LED control and show design",
+      "organizationId": "space-cadets-lighting",
+      "category": "venture",
+      "featuredDiscover": true,
+      "featured": true,
+      "status": "published",
+      "tags": ["LED", "App", "Wi-Fi", "Interactive"],
+      "date": "2023-06",
+      "summary": "Mobile app for programming and controlling Space Cadets LED installations.",
+      "details": "Nebula — design, firmware integration, and field workflows for interactive lighting shows.",
+      "media": [],
+      "links": []
+    },
+    {
+      "id": "dimension-3-fabrication",
+      "slug": "dimension-3-fabrication",
+      "title": "Dimension 3 Multi-Function Machine",
+      "subtitle": "3D print + CNC + laser integration",
+      "organizationId": "dimension-3",
+      "category": "engineering",
+      "featured": false,
+      "status": "published",
+      "tags": ["EE", "ME", "CNC", "3D Printing"],
+      "date": "2016-12",
+      "summary": "A single platform combining additive, CNC engraving, and laser workflows.",
+      "details": "Designed a multi-function machine combining 3D printing, CNC engraving, and laser engraving from concept through production.",
       "media": [],
       "links": [],
-      "timelineRef": "2014-01-mojo-lab"
+      "timelineRef": "2016-12-dimension-3"
     },
     {
       "id": "experiments",
@@ -244,14 +262,14 @@
       "subtitle": "Sculptural forms, biomimicry, and prototypes",
       "category": "art",
       "featured": false,
-      "hero": null,
+      "featuredDiscover": true,
+      "status": "published",
       "tags": ["R&D", "Biomimicry", "Interactive", "Sculpture"],
       "date": "2016-01",
       "summary": "Exploratory work at the intersection of craft, light, and electromechanical systems.",
       "details": "Personal and client-adjacent R&D — organic geometry, immersive media, and rapid prototyping across disciplines.",
       "media": [],
-      "links": [],
-      "timelineRef": null
+      "links": []
     }
   ],
   "timeline": [
@@ -286,7 +304,7 @@
     },
     {
       "id": "2016-12-dimension-3",
-      "projectId": "dimension-3-fabrication",
+      "projectId": "dimension-3",
       "date": "2016-12",
       "title": "Electrical & Mechanical Engineer — Dimension 3 Fabrication",
       "type": "Role",

@@ -196,6 +196,17 @@ body {
   width: 100%;
   max-width: 960px;
 }
+.chapter-inner.chapter-wide {
+  max-width: min(96vw, 1440px);
+  padding-left: clamp(16px, 4vw, 56px);
+  padding-right: clamp(16px, 4vw, 56px);
+}
+.chapter-inner.chapter-discover {
+  max-width: min(98vw, 1680px);
+}
+.discover-panel {
+  padding: clamp(20px, 3vw, 36px);
+}
 
 /* Hero is slightly shorter than the full viewport — the tops of the two summary
    panels below peek up from the bottom edge, hinting there's content to scroll to. */
@@ -2920,9 +2931,21 @@ body {
 }
 .disc-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: clamp(14px, 2vw, 22px);
 }
+@media (min-width: 1100px) {
+  .disc-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .disc-tile.disc-tile--wide {
+    grid-column: span 2;
+  }
+  .disc-tile.disc-tile--wide .cover-montage {
+    aspect-ratio: 21/9;
+  }
+}
+.disc-tile .cover-montage { aspect-ratio: 16/10; }
 .disc-tile {
   position: relative;
   display: block;
@@ -2955,7 +2978,7 @@ body {
   overflow: hidden;
   background: rgba(0,0,0,0.2);
 }
-.disc-tile .cover-montage { aspect-ratio: 4/3; }
+.disc-tile .cover-montage { aspect-ratio: 16/10; }
 .proj-card-hero .cover-montage { aspect-ratio: 16/9; }
 .cover-montage-img {
   position: absolute;
@@ -3031,6 +3054,89 @@ body {
   text-decoration: none;
 }
 .proj-timeline-link:hover { text-decoration: underline; }
+
+/* ===== Companies ===== */
+.company-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: clamp(16px, 2vw, 24px);
+}
+.company-card {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: var(--r);
+  overflow: hidden;
+  background: rgba(10,14,30,0.4);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.18s, transform 0.18s, box-shadow 0.18s;
+  font-family: inherit;
+}
+.company-card:hover {
+  border-color: rgba(124,247,255,0.35);
+  transform: translateY(-3px);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.35);
+}
+.company-card-hero .cover-montage { aspect-ratio: 16/9; }
+.company-card-placeholder {
+  aspect-ratio: 16/9;
+  background: linear-gradient(135deg, rgba(138,96,255,0.2), rgba(0,232,196,0.1));
+}
+.company-card-body { padding: 16px 18px 18px; }
+.company-card-title { font-size: 18px; margin: 0 0 6px; }
+.company-card-sub { font-size: 13px; color: var(--muted); margin: 0 0 12px; }
+.company-card-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.tl-pill.org-pill {
+  border-color: rgba(138,96,255,0.35);
+  color: rgba(220,210,255,0.95);
+}
+
+.org-panel {
+  border: none;
+  padding: 0;
+  background: transparent;
+  max-width: min(96vw, 1100px);
+  width: 100%;
+}
+.org-panel::backdrop {
+  background: rgba(4, 6, 18, 0.72);
+  backdrop-filter: blur(8px);
+}
+.org-panel-inner {
+  position: relative;
+  padding: clamp(20px, 3vw, 32px);
+  margin: 2vh auto;
+}
+.org-panel-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  border: none;
+  background: rgba(255,255,255,0.08);
+  color: var(--text);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.org-panel-desc {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+  margin: 0 0 8px;
+}
+.org-project-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+.org-proj-card { margin: 0; }
 
 /* ===== Timeline hero strip ===== */
 .tl-hero-strip {

@@ -42,7 +42,13 @@ npm install
 npx wrangler d1 execute isaac-portfolio --file=schema.sql
 ```
 
-Re-run after updates that add **Resume Data** cloud storage (`site_pack` table).
+Re-run after updates that add **Resume Data** cloud storage (`site_pack` table) or **Companies** (`organizations` table, `featured_discover` on projects).
+
+For existing databases, also run:
+
+```bash
+npx wrangler d1 execute isaac-portfolio --file=migrations/002_organizations.sql
+```
 
 ---
 
@@ -111,8 +117,9 @@ If you use another preview URL, add it to `ALLOWED_ORIGINS` (comma-separated) an
 
 | Tab | Purpose |
 |-----|---------|
-| **Resume Data** | Batch import resume, timeline, skills, and project **text** from JSON |
-| **Projects** | Edit one project, upload gallery media, publish/feature |
+| **Companies** | Ventures and employers (Space Cadets Lighting, Gorilla Machines, etc.) |
+| **Projects** | Individual products, installations, and builds — link each to a company |
+| **Resume Data** | Batch import resume, timeline, skills, organizations, and project **text** from JSON |
 
 **Slug is the join key** — uploaded photos stay on the database row whose `slug` matches. JSON `media: [...]` paths are not re-imported; upload files under Projects → Edit.
 

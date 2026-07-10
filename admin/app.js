@@ -106,6 +106,11 @@ function renderImportReport(container, data) {
 
 async function fetchProjectMeta() {
   const { projects } = await api('/api/projects');
+  let organizations = [];
+  try {
+    const orgRes = await api('/api/organizations');
+    organizations = orgRes.organizations || [];
+  } catch (_) {}
   let pack = {};
   try {
     const res = await api('/api/pack');
@@ -114,7 +119,21 @@ async function fetchProjectMeta() {
   return {
     categories: getAdminCategories(projects),
     tags: collectAllTags({ projects, timeline: pack.timeline, resume: pack.resume }),
+    organizations,
   };
+}
+
+function renderOrganizationField(currentId, organizations) {
+  const opts = [
+    '<option value="">— Independent / no company —</option>',
+    ...organizations.map(o =>
+      `<option value="${esc(o.slug || o.id)}" ${(currentId === o.slug || currentId === o.id) ? 'selected' : ''}>${esc(o.title)}</option>`
+    ),
+  ].join('');
+  return `<label>Company / organization
+    <select name="organizationId">${opts}</select>
+    <span class="muted small">Parent venture or employer for this project</span>
+  </label>`;
 }
 
 function renderCategoryField(current, categories) {
@@ -212,17 +231,21 @@ async function api(path, opts = {}) {
 }
 
 function route() {
-  const hash = location.hash.replace(/^#\/?/, '') || 'projects';
+  const hash = location.hash.replace(/^#\/?/, '') || 'companies';
   const parts = hash.split('/');
   if (parts[0] === 'data') return { view: 'data' };
+  if (parts[0] === 'companies' && parts[1] === 'new') return { view: 'org-edit', id: null };
+  if (parts[0] === 'companies' && parts[2] === 'edit') return { view: 'org-edit', id: parts[1] };
+  if (parts[0] === 'companies') return { view: 'companies' };
   if (parts[0] === 'projects' && parts[1] === 'new') return { view: 'edit', id: null };
   if (parts[0] === 'projects' && parts[2] === 'edit') return { view: 'edit', id: parts[1] };
   return { view: 'list' };
 }
 
 function updateNavActive(view) {
+  const navKey = view === 'data' ? 'data' : (view === 'companies' || view === 'org-edit') ? 'companies' : 'projects';
   document.querySelectorAll('#admin-nav a').forEach(a => {
-    a.classList.toggle('active', a.dataset.nav === (view === 'data' ? 'data' : 'projects'));
+    a.classList.toggle('active', a.dataset.nav === navKey);
   });
 }
 
@@ -461,6 +484,121 @@ async function renderData() {
   });
 }
 
+async function renderOrgList() {
+  const main = document.getElementById('main');
+  main.innerHTML = '<p class="muted">Loading…</p>';
+  const { organizations } = await api('/api/organizations');
+  main.innerHTML = `
+    <div class="toolbar">
+      <a href="#/companies/new" class="btn primary">+ New company</a>
+      <a href="#/projects" class="btn">All projects</a>
+    </div>
+    <p class="muted small" style="margin-bottom:16px">Companies and ventures are parents — add individual products and builds as <strong>Projects</strong> linked to a company.</p>
+    <div class="project-list">
+      ${organizations.length ? organizations.map(o => `
+        <div class="project-row glass">
+          <div>
+            <h3>${esc(o.title)}</h3>
+            <p class="muted small">${esc(o.slug)} · ${esc(categoryLabel(o.category))}</p>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span class="badge ${o.status === 'published' ? 'published' : ''}">${esc(o.status)}</span>
+            <a href="#/companies/${o.id}/edit" class="btn">Edit</a>
+          </div>
+        </div>
+      `).join('') : '<p class="muted">No companies yet. Create one for Space Cadets Lighting, Gorilla Machines, etc.</p>'}
+    </div>`;
+}
+
+async function renderOrgEdit(id) {
+  const main = document.getElementById('main');
+  main.innerHTML = '<p class="muted">Loading…</p>';
+  const meta = await fetchProjectMeta();
+  let org = {
+    title: '', slug: '', subtitle: '', description: '', tags: [], website: '',
+    date: '', category: 'venture', links: [], status: 'draft', featured: false, sortOrder: 0, timelineRef: '',
+  };
+  if (id) {
+    const res = await api(`/api/organizations/${id}`);
+    org = res.organization;
+  }
+  const tagsStr = (org.tags || []).join(', ');
+  main.innerHTML = `
+    <p><a href="#/companies">← All companies</a></p>
+    <form id="org-form" class="form-grid glass" style="padding:20px;margin-top:12px">
+      <label>Title<input name="title" value="${esc(org.title)}" required></label>
+      <label>Slug <span class="muted small">stable key — avoid changing after linking projects</span>
+        <input name="slug" value="${esc(org.slug)}" placeholder="space-cadets-lighting"></label>
+      <label>Subtitle<input name="subtitle" value="${esc(org.subtitle || '')}"></label>
+      <label>Description<textarea name="description">${esc(org.description || '')}</textarea></label>
+      <label>Website<input name="website" value="${esc(org.website || '')}" placeholder="https://…"></label>
+      ${renderTagField(tagsStr, meta.tags)}
+      <label>Founded / start date (YYYY-MM)<input name="date" value="${esc(org.date || '')}"></label>
+      ${renderCategoryField(org.category || 'venture', meta.categories)}
+      <label>Timeline ref <span class="muted small">matches timeline entry id</span>
+        <input name="timelineRef" value="${esc(org.timelineRef || '')}" placeholder="2020-03-space-cadets"></label>
+      <label>Status
+        <select name="status">
+          <option value="draft" ${org.status === 'draft' ? 'selected' : ''}>draft</option>
+          <option value="published" ${org.status === 'published' ? 'selected' : ''}>published</option>
+        </select>
+      </label>
+      <label><input type="checkbox" name="featured" ${org.featured ? 'checked' : ''}> Featured on Companies section</label>
+      <label>Sort order<input name="sortOrder" type="number" value="${org.sortOrder ?? 0}"></label>
+      <div class="form-actions">
+        <button type="submit" class="btn primary">Save company</button>
+        ${id ? '<button type="button" id="btn-org-delete" class="btn">Delete</button>' : ''}
+      </div>
+      <p id="org-save-status" class="status"></p>
+    </form>`;
+
+  wireCategoryField();
+  wireTagSuggestions();
+
+  document.getElementById('org-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const body = {
+      title: fd.get('title'),
+      slug: fd.get('slug'),
+      subtitle: fd.get('subtitle'),
+      description: fd.get('description'),
+      website: fd.get('website'),
+      tags: String(fd.get('tags')).split(',').map(s => s.trim()).filter(Boolean),
+      date: fd.get('date'),
+      category: resolveCategoryFromForm(fd),
+      timelineRef: fd.get('timelineRef') || null,
+      status: fd.get('status'),
+      featured: !!fd.get('featured'),
+      sortOrder: Number(fd.get('sortOrder')) || 0,
+    };
+    const status = document.getElementById('org-save-status');
+    try {
+      if (id) {
+        await api(`/api/organizations/${id}`, { method: 'PUT', body: JSON.stringify(body) });
+        status.textContent = 'Saved.';
+      } else {
+        const res = await api('/api/organizations', { method: 'POST', body: JSON.stringify(body) });
+        location.hash = `#/companies/${res.organization.id}/edit`;
+      }
+    } catch (err) {
+      status.textContent = err.message;
+    }
+  });
+
+  if (id) {
+    document.getElementById('btn-org-delete')?.addEventListener('click', async () => {
+      if (!confirm('Delete this company? Projects must be reassigned first.')) return;
+      try {
+        await api(`/api/organizations/${id}`, { method: 'DELETE' });
+        location.hash = '#/companies';
+      } catch (err) {
+        document.getElementById('org-save-status').textContent = err.message;
+      }
+    });
+  }
+}
+
 async function renderList() {
   const main = document.getElementById('main');
   main.innerHTML = '<p class="muted">Loading…</p>';
@@ -476,7 +614,7 @@ async function renderList() {
         <div class="project-row glass">
           <div>
             <h3>${esc(p.title)}</h3>
-            <p class="muted small">${esc(p.slug)} · ${esc(categoryLabel(p.category))} · ${p.media?.length || 0} media</p>
+            <p class="muted small">${esc(p.slug)} · ${esc(categoryLabel(p.category))}${p.organizationId ? ` · ${esc(p.organizationId)}` : ''}${p.featuredDiscover ? ' · Discover' : ''} · ${p.media?.length || 0} media</p>
           </div>
           <div style="display:flex;gap:8px;align-items:center">
             <span class="badge ${p.status === 'published' ? 'published' : ''}">${esc(p.status)}</span>
@@ -496,7 +634,7 @@ async function renderEdit(id) {
   let project = {
     title: '', slug: '', subtitle: '', description: '', tags: [], role: '', tools: [],
     year: new Date().getFullYear(), date: '', category: 'engineering', links: [],
-    status: 'draft', featured: false, sortOrder: 0, timelineRef: '', media: [],
+    status: 'draft', featured: false, featuredDiscover: false, sortOrder: 0, timelineRef: '', organizationId: '', media: [],
   };
   if (id) {
     const res = await api(`/api/projects/${id}`);
@@ -520,6 +658,7 @@ async function renderEdit(id) {
       <label>Year<input name="year" type="number" value="${project.year || ''}"></label>
       <label>Date (YYYY-MM)<input name="date" value="${esc(project.date || '')}"></label>
       ${renderCategoryField(project.category || 'engineering', meta.categories)}
+      ${renderOrganizationField(project.organizationId, meta.organizations)}
       <label>Timeline ref <span class="muted small">matches timeline entry id</span>
         <input name="timelineRef" value="${esc(project.timelineRef || '')}" placeholder="2017-03-gorilla-machines"></label>
       <label>Status
@@ -528,7 +667,8 @@ async function renderEdit(id) {
           <option value="published" ${project.status === 'published' ? 'selected' : ''}>published</option>
         </select>
       </label>
-      <label><input type="checkbox" name="featured" ${project.featured ? 'checked' : ''}> Featured on portfolio</label>
+      <label><input type="checkbox" name="featuredDiscover" ${project.featuredDiscover ? 'checked' : ''}> Featured on Discover</label>
+      <label><input type="checkbox" name="featured" ${project.featured ? 'checked' : ''}> Featured in Projects grid</label>
       <label>Sort order<input name="sortOrder" type="number" value="${project.sortOrder ?? 0}"></label>
       <div class="form-actions">
         <button type="submit" class="btn primary">Save project</button>
@@ -577,8 +717,10 @@ async function renderEdit(id) {
       date: fd.get('date'),
       category: resolveCategoryFromForm(fd),
       timelineRef: fd.get('timelineRef') || null,
+      organizationId: fd.get('organizationId') || null,
       status: fd.get('status'),
       featured: !!fd.get('featured'),
+      featuredDiscover: !!fd.get('featuredDiscover'),
       sortOrder: Number(fd.get('sortOrder')) || 0,
     };
     const status = document.getElementById('save-status');
@@ -660,6 +802,8 @@ async function navigate() {
   updateNavActive(view);
   try {
     if (view === 'data') await renderData();
+    else if (view === 'companies') await renderOrgList();
+    else if (view === 'org-edit') await renderOrgEdit(id);
     else if (view === 'list') await renderList();
     else await renderEdit(id);
   } catch (err) {

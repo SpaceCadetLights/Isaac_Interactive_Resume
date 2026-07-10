@@ -67,6 +67,9 @@
     <button class="snav-btn" data-target="ch-discover">
       <span class="snav-dot"></span>Discover
     </button>
+    <button class="snav-btn" data-target="ch-companies">
+      <span class="snav-dot"></span>Companies
+    </button>
     <button class="snav-btn" data-target="ch-projects">
       <span class="snav-dot"></span>Projects
     </button>
@@ -112,24 +115,41 @@
 
   <!-- Ch: Discover -->
   <section class="chapter" id="ch-discover">
-    <div class="chapter-inner">
-      <div class="glass-panel">
-        <h2 class="section-title">Discover</h2>
-        <p class="section-subtitle">Explore work through photos, video, and installations</p>
-        <div class="disc-filters" id="discover-filters" role="group" aria-label="Filter by category">
-          <button type="button" class="glass-btn disc-filter active" data-disc-cat="all">All</button>
-        </div>
+    <div class="chapter-inner chapter-wide chapter-discover">
+      <div class="glass-panel discover-panel">
+        <h2 class="section-title">Discover the Work</h2>
+        <p class="section-subtitle">Curated highlights — installations, products, and experiments across companies and independent projects</p>
         <div class="disc-grid" id="discover-grid"></div>
       </div>
     </div>
   </section>
 
+  <!-- Ch: Companies -->
+  <section class="chapter" id="ch-companies">
+    <div class="chapter-inner chapter-wide">
+      <div class="glass-panel">
+        <h2 class="section-title">Companies &amp; Ventures</h2>
+        <p class="section-subtitle">Businesses and teams — tap a company to browse its projects</p>
+        <div class="company-grid" id="companies-grid"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Org detail overlay -->
+  <dialog id="org-panel" class="org-panel" aria-labelledby="org-panel-title">
+    <div class="org-panel-inner glass-panel">
+      <button type="button" class="org-panel-close" id="org-panel-close" aria-label="Close">&times;</button>
+      <div id="org-panel-header"></div>
+      <div class="org-project-grid" id="org-project-grid"></div>
+    </div>
+  </dialog>
+
   <!-- Ch: Projects -->
   <section class="chapter" id="ch-projects">
-    <div class="chapter-inner">
+    <div class="chapter-inner chapter-wide">
       <div class="glass-panel">
-        <h2 class="section-title">Projects</h2>
-        <p class="section-subtitle">Browse the full library</p>
+        <h2 class="section-title">All Projects</h2>
+        <p class="section-subtitle">Search the full library — individual products, installations, and builds</p>
         <div class="proj-toolbar">
           <div class="search-bar-wrap" style="margin-bottom:0">
             <div class="search-bar">

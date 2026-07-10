@@ -197,15 +197,23 @@ function packToData(pack) {
   const r = (pack.resume) || {};
   const h = r.hero || {};
   const projects = Array.isArray(pack.projects) ? pack.projects : [];
+  const organizations = Array.isArray(pack.organizations) ? pack.organizations : [];
   const projectById = {};
   projects.forEach(p => {
     projectById[p.id] = p;
     if (p.slug) projectById[p.slug] = p;
   });
+  const organizationById = {};
+  organizations.forEach(o => {
+    organizationById[o.id] = o;
+    if (o.slug) organizationById[o.slug] = o;
+  });
   return {
     config: pack.config || {},
     projects,
+    organizations,
     projectById,
+    organizationById,
     profile: { ...SEED.profile, ...(r.profile || {}) },
     hero: {
       primaryDomains: tokenize(h.primary_domains || h.primaryDomains) || SEED.hero.primaryDomains,
@@ -247,7 +255,9 @@ async function fetchExternalData() {
 let DATA = resolveFromLocalStorage() || {
   config: {},
   projects: [],
+  organizations: [],
   projectById: {},
+  organizationById: {},
   profile:      SEED.profile,
   hero:         SEED.hero,
   mvv:          SEED.mvv,
@@ -349,9 +359,36 @@ function getProject(id) {
   return id ? DATA.projectById[id] : null;
 }
 
+function getOrganization(id) {
+  return id ? DATA.organizationById?.[id] : null;
+}
+
+function getOrgProjects(org) {
+  if (!org) return [];
+  const keys = new Set([org.id, org.slug].filter(Boolean));
+  return (DATA.projects || []).filter(p => keys.has(p.organizationId));
+}
+
+function orgCoverSlides(org) {
+  const children = getOrgProjects(org);
+  const slides = [];
+  children.forEach(p => {
+    projectCoverSlides(p).forEach(s => {
+      if (slides.length < 6 && !slides.includes(s)) slides.push(s);
+    });
+  });
+  if (!slides.length && org.website) return [];
+  return slides;
+}
+
 function getEntryMedia(entry) {
   if (!entry) return [];
   if (entry.projectId) {
+    const org = getOrganization(entry.projectId);
+    if (org) {
+      const media = getOrgProjects(org).flatMap(p => p.media || []);
+      if (media.length) return media;
+    }
     const p = getProject(entry.projectId);
     if (p && Array.isArray(p.media)) return p.media;
   }
@@ -386,7 +423,24 @@ function galleryContextFromEntry(entry) {
       projectId: p.id,
     };
   }
+  const org = entry.projectId ? getOrganization(entry.projectId) : null;
   const project = entry.projectId ? getProject(entry.projectId) : null;
+  if (org) {
+    const children = getOrgProjects(org);
+    const primary = children[0];
+    return {
+      title: org.title,
+      date: entry.date || org.date || '',
+      type: entry.type || categoryLabel(org.category),
+      tags: org.tags || entry.tags || [],
+      details: org.description || entry.details || org.subtitle || '',
+      media: getEntryMedia(entry),
+      links: org.links || (org.website ? [{ url: org.website, label: 'Website' }] : []),
+      timelineRef: org.timelineRef || entry.id,
+      projectId: primary?.id || org.id,
+      organizationId: org.id,
+    };
+  }
   if (project) {
     return {
       title: project.title,
@@ -1133,22 +1187,24 @@ function renderHero() {
 function renderDiscover() {
   const grid = $('#discover-grid');
   if (!grid) return;
-  let items = (DATA.projects || []).slice();
-  items.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0) || (b.date || '').localeCompare(a.date || ''));
-  if (_discCategory !== 'all') items = items.filter(p => p.category === _discCategory);
+  let items = (DATA.projects || []).filter(p => p.featuredDiscover);
+  items.sort((a, b) => (b.sortOrder ?? 0) - (a.sortOrder ?? 0) || (b.date || '').localeCompare(a.date || ''));
   if (!items.length) {
-    grid.innerHTML = '<p class="disc-empty">No projects in this category yet.</p>';
+    grid.innerHTML = '<p class="disc-empty">No Discover highlights yet. In Portfolio Admin, check <strong>Featured on Discover</strong> on individual projects.</p>';
     return;
   }
-  grid.innerHTML = items.map(p => {
+  grid.innerHTML = items.map((p, i) => {
     const n = countMediaPics(p.media);
     const thumb = buildCoverMontageHtml(projectCoverSlides(p), 'disc-tile-placeholder');
+    const org = p.organizationId ? getOrganization(p.organizationId) : null;
     const tag = (p.tags || [])[0] || p.category || 'Project';
-    return `<button type="button" class="disc-tile" data-proj-id="${esc(p.id)}" aria-label="Open ${esc(p.title)}">
+    const wide = i < 2 ? ' disc-tile--wide' : '';
+    return `<button type="button" class="disc-tile${wide}" data-proj-id="${esc(p.id)}" aria-label="Open ${esc(p.title)}">
       ${thumb}
       <div class="disc-tile-body">
         <div class="disc-tile-title">${esc(p.title)}</div>
         <div class="disc-tile-meta">
+          ${org ? `<span class="tl-pill org-pill">${esc(org.title)}</span>` : ''}
           <span class="tl-pill">${esc(tag)}</span>
           ${n ? `<span class="tl-media-badge"><span class="tl-media-badge-icon">&#9671;</span>${n}</span>` : ''}
         </div>
@@ -1156,6 +1212,79 @@ function renderDiscover() {
     </button>`;
   }).join('');
   initCoverMontages();
+}
+
+function renderCompanies() {
+  const grid = $('#companies-grid');
+  if (!grid) return;
+  let orgs = (DATA.organizations || []).slice();
+  orgs.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0) || (b.date || '').localeCompare(a.date || ''));
+  if (!orgs.length) {
+    grid.innerHTML = '<p class="disc-empty">No companies listed yet. Add organizations in Portfolio Admin.</p>';
+    return;
+  }
+  grid.innerHTML = orgs.map(o => {
+    const children = getOrgProjects(o);
+    const thumb = buildCoverMontageHtml(orgCoverSlides(o), 'company-card-placeholder');
+    const count = children.length;
+    return `<button type="button" class="company-card" data-org-id="${esc(o.id || o.slug)}" aria-label="View projects at ${esc(o.title)}">
+      <div class="company-card-hero">${thumb}</div>
+      <div class="company-card-body">
+        <h3 class="company-card-title">${esc(o.title)}</h3>
+        <p class="company-card-sub">${esc(o.subtitle || '')}</p>
+        <div class="company-card-meta">
+          <span class="tl-pill">${esc(categoryLabel(o.category))}</span>
+          <span class="muted small">${count} project${count !== 1 ? 's' : ''}</span>
+        </div>
+      </div>
+    </button>`;
+  }).join('');
+  initCoverMontages();
+}
+
+function openOrgPanel(orgId) {
+  const org = getOrganization(orgId);
+  const panel = document.getElementById('org-panel');
+  const header = document.getElementById('org-panel-header');
+  const grid = document.getElementById('org-project-grid');
+  if (!org || !panel || !header || !grid) return;
+  const children = getOrgProjects(org);
+  const website = org.website || (org.links || [])[0]?.url;
+  header.innerHTML = `
+    <h2 id="org-panel-title" class="section-title">${esc(org.title)}</h2>
+    <p class="section-subtitle">${esc(org.subtitle || '')}</p>
+    ${org.description ? `<p class="org-panel-desc">${esc(org.description)}</p>` : ''}
+    ${website ? `<p><a href="${esc(website)}" class="proj-timeline-link" target="_blank" rel="noopener">Visit website &#x2197;</a></p>` : ''}
+    <p class="muted small" style="margin-top:12px">${children.length} project${children.length !== 1 ? 's' : ''}</p>`;
+  if (!children.length) {
+    grid.innerHTML = '<p class="disc-empty">No projects under this company yet. Add child projects in Portfolio Admin.</p>';
+  } else {
+    grid.innerHTML = children.map(p => {
+      const thumb = buildCoverMontageHtml(projectCoverSlides(p), 'proj-card-placeholder');
+      const n = countMediaPics(p.media);
+      return `<article class="proj-card org-proj-card">
+        <button type="button" class="proj-card-hit" data-proj-id="${esc(p.id)}" aria-label="Open ${esc(p.title)}">
+          <div class="proj-card-hero">${thumb}</div>
+          <div class="proj-card-body">
+            <h3 class="proj-card-title">${esc(p.title)}</h3>
+            <p class="proj-card-sub">${esc(p.subtitle || '')}</p>
+            <p class="proj-card-meta">${n ? `${n} photo${n !== 1 ? 's' : ''}` : 'Details & links'}</p>
+          </div>
+        </button>
+      </article>`;
+    }).join('');
+    initCoverMontages();
+    grid.querySelectorAll('[data-proj-id]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const p = getProject(btn.dataset.projId);
+        if (p) {
+          panel.close();
+          openGalleryModal(p);
+        }
+      });
+    });
+  }
+  panel.showModal();
 }
 
 function renderProjects(query) {
@@ -1178,6 +1307,7 @@ function renderProjects(query) {
     const pics = countMediaPics(p.media);
     const vids = (p.media || []).filter(m => m.type === 'video').length;
     const thumb = buildCoverMontageHtml(projectCoverSlides(p), 'proj-card-placeholder');
+    const org = p.organizationId ? getOrganization(p.organizationId) : null;
     const meta = [pics ? `${pics} photo${pics !== 1 ? 's' : ''}` : '', vids ? `${vids} video${vids !== 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ') || 'Details & links';
     const timelineLink = p.timelineRef
       ? `<a href="${esc(siteUrl('3d-resume/'))}#ch-timeline" class="proj-timeline-link">View on career timeline &#x2197;</a>`
@@ -1188,7 +1318,7 @@ function renderProjects(query) {
         <div class="proj-card-body">
           <h3 class="proj-card-title">${esc(p.title)}</h3>
           <p class="proj-card-sub">${esc(p.subtitle || '')}</p>
-          <div class="proj-card-tags">${(p.tags || []).slice(0, 3).map(t => `<span class="tl-pill">${esc(t)}</span>`).join('')}</div>
+          <div class="proj-card-tags">${org ? `<span class="tl-pill org-pill">${esc(org.title)}</span>` : ''}${(p.tags || []).slice(0, 3).map(t => `<span class="tl-pill">${esc(t)}</span>`).join('')}</div>
           <p class="proj-card-meta">${esc(meta)}</p>
         </div>
       </button>
@@ -1417,8 +1547,12 @@ function renderTimeline(query) {
     ${items.map((t, i) => {
       const mediaPics = getEntryMedia(t).filter(m => m.type === 'image' || m.type === 'video');
       const hasMedia = mediaPics.length > 0;
+      const org = t.projectId ? getOrganization(t.projectId) : null;
       const project = t.projectId ? getProject(t.projectId) : null;
-      const heroSrc = project ? projectHeroSrc(project) : '';
+      let heroSrc = project ? projectHeroSrc(project) : '';
+      if (!heroSrc && org) {
+        heroSrc = getOrgProjects(org).map(p => projectHeroSrc(p)).find(Boolean) || '';
+      }
       const heroStrip = heroSrc
         ? `<div class="tl-hero-strip"><img src="${esc(heroSrc)}" alt="" loading="lazy"></div>`
         : '';
@@ -1496,6 +1630,7 @@ function renderAll() {
   syncCategoryFilterUI();
   renderHero();
   renderDiscover();
+  renderCompanies();
   renderProjects($('#projects-search') ? $('#projects-search').value : '');
   renderSummary();
   renderWorkHistory();
@@ -1906,29 +2041,40 @@ function syncCategoryFilterUI() {
     ];
     wrap.innerHTML = btns.join('');
   };
-  build('discover-filters', 'disc-cat', 'disc-filter', _discCategory);
   build('projects-filters', 'proj-cat', 'proj-filter', _projCategory);
 }
 
-function setupDiscoverFilters() {
-  const wrap = $('#discover-filters');
+function setupDiscoverGrid() {
   const grid = $('#discover-grid');
-  if (!wrap) return;
-  wrap.addEventListener('click', e => {
-    const btn = e.target.closest('[data-disc-cat]');
-    if (!btn) return;
-    _discCategory = btn.dataset.discCat;
-    wrap.querySelectorAll('.disc-filter').forEach(b => b.classList.toggle('active', b === btn));
-    renderDiscover();
+  if (!grid) return;
+  grid.addEventListener('click', e => {
+    const tile = e.target.closest('[data-proj-id]');
+    if (!tile) return;
+    const p = getProject(tile.dataset.projId);
+    if (p) openGalleryModal(p);
   });
-  if (grid) {
-    grid.addEventListener('click', e => {
-      const tile = e.target.closest('[data-proj-id]');
-      if (!tile) return;
-      const p = getProject(tile.dataset.projId);
-      if (p) openGalleryModal(p);
+}
+
+function setupCompanies() {
+  const grid = $('#companies-grid');
+  if (!grid) return;
+  grid.addEventListener('click', e => {
+    const card = e.target.closest('[data-org-id]');
+    if (!card) return;
+    openOrgPanel(card.dataset.orgId);
+  });
+  const panel = document.getElementById('org-panel');
+  const closeBtn = document.getElementById('org-panel-close');
+  if (closeBtn && panel) {
+    closeBtn.addEventListener('click', () => panel.close());
+    panel.addEventListener('click', e => {
+      if (e.target === panel) panel.close();
     });
   }
+}
+
+function setupDiscoverFilters() {
+  setupDiscoverGrid();
 }
 
 function setupProjectsSearch() {
@@ -2433,6 +2579,7 @@ async function init() {
   setupScroll();
   setupNav();
   setupDiscoverFilters();
+  setupCompanies();
   setupProjectsSearch();
   setupSearch();
   setupTimelineSearch();

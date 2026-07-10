@@ -36,11 +36,45 @@ export async function fetchPublicPack(apiBase) {
   }
 }
 
+/** Merge CMS organizations with JSON stubs by slug. */
+export function applyCmsOrganizations(data, cmsPack) {
+  if (!data || !cmsPack) return data;
+  const cmsOrgs = Array.isArray(cmsPack.organizations) ? cmsPack.organizations : [];
+  const jsonOrgs = Array.isArray(data.organizations) ? data.organizations : [];
+  const cmsBySlug = Object.fromEntries(cmsOrgs.filter(o => o.slug).map(o => [o.slug, o]));
+  const merged = [];
+  const seen = new Set();
+
+  cmsOrgs.forEach(o => {
+    merged.push(o);
+    if (o.slug) seen.add(o.slug);
+    if (o.id) seen.add(o.id);
+  });
+
+  jsonOrgs.forEach(o => {
+    const slug = o.slug || o.id;
+    if (slug && cmsBySlug[slug]) return;
+    const key = slug || o.id;
+    if (!key || seen.has(key)) return;
+    merged.push(o);
+    seen.add(key);
+  });
+
+  const organizationById = {};
+  merged.forEach(o => {
+    if (o.id) organizationById[o.id] = o;
+    if (o.slug) organizationById[o.slug] = o;
+  });
+
+  return { ...data, organizations: merged, organizationById };
+}
+
 /** Merge CMS projects (media + live edits) with JSON stubs by slug. */
 export function applyCmsProjects(data, cmsPack) {
   if (!data || !cmsPack) return data;
+  let next = applyCmsOrganizations(data, cmsPack);
   const cmsProjects = Array.isArray(cmsPack.projects) ? cmsPack.projects : [];
-  const jsonProjects = Array.isArray(data.projects) ? data.projects : [];
+  const jsonProjects = Array.isArray(next.projects) ? next.projects : [];
   const cmsBySlug = Object.fromEntries(
     cmsProjects.filter(p => p.slug).map(p => [p.slug, p])
   );
@@ -69,11 +103,11 @@ export function applyCmsProjects(data, cmsPack) {
   });
 
   return {
-    ...data,
+    ...next,
     config: {
-      ...data.config,
+      ...next.config,
       ...(cmsPack.config || {}),
-      apiBaseUrl: data.config?.apiBaseUrl || cmsPack.config?.apiBaseUrl,
+      apiBaseUrl: next.config?.apiBaseUrl || cmsPack.config?.apiBaseUrl,
     },
     projects: merged,
     projectById,
@@ -100,7 +134,9 @@ export function normalizeProjectForImport(p) {
     links: Array.isArray(p.links) ? p.links : [],
     status: p.status === 'draft' ? 'draft' : 'published',
     featured: !!p.featured,
+    featuredDiscover: !!p.featuredDiscover,
     sortOrder: p.sortOrder ?? 0,
+    organizationId: p.organizationId || p.organization_id || null,
     timelineRef: p.timelineRef || p.timeline_ref || null,
   };
 }

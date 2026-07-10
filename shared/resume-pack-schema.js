@@ -70,12 +70,25 @@ The user will describe new work, career changes, projects, or corrections in pla
 
 ## OUTPUT RULES (strict)
 1. Output ONLY valid JSON. No markdown code fences, no commentary before or after.
-2. Root object must include: "version": ${PACK_VERSION}, "config", "resume", "timeline", "projects", and optionally "skills_markdown".
+2. Root object must include: "version": ${PACK_VERSION}, "config", "resume", "timeline", "organizations", "projects", and optionally "skills_markdown".
 3. Preserve existing "config" URLs unless the user asks to change them.
 4. Keep "slug" values STABLE on continuing projects — slug is how cloud-uploaded photos stay attached.
 5. Project "media" arrays must be [] (empty). Photos are uploaded separately in Portfolio Admin; do not invent image URLs.
 6. Use lowercase slug strings: letters, numbers, hyphens only (e.g. "space-cadets-lighting").
-7. Timeline entry "id" should be unique (often "YYYY-MM-short-name"). Link projects via timelineRef (matches timeline id) and timeline projectId (matches project slug).
+7. Timeline entry "id" should be unique (often "YYYY-MM-short-name"). Link organizations via timelineRef and timeline projectId (organization slug). Child projects use organizationId (organization slug).
+
+## ORGANIZATION FIELDS (companies, ventures, employers — each item in "organizations" array)
+- id or slug (required, stable — e.g. "space-cadets-lighting")
+- title, subtitle, description (or summary/details)
+- category (slug from list below)
+- tags, website, date ("YYYY-MM")
+- status: "published" or "draft"
+- featured: boolean (sort boost on Companies section)
+- sortOrder: number
+- timelineRef: timeline entry id (optional)
+- links: [{ "label", "url" }] (optional)
+
+Organizations are companies/ventures — NOT individual products. Child work lives in "projects" with organizationId set.
 
 ## PROJECT CATEGORIES (slug → site filter label)
 ${categoryDoc}
@@ -89,8 +102,10 @@ You may add a new lowercase category slug if needed; it will appear as a new fil
 - role, tools (optional)
 - year, date ("YYYY-MM")
 - status: "published" or "draft"
-- featured: boolean
+- featured: boolean (sort boost in Projects grid)
+- featuredDiscover: boolean (show on Discover section — curator's picks)
 - sortOrder: number
+- organizationId: parent organization slug (optional — omit for independent work)
 - timelineRef: timeline entry id (optional)
 - media: [] (always empty)
 - links: [{ "label", "url" }] (optional)
@@ -101,7 +116,7 @@ You may add a new lowercase category slug if needed; it will appear as a new fil
 - title, type (e.g. Role, Venture, Milestone)
 - tags, details (string)
 - significance: 1–5 (optional, for 3D resume)
-- projectId: project slug (optional, links to projects[])
+- projectId: organization slug (optional, links to organizations[] — career chapter)
 - media: []
 
 ## RESUME OBJECT ("resume")
