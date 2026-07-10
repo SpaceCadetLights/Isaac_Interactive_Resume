@@ -1,0 +1,10 @@
+{
+  "name": "isaac-interactive-resume",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "portfolio:generate": "node portfolio-export/generate-portfolio.mjs",
+    "portfolio:validate": "node portfolio-export/validate-portfolio.mjs",
+    "portfolio:build": "npm run portfolio:generate && npm run portfolio:validate"
+  }
+}

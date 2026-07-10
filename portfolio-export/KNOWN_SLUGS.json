@@ -1,0 +1,30 @@
+{
+  "_comment": "Stable slugs from data/resume_pack.json as of 2026-07-09. Never rename entries that may have R2 media keyed by slug.",
+  "source": "data/resume_pack.json",
+  "capturedAt": "2026-07-09",
+  "organizations": [
+    "space-cadets-lighting",
+    "gorilla-machines",
+    "dimension-3",
+    "mojo-3d-print-lab"
+  ],
+  "projects": [
+    "nebula-app",
+    "dimension-3-fabrication",
+    "experiments"
+  ],
+  "timeline": [
+    "2014-01-mojo-lab",
+    "2015-07-linamar",
+    "2016-03-microtech",
+    "2016-12-dimension-3",
+    "2017-03-gorilla-machines",
+    "2020-03-space-cadets"
+  ],
+  "migrationNotes": {
+    "dimension-3": "Existing org slug is 'dimension-3', not 'dimension-3-fabrication'. The project slug 'dimension-3-fabrication' refers to the Multi-Machine build.",
+    "mojo-3d-print-lab": "Org represents Mojo Coworking 3D Print Lab role; archive file is Mojo_Coworking.md.",
+    "experiments": "Legacy R&D project retained from current package. Not in Phase 1 scope list but preserved for media continuity.",
+    "nebula-app": "Existing project with featuredDiscover in live pack; Phase 1 featured list uses parent Nebula platform instead."
+  }
+}

@@ -1,0 +1,808 @@
+{
+  "meta": {
+    "sourceArchive": "Isaacs-Life-Archive",
+    "archiveVersion": "1.1-phase-two",
+    "curatedAt": "2026-07-09",
+    "curator": "portfolio-export adapter Phase 1"
+  },
+  "profile": {
+    "name": "Isaac E. Norris",
+    "email": "connect@spacecadetslighting.com",
+    "site": "https://spacecadetslighting.com",
+    "headline": "Creative Technology Systems Architect",
+    "summary": "I design systems that make physical spaces come alive — integrating art, mechanical and electrical engineering, embedded systems, fabrication, and software into coherent physical experiences. My work spans interactive lighting products, distributed control platforms, CNC machine design, and immersive environments."
+  },
+  "hero": {
+    "primary_domains": "Creative Technology • Systems Architecture • Electrical Engineering • Mechanical Design • Embedded Systems • Interactive Lighting",
+    "focus": "Physical spaces • Distributed control • Artisan craft through digital fabrication • Systems integration",
+    "style": "Organic • Biomimicry • Human-centered • Multi-disciplinary • Platform-oriented",
+    "chips": [
+      "Systems Architect",
+      "Embedded (ESP32)",
+      "PCB + Wiring",
+      "CAD (Fusion/Inventor)",
+      "CNC + Laser",
+      "Interactive LEDs",
+      "Immersive Installations"
+    ]
+  },
+  "mvv": {
+    "mission": "Design and build human-centered interactive systems that blend artisanship, engineering, and community care to create shared moments of connection.",
+    "vision": "Unify people through interactive technology, lighting, and physical products that invite participation, wonder, and belonging rather than division.",
+    "values": [
+      "Craft + artisanship",
+      "Community + inclusion",
+      "Curiosity + learning",
+      "Clarity + usability",
+      "Responsibility + durability",
+      "Unify, not divide"
+    ]
+  },
+  "jobs": [
+    {
+      "title": "Head of 3D Print Lab — Mojo Coworking",
+      "dates": "Jan 2014 – Jun 2015",
+      "details": [
+        "Operated, repaired, and managed 3D printers for a public-facing lab.",
+        "Taught weekly community classes on 3D printing and design workflows.",
+        "Delivered prints and supported members' projects end-to-end."
+      ],
+      "tags": ["3D Printing", "Community", "Operations", "Teaching"]
+    },
+    {
+      "title": "Metal Fabricator — Linamar NC",
+      "dates": "Jul 2015 – Mar 2016",
+      "details": [
+        "Assisted maintenance fabrication projects to improve assembly line efficiency.",
+        "Welding, machining, and CAD-supported production improvements."
+      ],
+      "tags": ["Fabrication", "Welding", "Machining", "CAD"]
+    },
+    {
+      "title": "Machinist & Assembler — MicroTech Knives",
+      "dates": "Mar 2016 – Dec 2016",
+      "details": [
+        "Thermoformed custom knife sheaths.",
+        "Sandblasted and prepared knives for electroplating and finishing."
+      ],
+      "tags": ["Manufacturing", "Finishing", "Sandblasting"]
+    },
+    {
+      "title": "Electrical & Mechanical Engineer — Dimension 3 Fabrication",
+      "dates": "Dec 2016 – Mar 2017",
+      "details": [
+        "Designed a multi-function machine combining 3D printing, CNC engraving, and laser engraving.",
+        "Owned 3D modeling, electrical design, software development, and manufacturing integration."
+      ],
+      "tags": ["EE", "ME", "Product Design", "CNC", "3D Printing"]
+    },
+    {
+      "title": "Lead Engineer & Design Manager — Gorilla Machines Inc",
+      "dates": "Mar 2017 – Mar 2020",
+      "details": [
+        "Designed and manufactured CNC plasma cutting machines end-to-end.",
+        "Led redesign and manufacturing improvements for flagship platform."
+      ],
+      "tags": ["CNC", "Motion Systems", "CAD", "Controls", "Manufacturing"]
+    },
+    {
+      "title": "Owner / Creative Technology Systems Architect — Space Cadets Lighting",
+      "dates": "Mar 2020 – Current",
+      "details": [
+        "Designs and manufactures sound-reactive, Wi-Fi connected LED fixtures and installations.",
+        "Builds product ecosystems, distributed control platforms, and immersive environments across electronics, firmware, CAD, manufacturing, and software."
+      ],
+      "tags": ["LED", "ESP32", "Product", "Manufacturing", "Interactive", "Platform"]
+    }
+  ],
+  "education": [
+    {
+      "title": "Dedicated Self-Guided Education",
+      "dates": "Ongoing",
+      "details": [
+        "Continuous self-guided learning across electrical and mechanical engineering, embedded systems, product design, manufacturing, and business operations."
+      ],
+      "tags": ["Continuous Learning", "Mentors", "Applied R&D"]
+    },
+    {
+      "title": "Asheville-Buncombe Technical Community College (AB Tech)",
+      "dates": "1 semester (Electrical Engineering track)",
+      "details": [
+        "Completed one semester toward Electrical Engineering.",
+        "Left formal coursework to build CNC and robotics systems after already surpassing covered material."
+      ],
+      "tags": ["Electrical Engineering", "Self-direction"]
+    },
+    {
+      "title": "Asheville High School (CTE Honors)",
+      "dates": "2013 – 2016",
+      "details": [
+        "Student-teacher in machining / metalworking track.",
+        "Early fabrication mentorship and hands-on engineering foundation."
+      ],
+      "tags": ["CTE", "Machining", "Mentorship"]
+    }
+  ],
+  "passions": [
+    "Interactive light and sound experiences that move people emotionally",
+    "Embedded systems and modular hardware ecosystems",
+    "Product design blending sculpture, nature-inspired form, and engineering",
+    "Rapid prototyping and manufacturing workflows",
+    "Community education and maker culture",
+    "Robotics, motion systems, and multidisciplinary machines",
+    "Immersive media and experiential installations",
+    "Distributed physical computing and human-centered interfaces"
+  ],
+  "capabilities": [
+    {
+      "group": "Digital Fabrication Infrastructure",
+      "items": [
+        "RatRig V-Core 3.1 (500mm³)",
+        "RatRig V-Core 3.1 (400mm³)",
+        "Bambu Lab X1 Carbon",
+        "Artillery Sidewinder (×2)",
+        "Large-format Elegoo resin printers (×2)",
+        "Anycubic large-format resin printer",
+        "Inventables X-Carve CNC router",
+        "CNC plasma systems",
+        "xTool P2 55W CO₂ laser cutter",
+        "Sublimation printers",
+        "UV printer (incoming)"
+      ]
+    },
+    {
+      "group": "Electronics + Prototyping Lab",
+      "items": [
+        "Circuit design (EasyEDA — primary)",
+        "Limited exposure: Altium, KiCad",
+        "PCB prototyping and assembly",
+        "High-current LED systems",
+        "Embedded controller development",
+        "Airbrushing and finishing systems",
+        "Sandblasting and surface treatment"
+      ]
+    }
+  ],
+  "organizations": [
+    {
+      "slug": "space-cadets-lighting",
+      "title": "Space Cadets Lighting",
+      "subtitle": "Interactive LED products, platforms, and installations",
+      "category": "venture",
+      "featured": true,
+      "status": "published",
+      "tags": ["LED", "ESP32", "Product", "Interactive", "Platform"],
+      "date": "2020-03",
+      "website": "https://spacecadetslighting.com",
+      "description": "Founder-led venture for interactive LED products, sculptural lighting, embedded hardware, manufacturing, software, and commissioned immersive systems. Evolved from chandeliers into an ecosystem spanning production products, LightDrive controllers, Nebula platform software, and festival installations.",
+      "links": [{ "url": "https://spacecadetslighting.com", "label": "Website" }],
+      "timelineRef": "2020-03-space-cadets"
+    },
+    {
+      "slug": "gorilla-machines",
+      "title": "Gorilla Machines / ArcForge",
+      "subtitle": "CNC plasma cutting machines",
+      "category": "engineering",
+      "featured": true,
+      "status": "published",
+      "tags": ["CNC", "Controls", "Manufacturing", "Motion Systems"],
+      "date": "2017-03",
+      "description": "Lead engineering role evolving 4×4 and 4×8 CNC plasma platforms from early prototypes into production-ready systems. Designed mechanical assemblies, motion control, firmware, and beginner-oriented control software across many production iterations.",
+      "timelineRef": "2017-03-gorilla-machines"
+    },
+    {
+      "slug": "dimension-3",
+      "title": "Dimension 3 Fabrication",
+      "subtitle": "Multi-function fabrication studio",
+      "category": "engineering",
+      "featured": false,
+      "status": "published",
+      "tags": ["EE", "ME", "CNC", "3D Printing"],
+      "date": "2016-12",
+      "description": "Short-lived venture formalizing the Multi-Machine modular fabrication platform — integrating 3D printing, CNC engraving, and laser engraving on a single delta-style platform.",
+      "timelineRef": "2016-12-dimension-3"
+    },
+    {
+      "slug": "mojo-3d-print-lab",
+      "title": "Mojo 3D Print Lab",
+      "subtitle": "Community maker lab operations",
+      "category": "community",
+      "featured": false,
+      "status": "published",
+      "tags": ["3D Printing", "Teaching", "Community"],
+      "date": "2014-01",
+      "description": "Ran the Mojo Coworking 3D Print Lab: printer repair, daily operations, weekly public classes, and end-to-end support for member projects.",
+      "timelineRef": "2014-01-mojo-lab"
+    }
+  ],
+  "projects": [
+    {
+      "slug": "space-cadets-product-ecosystem",
+      "title": "Space Cadets Product Ecosystem",
+      "subtitle": "Wi-Fi sound-reactive LED sculptures",
+      "organizationId": "space-cadets-lighting",
+      "category": "venture",
+      "status": "published",
+      "tags": ["LED", "Products", "Manufacturing", "LightDrive"],
+      "date": "2020-03",
+      "summary": "A family of production LED sculptures sharing LightDrive-based architecture and custom large-format additive manufacturing.",
+      "details": "Founded in March 2020, Space Cadets grew from artistic chandeliers into approximately eight or nine production products — including Astral Vega, Voyager One, Astral Lotus, Andromeda, Stargate, Andromeda Tabletop, Quasar, Arc, and Ion. Each product integrates sound-reactive addressable LEDs, Wi-Fi control, custom PCB design, Fusion 360 mechanical design, and in-house large-format 3D printing tuned for sculptural production.",
+      "role": "Founder and system architect — product design, electronics, firmware, CAD, manufacturing, web, and marketing",
+      "timelineRef": "2020-06-astral-vega"
+    },
+    {
+      "slug": "lightdrive",
+      "title": "LightDrive",
+      "subtitle": "ESP32 distributed control hardware",
+      "organizationId": "space-cadets-lighting",
+      "category": "engineering",
+      "status": "published",
+      "tags": ["ESP32", "PCB", "Distributed Systems", "Hardware Platform"],
+      "date": "2020-01",
+      "summary": "Custom four-layer ESP32 control boards designed as distributed physical-computing nodes for festival and installation reliability.",
+      "details": "LightDrive boards integrate Wi-Fi, Bluetooth, redundant mesh and long-range radio options, capacitive touch, motion sensing, and modular expansion. The platform underpins Space Cadets products and evolved into the Nebula ecosystem. Compact LightDrive Pico variants extend the architecture to smaller nodes.",
+      "role": "Hardware architect, PCB designer, firmware direction",
+      "dateNote": "Month is placeholder — platform evolved across 2020s"
+    },
+    {
+      "slug": "nebula",
+      "title": "Nebula / NebulOS",
+      "subtitle": "Distributed physical-computing platform",
+      "organizationId": "space-cadets-lighting",
+      "category": "venture",
+      "status": "published",
+      "tags": ["Platform", "Mesh", "Distributed Systems", "NebulOS"],
+      "date": "2022-01",
+      "summary": "A distributed physical-computing platform grown from Space Cadets lighting infrastructure — coordinating lighting, sensors, touch, wireless sync, and artist tools.",
+      "details": "Nebula evolved from production lighting workflows into a broader platform direction (NebulOS) for device discovery, multi-node synchronization, capacitive interaction, and automation across heterogeneous hardware. It integrates LightDrive nodes, WLED-compatible ecosystems, and expansion toward motor control and display interfaces.",
+      "role": "Concept, architecture, firmware direction, platform strategy",
+      "dateNote": "Month is placeholder — platform deepening approximate 2022 onward"
+    },
+    {
+      "slug": "nebula-app",
+      "title": "Nebula App",
+      "subtitle": "Cross-platform device control",
+      "organizationId": "space-cadets-lighting",
+      "category": "venture",
+      "status": "published",
+      "tags": ["Flutter", "App", "Wi-Fi", "Interactive"],
+      "date": "2023-06",
+      "summary": "Flutter/Dart application for iOS, Android, macOS, and Windows — discovering and controlling Nebula, LightDrive, Space Cadets, and WLED devices.",
+      "details": "The Nebula App provides device discovery, organization, and control across Isaac's hardware ecosystems. Development combines domain expertise with AI-assisted software workflows for cross-platform delivery.",
+      "role": "Designer and developer"
+    },
+    {
+      "slug": "nebula-touch-remotes",
+      "title": "Nebula Touch Remotes",
+      "subtitle": "Capacitive physical controls",
+      "organizationId": "space-cadets-lighting",
+      "category": "engineering",
+      "status": "draft",
+      "tags": ["Capacitive", "Touch", "Hardware", "Nebula"],
+      "date": "2023-01",
+      "summary": "Capacitive-touch physical remotes for lighting and interactive environments — direct, innate control without technical configuration.",
+      "details": "Touch remotes integrate with the Nebula ecosystem and LightDrive Pico hardware, extending human-centered interface design from software into physical controls.",
+      "role": "Hardware, firmware, and product design",
+      "dateNote": "Month is placeholder — release timing unverified"
+    },
+    {
+      "slug": "luminous-grove",
+      "title": "Luminous Grove",
+      "subtitle": "Interactive festival installation",
+      "organizationId": "space-cadets-lighting",
+      "category": "art",
+      "status": "published",
+      "tags": ["Installation", "Festival", "Capacitive", "Immersive"],
+      "date": "2024-01",
+      "summary": "A touch-reactive LED flower with ~30 capacitive pads wirelessly synchronized with 16 sculptures and a large chandelier.",
+      "details": "Designed initially for Secret Dreams and later shown at What To Love Burn and Groove Cruise. I developed a custom ESP32 capacitive library with pre-touch proximity sensing and multi-user interaction modes. The installation demonstrated that distributed sculptures can behave as one cohesive interactive environment — a major proof of the Nebula platform.",
+      "role": "Lead designer and engineer",
+      "timelineRef": "2024-luminous-grove",
+      "dateNote": "Month is placeholder — venue dates approximate 2024–2025"
+    },
+    {
+      "slug": "mesmerite",
+      "title": "Mesmerite",
+      "subtitle": "14-foot immersive sculpture at Atlas 9",
+      "organizationId": "space-cadets-lighting",
+      "category": "art",
+      "status": "published",
+      "tags": ["Installation", "Commission", "Pixel Mapping", "LED"],
+      "date": "2022-01",
+      "summary": "Commissioned immersive sculpture integrating ~10,000 addressable LEDs across six synchronized controllers with 3D pixel mapping.",
+      "details": "Collaborated with Tyler Schrader, who built the wooden structure. I architected the lighting system — controller distribution, 3D pixel mapping via a Mac Mini, and remote/internet control for ongoing operation.",
+      "role": "Lighting system architecture and remote operations",
+      "dateNote": "Month is placeholder — installation year unverified"
+    },
+    {
+      "slug": "wled-contributions",
+      "title": "WLED Contributions",
+      "subtitle": "Open-source LED firmware improvements",
+      "organizationId": "space-cadets-lighting",
+      "category": "engineering",
+      "status": "draft",
+      "tags": ["Open Source", "LED", "Firmware", "ESP32"],
+      "date": "2021-01",
+      "summary": "Contributions to the WLED open-source ecosystem — UI improvements, effects, and workflow changes.",
+      "details": "Worked within the WLED community on human-interface improvements and effects. WLED served as a foundation and reference point for Nebula's approach to approachable LED control. Specific contributions require verification before public citation.",
+      "role": "Contributor",
+      "dateNote": "Month is placeholder; specific PRs/commits need verification"
+    },
+    {
+      "slug": "blue-ridge-puttway",
+      "title": "Blue Ridge Puttway",
+      "subtitle": "Immersive nine-hole art putt-putt",
+      "category": "art",
+      "status": "published",
+      "tags": ["Installation", "Automation", "Attraction", "Systems Integration"],
+      "date": "2025-01",
+      "summary": "A fully immersive art putt-putt environment integrating sculpture, local ecology, permitting, ADA compliance, automation, sound, and lighting across 30+ networked devices.",
+      "details": "I led systems integration — Fusion 360 spatial CAD, permit drawings, ADA iterations, and coordination with visual artist Gavin Gerundo and carpenter/general contractor Atreyu. Technical systems include Home Assistant, Raspberry Pi automation, Bose surround sound, motion sensors, water pumps, Nebula/Wi-Fi devices, and an intelligent pendulum interaction using inertial sensing.",
+      "role": "Systems integrator and project lead",
+      "timelineRef": "2025-blue-ridge-puttway",
+      "dateNote": "Month is placeholder — development approximate 2025–2026"
+    },
+    {
+      "slug": "gorilla-machines-cnc-plasma-systems",
+      "title": "Gorilla Machines CNC Plasma Systems",
+      "subtitle": "4×4 and 4×8 production machines",
+      "organizationId": "gorilla-machines",
+      "category": "engineering",
+      "status": "published",
+      "tags": ["CNC", "Plasma", "Motion Control", "Manufacturing"],
+      "date": "2017-03",
+      "summary": "End-to-end design and evolution of CNC plasma cutting machines through many production generations.",
+      "details": "As Lead Engineer and Design Manager, I designed complete machine CAD assemblies, custom CNC-machined aluminum components, motion control electronics, firmware, 3D-printed machine parts, and beginner-oriented control software. The platform evolved from rudimentary early units into production-ready systems deployed at significant scale.",
+      "role": "Lead Engineer and Design Manager",
+      "timelineRef": "2017-03-gorilla-machines"
+    },
+    {
+      "slug": "multi-machine",
+      "title": "Multi-Machine",
+      "subtitle": "Modular delta fabrication platform",
+      "organizationId": "dimension-3",
+      "category": "engineering",
+      "status": "published",
+      "tags": ["Modular", "Delta", "3D Printing", "CNC", "Laser"],
+      "date": "2015-01",
+      "summary": "High-speed delta-style modular fabrication platform with interchangeable tool heads for FDM, laser engraving, and light CNC work.",
+      "details": "I designed the machine in Autodesk Inventor, manually machined components, assembled functional prototypes, built a website, and prepared toward Kickstarter. The project approached production prototype before shifting focus to the Gorilla Machines opportunity. Dimension 3 Fabrication formalized this work briefly in 2016–2017.",
+      "role": "Sole designer and builder",
+      "timelineRef": "2015-multi-machine",
+      "dateNote": "Month is placeholder — development approximate 2015–2017"
+    },
+    {
+      "slug": "dimension-3-fabrication",
+      "title": "Dimension 3 Multi-Function Machine",
+      "subtitle": "3D print + CNC + laser integration",
+      "organizationId": "dimension-3",
+      "category": "engineering",
+      "status": "published",
+      "tags": ["EE", "ME", "CNC", "3D Printing"],
+      "date": "2016-12",
+      "summary": "A single platform combining additive, CNC engraving, and laser workflows.",
+      "details": "Designed a multi-function machine combining 3D printing, CNC engraving, and laser engraving from concept through production integration. Legacy slug preserved from existing portfolio package.",
+      "timelineRef": "2016-12-dimension-3"
+    },
+    {
+      "slug": "custom-3d-printers",
+      "title": "Custom 3D Printers",
+      "subtitle": "Build, tune, and production workflows",
+      "category": "engineering",
+      "status": "published",
+      "tags": ["Additive Manufacturing", "Tooling", "Production"],
+      "date": "2015-01",
+      "summary": "From Mojo-era repair through custom builds to large-format production printers enabling Space Cadets sculptural manufacturing.",
+      "details": "Built custom printers from salvaged and purchased components, studied motion systems and slicer strategy, and eventually developed large-format systems tuned for Space Cadets production — including over a year of build and tuning for sculptural output.",
+      "role": "Designer, builder, tuner, and operator",
+      "dateNote": "Month is placeholder — ongoing from ~2015"
+    },
+    {
+      "slug": "nautilus-speakers-ratio-audio",
+      "title": "Nautilus Speakers / Ratio Audio",
+      "subtitle": "Biomimetic acoustic enclosures",
+      "category": "art",
+      "status": "draft",
+      "tags": ["Acoustics", "Biomimicry", "R&D", "3D Printing"],
+      "date": "2018-01",
+      "summary": "Spiral speaker enclosures inspired by nautilus and cochlear geometry — exploring resonance, standing waves, and harmonics.",
+      "details": "3D-printed enclosures finished with Bondo and sanding. Explores acoustic form as sculpture. Ratio Audio remains a future-facing concept — not a shipped product.",
+      "role": "Designer, fabricator, and acoustic experimenter",
+      "dateNote": "Month is placeholder — approximate 2018–2019"
+    },
+    {
+      "slug": "illuminated-signage",
+      "title": "Illuminated Signage",
+      "subtitle": "Commercial CNC-cut signage",
+      "category": "engineering",
+      "status": "draft",
+      "tags": ["Signage", "CNC", "Commercial", "Fabrication"],
+      "date": "2018-01",
+      "summary": "Commercial illuminated signage — CNC-cut DiBond, graphic design, lighting integration, and installation.",
+      "details": "Freelance commercial work combining graphic design, CNC fabrication, and illuminated forms. Specific client projects not indexed in archive.",
+      "role": "Designer and fabricator",
+      "dateNote": "Month is placeholder — approximate 2018–2019"
+    },
+    {
+      "slug": "rc-aircraft-quadcopters",
+      "title": "RC Aircraft and Quadcopters",
+      "subtitle": "Teenage electronics origin story",
+      "category": "engineering",
+      "status": "published",
+      "tags": ["Drones", "Electronics", "Arduino", "Origin"],
+      "date": "2008-01",
+      "summary": "RC aircraft and quadcopter builds that introduced motors, ESCs, flight controllers, soldering, and the need for custom fabricated parts.",
+      "details": "Self-directed learning in Arduino, C++, batteries, radios, and mechanical troubleshooting during teenage years. The need for parts that did not exist commercially created the direct bridge to 3D printing and later embedded systems work.",
+      "role": "Designer, assembler, and self-directed learner",
+      "dateNote": "Month is placeholder — approximate 2008–2014"
+    },
+    {
+      "slug": "experiments",
+      "title": "Experiments & R&D",
+      "subtitle": "Sculptural forms, biomimicry, and prototypes",
+      "category": "art",
+      "featured": false,
+      "status": "published",
+      "tags": ["R&D", "Biomimicry", "Interactive", "Sculpture"],
+      "date": "2016-01",
+      "summary": "Exploratory work at the intersection of craft, light, and electromechanical systems.",
+      "details": "Personal and client-adjacent R&D — organic geometry, immersive media, and rapid prototyping across disciplines. Legacy entry preserved from existing portfolio package.",
+      "dateNote": "Month is placeholder"
+    }
+  ],
+  "timeline": [
+    {
+      "id": "childhood-art-foundation",
+      "date": "2000-01",
+      "title": "Artistic and festival foundation",
+      "type": "Foundation",
+      "significance": 2,
+      "tags": ["Art", "Craft", "Festivals"],
+      "details": "Raised around glassblowing, ceramics, sculpture, and craft festivals — developing sensitivity to form, materials, public experience, and handmade production.",
+      "dateNote": "Month is placeholder — childhood through ~2013"
+    },
+    {
+      "id": "2008-rc-electronics",
+      "date": "2008-01",
+      "title": "RC aircraft, quadcopters, and Arduino",
+      "type": "Foundation",
+      "significance": 2,
+      "tags": ["Electronics", "Drones", "Embedded"],
+      "details": "Teenage exploration of RC aircraft, quadcopters, motors, ESCs, flight controllers, and microcontroller programming — creating the bridge to custom fabrication.",
+      "dateNote": "Month is placeholder — approximate 2008–2014"
+    },
+    {
+      "id": "2014-01-mojo-lab",
+      "projectId": "mojo-3d-print-lab",
+      "date": "2014-01",
+      "title": "Head of 3D Print Lab — Mojo Coworking",
+      "type": "Role",
+      "significance": 3,
+      "tags": ["3D Printing", "Teaching", "Community"],
+      "details": "Ran the Mojo 3D Print Lab: operations, repair, management, and community education. Taught weekly public classes on 3D printing and design workflows."
+    },
+    {
+      "id": "2015-multi-machine",
+      "projectId": "dimension-3",
+      "date": "2015-01",
+      "title": "Multi-Machine modular platform development",
+      "type": "Project",
+      "significance": 3,
+      "tags": ["Modular", "Delta", "Fabrication"],
+      "details": "Designed a high-speed delta-style modular fabrication machine with interchangeable tool heads. Approached production prototype before shifting to CNC plasma engineering.",
+      "dateNote": "Month is placeholder — development ~2015–2017"
+    },
+    {
+      "id": "2015-07-linamar",
+      "date": "2015-07",
+      "title": "Metal Fabricator — Linamar NC",
+      "type": "Role",
+      "significance": 2,
+      "tags": ["Fabrication", "Welding", "CAD"],
+      "details": "Maintenance fabrication and assembly-line efficiency improvements using welding, machining, and CAD-supported production."
+    },
+    {
+      "id": "2016-03-microtech",
+      "date": "2016-03",
+      "title": "Machinist & Assembler — MicroTech Knives",
+      "type": "Role",
+      "significance": 2,
+      "tags": ["Manufacturing", "Finishing", "Sandblasting"],
+      "details": "Thermoforming, sandblasting, and precision finishing for premium knife production."
+    },
+    {
+      "id": "2016-12-dimension-3",
+      "projectId": "dimension-3",
+      "date": "2016-12",
+      "title": "Electrical & Mechanical Engineer — Dimension 3 Fabrication",
+      "type": "Role",
+      "significance": 3,
+      "tags": ["EE", "ME", "CNC", "3D Printing"],
+      "details": "Formalized the Multi-Machine as an electrical, mechanical, software, and manufacturing venture."
+    },
+    {
+      "id": "2017-03-gorilla-machines",
+      "projectId": "gorilla-machines",
+      "date": "2017-03",
+      "title": "Lead Engineer & Design Manager — Gorilla Machines",
+      "type": "Role",
+      "significance": 5,
+      "tags": ["CNC", "Controls", "Manufacturing", "Motion Systems"],
+      "details": "Designed and manufactured CNC plasma cutting machines end-to-end across many production iterations."
+    },
+    {
+      "id": "2020-03-space-cadets",
+      "projectId": "space-cadets-lighting",
+      "date": "2020-03",
+      "title": "Space Cadets Lighting — Founder",
+      "type": "Venture",
+      "significance": 5,
+      "tags": ["LED", "ESP32", "Product", "Interactive"],
+      "details": "Founded Space Cadets Lighting: interactive LED products and installations. Full-stack ownership — electronics, firmware, CAD, additive manufacturing, assembly, and testing."
+    },
+    {
+      "id": "2020-06-astral-vega",
+      "projectId": "space-cadets-lighting",
+      "date": "2020-06",
+      "title": "Astral Vega — first production product",
+      "type": "Product",
+      "significance": 4,
+      "tags": ["LED", "Product", "Manufacturing"],
+      "details": "Released Astral Vega as the first known Space Cadets production product, establishing the product ecosystem direction."
+    },
+    {
+      "id": "2020-lightdrive",
+      "projectId": "space-cadets-lighting",
+      "date": "2020-01",
+      "title": "LightDrive hardware platform",
+      "type": "Platform",
+      "significance": 4,
+      "tags": ["ESP32", "PCB", "Hardware Platform"],
+      "details": "Developed custom four-layer ESP32 control boards as distributed nodes with redundant networking for festival reliability.",
+      "dateNote": "Month is placeholder — evolved across 2020s"
+    },
+    {
+      "id": "2022-nebula",
+      "projectId": "space-cadets-lighting",
+      "date": "2022-01",
+      "title": "Nebula ecosystem and NebulOS direction",
+      "type": "Platform",
+      "significance": 4,
+      "tags": ["Platform", "Distributed Systems", "Mesh"],
+      "details": "Evolved Space Cadets infrastructure into a distributed physical-computing platform for lighting, sensors, touch, and artist tools.",
+      "dateNote": "Month is placeholder — deepening approximate 2022 onward"
+    },
+    {
+      "id": "2024-luminous-grove",
+      "projectId": "space-cadets-lighting",
+      "date": "2024-01",
+      "title": "Luminous Grove festival installation",
+      "type": "Installation",
+      "significance": 5,
+      "tags": ["Installation", "Festival", "Capacitive", "Nebula"],
+      "details": "Major proof of the Nebula ecosystem — touch-reactive flower synchronized with 16 sculptures and a large chandelier across festival venues.",
+      "dateNote": "Month is placeholder — venues approximate 2024–2025"
+    },
+    {
+      "id": "2022-mesmerite",
+      "projectId": "space-cadets-lighting",
+      "date": "2022-01",
+      "title": "Mesmerite at Atlas 9",
+      "type": "Installation",
+      "significance": 4,
+      "tags": ["Installation", "Commission", "Pixel Mapping"],
+      "details": "14-foot commissioned sculpture with ~10,000 LEDs, six controllers, and 3D pixel mapping. Collaboration with Tyler Schrader.",
+      "dateNote": "Month is placeholder — year unverified"
+    },
+    {
+      "id": "2025-blue-ridge-puttway",
+      "date": "2025-01",
+      "title": "Blue Ridge Puttway immersive attraction",
+      "type": "Installation",
+      "significance": 5,
+      "tags": ["Installation", "Automation", "Attraction"],
+      "details": "Nine-hole immersive art putt-putt integrating sculpture, ecology storytelling, permitting, ADA, automation, sound, and 30+ networked devices.",
+      "dateNote": "Month is placeholder — approximate 2025–2026"
+    }
+  ],
+  "skills": {
+    "Creative Technology": {
+      "Immersive Systems": [
+        "Festival and venue installations with 30+ coordinated devices",
+        "Distributed LED sculpture networks and wireless synchronization",
+        "Capacitive touch and pre-touch proximity interaction",
+        "3D pixel mapping at installation scale",
+        "Permitting, ADA planning, and field installation logistics",
+        "Artist collaboration and interdisciplinary team coordination"
+      ],
+      "Interactive Lighting": [
+        "Addressable LED ecosystems and modular lighting platforms",
+        "Sound-reactive and Wi-Fi connected fixture design",
+        "High-current LED driver and power distribution planning",
+        "Sculptural LED integration and wearable electronics",
+        "Festival-scale RF reliability and redundant networking"
+      ],
+      "Systems Integration": [
+        "Heterogeneous device integration (custom nodes + consumer smart devices)",
+        "Home Assistant and Raspberry Pi automation architectures",
+        "Cross-domain mechanical + electrical + firmware coordination",
+        "Experience architecture — from products to complete environments"
+      ]
+    },
+    "Engineering": {
+      "Mechanical Design": [
+        "13+ years CAD (Fusion 360 primary, Autodesk Inventor)",
+        "Complex mechanical assemblies and motion systems",
+        "Organic and biomimetic structural modeling",
+        "CNC-manufacturable and additive-optimized part design",
+        "Machine design: gantry systems, linear rails, load-aware framing"
+      ],
+      "Electrical Engineering": [
+        "Schematic capture and production PCB layout (EasyEDA primary)",
+        "Motor driver, LED driver, and power regulation systems",
+        "High-current system planning and harness design",
+        "Prototype-to-production electronics transition",
+        "CNC control electronics and distributed controller boards"
+      ],
+      "Embedded Systems": [
+        "Embedded C++ and Arduino ecosystem",
+        "ESP32 / ESP8266 platform development",
+        "Real-time control loops, sensor integration, multi-MCU coordination",
+        "Wi-Fi, Bluetooth, and mesh radio architectures",
+        "Capacitive sensing firmware and proximity detection"
+      ],
+      "Motion and Control": [
+        "CNC plasma machine motion architecture",
+        "Stepper motor drivers and gantry performance tuning",
+        "RC aircraft and quadcopter flight system integration",
+        "Motor control firmware and ESC tuning concepts"
+      ]
+    },
+    "Software": {
+      "Firmware": [
+        "ESP32 firmware for lighting, sensing, and distributed control",
+        "WLED ecosystem familiarity and contributions",
+        "Multi-node synchronization and device discovery protocols"
+      ],
+      "Cross-Platform Applications": [
+        "Flutter/Dart for iOS, Android, macOS, and Windows",
+        "Device discovery and multi-ecosystem control UI",
+        "CNC beginner-oriented control software (Gorilla Machines)"
+      ],
+      "Automation and Interfaces": [
+        "Home Assistant integration for immersive environments",
+        "Human-centered interface design — complexity absorbed into architecture",
+        "Physical capacitive remotes and approachable guest controls"
+      ],
+      "AI-Assisted Development": [
+        "AI-assisted software development directed by domain expertise",
+        "Rapid iteration on cross-platform application features"
+      ]
+    },
+    "Fabrication and Manufacturing": {
+      "Additive Manufacturing": [
+        "Custom printer build, tune, repair, and diagnostics",
+        "Large-format production systems for sculptural output",
+        "Slicer optimization, failure diagnosis, and production repeatability",
+        "Structural print optimization and surface finish strategies"
+      ],
+      "CNC and Machining": [
+        "CNC plasma machine design and production deployment",
+        "Manual and CNC milling, turning, and plasma cutting",
+        "Welding, fabrication, and assembly construction"
+      ],
+      "Laser and Digital Fabrication": [
+        "CO₂ laser cutting (xTool P2)",
+        "CNC router workflows (Inventables X-Carve)",
+        "CNC-cut DiBond signage and illuminated commercial forms",
+        "Sublimation and UV printing"
+      ],
+      "Production and Assembly": [
+        "Small-scale production management and quality workflows",
+        "Thermoforming, sandblasting, and surface finishing",
+        "Field installation and maintenance logistics"
+      ]
+    },
+    "Creative Practice": {
+      "Sculpture and Biomimicry": [
+        "Organic geometry and nature-inspired structural forms",
+        "Glassblowing and ceramics exposure from artistic upbringing",
+        "Biomimetic acoustic enclosure experiments (Nautilus speakers)",
+        "Art-technology fusion in product and installation design"
+      ],
+      "Experience Design": [
+        "Guest-facing interaction design for immersive attractions",
+        "Festival and public art experience architecture",
+        "Emotion-driven lighting and participatory environments"
+      ],
+      "Audio and AV": [
+        "Surround sound system integration (Bose)",
+        "Synchronized playback and sound-effect automation",
+        "Speaker enclosure resonance exploration"
+      ],
+      "Media and Storytelling": [
+        "Product photography and presentation",
+        "Graphic design and instructional materials",
+        "Website development and targeted advertising (founder operations)"
+      ]
+    },
+    "Leadership": {
+      "Project Architecture": [
+        "End-to-end system ownership from concept through field deployment",
+        "Platform-oriented thinking — modular, upgradeable architectures",
+        "Translating ambiguous creative goals into buildable systems"
+      ],
+      "Team Coordination": [
+        "Lead Engineer and Design Manager experience",
+        "Interdisciplinary delegation across art, carpentry, and engineering",
+        "Festival and installation team coordination"
+      ],
+      "Technical Communication": [
+        "Community education and weekly technical classes (Mojo)",
+        "Cross-disciplinary translation between engineering and creative teams",
+        "Documentation and instructional material design"
+      ],
+      "Founder Operations": [
+        "Hardware startup founding and product ecosystem development",
+        "Web, advertising, and brand integration for Space Cadets",
+        "Manufacturing oversight and production scaling awareness"
+      ]
+    }
+  },
+  "editorial": {
+    "featuredDiscoverSlugs": [
+      "blue-ridge-puttway",
+      "luminous-grove",
+      "mesmerite",
+      "nebula",
+      "lightdrive",
+      "gorilla-machines-cnc-plasma-systems",
+      "space-cadets-product-ecosystem",
+      "multi-machine"
+    ],
+    "approvedPublicFields": ["email", "site"],
+    "privateExclusions": [
+      "Partner health context as motivation for leaving Gorilla Machines",
+      "COVID self-isolation personal details",
+      "Financial anxiety, burnout, or unreleased business strategy",
+      "Detailed pendulum control algorithm internals (Blue Ridge Puttway)",
+      "Unverified WLED specific PRs and commit references",
+      "Exact Gorilla Machines unit deployment counts",
+      "Blue Ridge Puttway exact location and business entity",
+      "Mesmerite exact installation date and LED power architecture",
+      "Luminous Grove exact festival dates",
+      "Ratio Audio legal/product status",
+      "Illuminated signage client names"
+    ],
+    "dateWarnings": [
+      "lightdrive: 2020-01 month is placeholder",
+      "nebula: 2022-01 month is placeholder",
+      "nebula-touch-remotes: 2023-01 month is placeholder",
+      "mesmerite: 2022-01 year and month unverified",
+      "luminous-grove: 2024-01 month is placeholder; venue dates approximate",
+      "blue-ridge-puttway: 2025-01 month is placeholder",
+      "multi-machine: 2015-01 month is placeholder",
+      "custom-3d-printers: 2015-01 month is placeholder",
+      "rc-aircraft-quadcopters: 2008-01 month is placeholder",
+      "nautilus-speakers-ratio-audio: 2018-01 month is placeholder",
+      "illuminated-signage: 2018-01 month is placeholder",
+      "wled-contributions: 2021-01 month is placeholder; attribution unverified",
+      "childhood-art-foundation: 2000-01 is approximate placeholder",
+      "2008-rc-electronics: 2008-01 month is placeholder",
+      "2020-lightdrive timeline: 2020-01 month is placeholder",
+      "2022-nebula timeline: 2022-01 month is placeholder",
+      "2022-mesmerite timeline: year unverified",
+      "2024-luminous-grove timeline: 2024-01 month is placeholder",
+      "2025-blue-ridge-puttway timeline: 2025-01 month is placeholder",
+      "experiments: 2016-01 month is placeholder",
+      "Space Cadets product release dates after Astral Vega need verification"
+    ],
+    "claimsNeedingVerification": [
+      "WLED specific contributions before public citation",
+      "Gorilla Machines production unit count (~100–150)",
+      "Software authorship split with Chris Libby at Gorilla Machines",
+      "Nebula App store availability per platform",
+      "Space Cadets product count (8 vs 9) and post-Astral Vega release sequence"
+    ]
+  }
+}
