@@ -172,6 +172,8 @@ async function rowToProject(row, mediaRows, orgSlugById) {
     sortOrder: row.sort_order,
     organizationId: orgSlug || row.organization_id || null,
     timelineRef: row.timeline_ref,
+    entryKind: row.entry_kind || 'project',
+    entryKindLabel: row.entry_kind_label || '',
     hero: hero ? mediaAssetToLegacy(hero) : null,
     media: media.map(mediaAssetToLegacy),
     updatedAt: row.updated_at,
@@ -451,14 +453,16 @@ async function handleCreateProject(request, env, cors) {
   const orgId = await resolveOrganizationId(env.DB, body.organizationId);
   await env.DB.prepare(`
     INSERT INTO projects (id, slug, title, subtitle, description, tags, role, tools, year, date,
-      category, links, status, featured, featured_discover, sort_order, organization_id, timeline_ref, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      category, links, status, featured, featured_discover, entry_kind, entry_kind_label,
+      sort_order, organization_id, timeline_ref, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).bind(
     id, slug, body.title || 'Untitled', body.subtitle || '', body.description || '',
     JSON.stringify(body.tags || []), body.role || '', JSON.stringify(body.tools || []),
     body.year || null, body.date || '', body.category || 'engineering',
     JSON.stringify(body.links || []), body.status || 'draft', body.featured ? 1 : 0,
-    body.featuredDiscover ? 1 : 0, body.sortOrder ?? 0, orgId, body.timelineRef || null, ts, ts
+    body.featuredDiscover ? 1 : 0, body.entryKind || 'project', body.entryKindLabel || '',
+    body.sortOrder ?? 0, orgId, body.timelineRef || null, ts, ts
   ).run();
   const project = await getProject(env.DB, id);
   return json({ project }, 201, cors);
@@ -472,15 +476,16 @@ async function handleUpdateProject(request, env, cors, id) {
   const orgId = await resolveOrganizationId(env.DB, body.organizationId);
   await env.DB.prepare(`
     UPDATE projects SET slug=?, title=?, subtitle=?, description=?, tags=?, role=?, tools=?,
-      year=?, date=?, category=?, links=?, status=?, featured=?, featured_discover=?, sort_order=?,
-      organization_id=?, timeline_ref=?, hero_media_id=?, updated_at=? WHERE id=?
+      year=?, date=?, category=?, links=?, status=?, featured=?, featured_discover=?,
+      entry_kind=?, entry_kind_label=?, sort_order=?, organization_id=?, timeline_ref=?,
+      hero_media_id=?, updated_at=? WHERE id=?
   `).bind(
     slugify(body.slug || body.title), body.title, body.subtitle || '', body.description || '',
     JSON.stringify(body.tags || []), body.role || '', JSON.stringify(body.tools || []),
     body.year || null, body.date || '', body.category || 'engineering',
     JSON.stringify(body.links || []), body.status || 'draft', body.featured ? 1 : 0,
-    body.featuredDiscover ? 1 : 0, body.sortOrder ?? 0, orgId, body.timelineRef || null,
-    body.heroMediaId || null, ts, id
+    body.featuredDiscover ? 1 : 0, body.entryKind || 'project', body.entryKindLabel || '',
+    body.sortOrder ?? 0, orgId, body.timelineRef || null, body.heroMediaId || null, ts, id
   ).run();
   const project = await getProject(env.DB, id);
   return json({ project }, 200, cors);
@@ -515,6 +520,8 @@ function normalizeImportProject(body) {
     sortOrder: body.sortOrder ?? 0,
     organizationId: body.organizationId || body.organization_id || null,
     timelineRef: body.timelineRef || body.timeline_ref || null,
+    entryKind: body.entryKind || body.entry_kind || 'project',
+    entryKindLabel: body.entryKindLabel || body.entry_kind_label || '',
     incomingMediaCount: Array.isArray(body.media) ? body.media.length : 0,
   };
 }
@@ -541,6 +548,8 @@ function projectFieldChanges(existing, incoming) {
   cmp('featuredDiscover', !!existing.featured_discover, !!incoming.featuredDiscover);
   cmp('sortOrder', existing.sort_order, incoming.sortOrder);
   cmp('organizationId', existing.organization_id, incoming.organizationId);
+  cmp('entryKind', existing.entry_kind || 'project', incoming.entryKind || 'project');
+  cmp('entryKindLabel', existing.entry_kind_label || '', incoming.entryKindLabel || '');
   cmp('timelineRef', existing.timeline_ref, incoming.timelineRef);
   return changes;
 }
@@ -737,12 +746,12 @@ async function importProjectsFromList(env, items, options = {}) {
       if (changes.length || existing.slug !== p.slug) {
         await env.DB.prepare(`
           UPDATE projects SET slug=?, title=?, subtitle=?, description=?, tags=?, role=?, tools=?,
-            year=?, date=?, category=?, links=?, status=?, featured=?, featured_discover=?, sort_order=?,
-            organization_id=?, timeline_ref=?, updated_at=? WHERE id=?
+            year=?, date=?, category=?, links=?, status=?, featured=?, featured_discover=?,
+            entry_kind=?, entry_kind_label=?, sort_order=?, organization_id=?, timeline_ref=?, updated_at=? WHERE id=?
         `).bind(
           p.slug, p.title, p.subtitle, p.description, JSON.stringify(p.tags), p.role, JSON.stringify(p.tools),
           p.year, p.date, p.category, JSON.stringify(p.links), p.status, p.featured, p.featuredDiscover,
-          p.sortOrder, orgId, p.timelineRef, ts, existing.id
+          p.entryKind || 'project', p.entryKindLabel || '', p.sortOrder, orgId, p.timelineRef, ts, existing.id
         ).run();
         updated++;
       }
@@ -751,12 +760,14 @@ async function importProjectsFromList(env, items, options = {}) {
       const orgId = await resolveOrganizationId(env.DB, p.organizationId);
       await env.DB.prepare(`
         INSERT INTO projects (id, slug, title, subtitle, description, tags, role, tools, year, date,
-          category, links, status, featured, featured_discover, sort_order, organization_id, timeline_ref, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          category, links, status, featured, featured_discover, entry_kind, entry_kind_label,
+          sort_order, organization_id, timeline_ref, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).bind(
         id, p.slug, p.title, p.subtitle, p.description, JSON.stringify(p.tags), p.role,
         JSON.stringify(p.tools), p.year, p.date, p.category, JSON.stringify(p.links), p.status,
-        p.featured, p.featuredDiscover, p.sortOrder, orgId, p.timelineRef, ts, ts
+        p.featured, p.featuredDiscover, p.entryKind || 'project', p.entryKindLabel || '',
+        p.sortOrder, orgId, p.timelineRef, ts, ts
       ).run();
       created++;
     }

@@ -25,6 +25,37 @@ export function slugifyCategory(s) {
   return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
 }
 
+/** Portfolio entry kinds — projects, life moments, custom types, etc. */
+export const DEFAULT_ENTRY_KINDS = ['project', 'life-moment', 'milestone', 'gallery', 'story', 'custom'];
+
+export const ENTRY_KIND_LABELS = {
+  project: 'Project',
+  'life-moment': 'Life moment',
+  milestone: 'Milestone',
+  gallery: 'Photo gallery',
+  story: 'Story',
+  custom: 'Custom',
+};
+
+export function entryKindLabel(kind, customLabel) {
+  const custom = String(customLabel || '').trim();
+  if (kind === 'custom' && custom) return custom;
+  if (custom) return custom;
+  return ENTRY_KIND_LABELS[kind] || ENTRY_KIND_LABELS.project;
+}
+
+/** Entry kinds in use (for library filters). */
+export function getEntryKindFilters(projects, { publishedOnly = true } = {}) {
+  const set = new Set(['project']);
+  (projects || []).forEach(p => {
+    if (publishedOnly && p.status && p.status !== 'published') return;
+    if (p.entryKind) set.add(p.entryKind);
+  });
+  const ordered = DEFAULT_ENTRY_KINDS.filter(k => set.has(k));
+  [...set].filter(k => !DEFAULT_ENTRY_KINDS.includes(k)).sort().forEach(k => ordered.push(k));
+  return ordered;
+}
+
 /** Categories for portfolio filter buttons: defaults + any used on published projects. */
 export function getCategoryFilters(projects, { publishedOnly = true } = {}) {
   const set = new Set(DEFAULT_CATEGORIES);
@@ -94,7 +125,9 @@ Organizations are companies/ventures — NOT individual products. Child work liv
 ${categoryDoc}
 You may add a new lowercase category slug if needed; it will appear as a new filter on the portfolio.
 
-## PROJECT FIELDS (each item in "projects" array)
+## PROJECT FIELDS (portfolio entries — each item in "projects" array)
+- entryKind: "project" | "life-moment" | "milestone" | "gallery" | "story" | "custom"
+- entryKindLabel: optional display label (required meaning for kind "custom", e.g. "Our wedding")
 - id or slug (required, stable identifier; prefer slug matching id)
 - title, subtitle, description (or summary/details — both accepted)
 - category (slug from list above)

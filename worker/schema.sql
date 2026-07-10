@@ -35,6 +35,8 @@ CREATE TABLE IF NOT EXISTS projects (
   status TEXT DEFAULT 'draft' CHECK (status IN ('draft', 'published')),
   featured INTEGER DEFAULT 0,
   featured_discover INTEGER DEFAULT 0,
+  entry_kind TEXT DEFAULT 'project',
+  entry_kind_label TEXT DEFAULT '',
   sort_order INTEGER DEFAULT 0,
   organization_id TEXT,
   timeline_ref TEXT,

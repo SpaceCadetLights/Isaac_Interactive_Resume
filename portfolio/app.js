@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import * as SEED from './data.js';
 import { getDataPackPath, siteUrl, isGitHubPagesRepo, REPO_NAME } from '../shared/site-paths.js';
 import { getApiBaseUrl, fetchPublicProjects, fetchPublicPack, applyCmsProjects, getAdminUrl } from '../shared/cms-config.js';
-import { getCategoryFilters, categoryLabel } from '../shared/resume-pack-schema.js';
+import { getCategoryFilters, getEntryKindFilters, categoryLabel, entryKindLabel } from '../shared/resume-pack-schema.js';
 
 /* ==========================================================
    TUNING
@@ -274,6 +274,7 @@ let DATA = resolveFromLocalStorage() || {
    ========================================================== */
 let _discCategory = 'all';
 let _projCategory = 'all';
+let _projKind = 'all';
 let _galAllItems = [];
 let _galTagFilter = 'all';
 let _coverflowIdx = 0;
@@ -366,7 +367,16 @@ function getOrganization(id) {
 function getOrgProjects(org) {
   if (!org) return [];
   const keys = new Set([org.id, org.slug].filter(Boolean));
-  return (DATA.projects || []).filter(p => keys.has(p.organizationId));
+  return (DATA.projects || []).filter(p =>
+    keys.has(p.organizationId) && (p.entryKind || 'project') === 'project'
+  );
+}
+
+function kindPillHtml(p) {
+  const kind = p.entryKind || 'project';
+  const label = entryKindLabel(kind, p.entryKindLabel);
+  const cls = kind === 'project' ? 'tl-pill' : `tl-pill kind-pill kind-${kind.replace(/[^a-z0-9-]/gi, '')}`;
+  return `<span class="${cls}">${esc(label)}</span>`;
 }
 
 function orgCoverSlides(org) {
@@ -409,6 +419,17 @@ function countMediaPics(media) {
 }
 
 function galleryContextFromEntry(entry) {
+  if (entry && entry.dates && Array.isArray(entry.details) && !entry.projectId && !(entry.id && DATA.projectById[entry.id])) {
+    return {
+      title: entry.title,
+      date: entry.dates || entry.date || '',
+      type: entry._galleryType || 'Role',
+      tags: entry.tags || [],
+      details: entry.details.map(d => `\u2022 ${d}`).join('\n'),
+      media: entry.media || [],
+      links: [],
+    };
+  }
   if (entry && entry.id && DATA.projectById[entry.id]) {
     const p = entry;
     return {
@@ -1204,8 +1225,9 @@ function renderDiscover() {
       <div class="disc-tile-body">
         <div class="disc-tile-title">${esc(p.title)}</div>
         <div class="disc-tile-meta">
+          ${kindPillHtml(p)}
           ${org ? `<span class="tl-pill org-pill">${esc(org.title)}</span>` : ''}
-          <span class="tl-pill">${esc(tag)}</span>
+          ${(p.entryKind || 'project') === 'project' ? `<span class="tl-pill">${esc(tag)}</span>` : ''}
           ${n ? `<span class="tl-media-badge"><span class="tl-media-badge-icon">&#9671;</span>${n}</span>` : ''}
         </div>
       </div>
@@ -1292,6 +1314,7 @@ function renderProjects(query) {
   if (!grid) return;
   const q = (query || '').toLowerCase().trim();
   let items = (DATA.projects || []).slice();
+  if (_projKind !== 'all') items = items.filter(p => (p.entryKind || 'project') === _projKind);
   if (_projCategory !== 'all') items = items.filter(p => p.category === _projCategory);
   if (q) {
     items = items.filter(p =>
@@ -1318,7 +1341,7 @@ function renderProjects(query) {
         <div class="proj-card-body">
           <h3 class="proj-card-title">${esc(p.title)}</h3>
           <p class="proj-card-sub">${esc(p.subtitle || '')}</p>
-          <div class="proj-card-tags">${org ? `<span class="tl-pill org-pill">${esc(org.title)}</span>` : ''}${(p.tags || []).slice(0, 3).map(t => `<span class="tl-pill">${esc(t)}</span>`).join('')}</div>
+          <div class="proj-card-tags">${kindPillHtml(p)}${org ? `<span class="tl-pill org-pill">${esc(org.title)}</span>` : ''}${(p.tags || []).slice(0, 3).map(t => `<span class="tl-pill">${esc(t)}</span>`).join('')}</div>
           <p class="proj-card-meta">${esc(meta)}</p>
         </div>
       </button>
@@ -1341,10 +1364,30 @@ function renderSummary() {
   `;
 }
 
+function jobMatchesOrganization(job, org) {
+  const jt = (job.title || '').toLowerCase();
+  const ot = (org.title || '').toLowerCase();
+  if (!jt || !ot) return false;
+  if (jt.includes(ot)) return true;
+  return ot.split(/\s+/).filter(w => w.length > 4).some(w => jt.includes(w));
+}
+
+function supplementalJobs() {
+  const orgs = DATA.organizations || [];
+  return DATA.jobs.filter(j => !orgs.some(o => jobMatchesOrganization(j, o)));
+}
+
 function renderWorkHistory() {
   const el = $('#jobs-list');
-  const reversed = DATA.jobs.slice().reverse();
-  el.innerHTML = reversed.map((j, i) => `
+  const wrap = $('#career-roles-wrap');
+  if (!el) return;
+  const jobs = supplementalJobs().slice().reverse();
+  if (wrap) wrap.hidden = !jobs.length;
+  if (!jobs.length) {
+    el.innerHTML = '';
+    return;
+  }
+  el.innerHTML = jobs.map((j, i) => `
     <div class="job-card" tabindex="0" role="button" data-type="job" data-idx="${i}">
       <div class="job-header"><div class="job-title">${esc(j.title)}</div><div class="job-dates">${esc(j.dates)}</div></div>
       <div class="job-preview">${esc(j.details.slice(0, 2).join(' \u2022 '))}</div>
@@ -1353,8 +1396,8 @@ function renderWorkHistory() {
   $$('.job-card', el).forEach(card => {
     const handler = () => {
       const idx = parseInt(card.dataset.idx, 10);
-      const item = DATA.jobs.slice().reverse()[idx];
-      openModal(item.title, item.dates, item.details.map(d => '\u2022 ' + d).join('\n'));
+      const item = jobs[idx];
+      openGalleryModal({ ...item, _galleryType: 'Role' });
     };
     card.addEventListener('click', handler);
     card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handler(); } });
@@ -1373,7 +1416,7 @@ function renderEducation() {
     const handler = () => {
       const idx = parseInt(card.dataset.idx, 10);
       const item = DATA.education[idx];
-      openModal(item.title, item.dates, item.details.map(d => '\u2022 ' + d).join('\n'));
+      openGalleryModal({ ...item, _galleryType: 'Education' });
     };
     card.addEventListener('click', handler);
     card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handler(); } });
@@ -2030,18 +2073,32 @@ function setupGalleryModal() {
 
 function syncCategoryFilterUI() {
   const cats = getCategoryFilters(DATA.projects);
-  const build = (wrapId, attr, btnClass, active) => {
+  const kinds = getEntryKindFilters(DATA.projects);
+  const build = (wrapId, attr, btnClass, active, labelFn) => {
     const wrap = document.getElementById(wrapId);
     if (!wrap) return;
     const btns = [
       `<button type="button" class="glass-btn ${btnClass}${active === 'all' ? ' active' : ''}" data-${attr}="all">All</button>`,
       ...cats.map(c =>
-        `<button type="button" class="glass-btn ${btnClass}${active === c ? ' active' : ''}" data-${attr}="${esc(c)}">${esc(categoryLabel(c))}</button>`
+        `<button type="button" class="glass-btn ${btnClass}${active === c ? ' active' : ''}" data-${attr}="${esc(c)}">${esc(labelFn(c))}</button>`
       ),
     ];
     wrap.innerHTML = btns.join('');
   };
-  build('projects-filters', 'proj-cat', 'proj-filter', _projCategory);
+  const buildKinds = (wrapId, attr, btnClass, active) => {
+    const wrap = document.getElementById(wrapId);
+    if (!wrap) return;
+    const btns = [
+      `<button type="button" class="glass-btn ${btnClass}${active === 'all' ? ' active' : ''}" data-${attr}="all">All types</button>`,
+      ...kinds.filter(k => k !== 'project').map(k =>
+        `<button type="button" class="glass-btn ${btnClass}${active === k ? ' active' : ''}" data-${attr}="${esc(k)}">${esc(entryKindLabel(k))}</button>`
+      ),
+      `<button type="button" class="glass-btn ${btnClass}${active === 'project' ? ' active' : ''}" data-${attr}="project">${esc(entryKindLabel('project'))}</button>`,
+    ];
+    wrap.innerHTML = btns.join('');
+  };
+  build('projects-filters', 'proj-cat', 'proj-filter', _projCategory, categoryLabel);
+  buildKinds('projects-kind-filters', 'proj-kind', 'proj-kind-filter', _projKind);
 }
 
 function setupDiscoverGrid() {
@@ -2093,6 +2150,16 @@ function setupProjectsSearch() {
       if (!btn) return;
       _projCategory = btn.dataset.projCat;
       wrap.querySelectorAll('.proj-filter').forEach(b => b.classList.toggle('active', b === btn));
+      renderProjects(input ? input.value : '');
+    });
+  }
+  const kindWrap = $('#projects-kind-filters');
+  if (kindWrap) {
+    kindWrap.addEventListener('click', e => {
+      const btn = e.target.closest('[data-proj-kind]');
+      if (!btn) return;
+      _projKind = btn.dataset.projKind;
+      kindWrap.querySelectorAll('.proj-kind-filter').forEach(b => b.classList.toggle('active', b === btn));
       renderProjects(input ? input.value : '');
     });
   }

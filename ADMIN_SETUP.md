@@ -48,6 +48,7 @@ For existing databases, also run:
 
 ```bash
 npx wrangler d1 execute isaac-portfolio --file=migrations/002_organizations.sql
+npx wrangler d1 execute isaac-portfolio --file=migrations/003_entry_kinds.sql
 ```
 
 ---

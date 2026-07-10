@@ -5,6 +5,9 @@ import {
   categoryLabel,
   slugifyCategory,
   DEFAULT_CATEGORIES,
+  DEFAULT_ENTRY_KINDS,
+  ENTRY_KIND_LABELS,
+  entryKindLabel,
 } from './resume-pack-schema.js';
 
 let API_BASE = '';
@@ -134,6 +137,33 @@ function renderOrganizationField(currentId, organizations) {
     <select name="organizationId">${opts}</select>
     <span class="muted small">Parent venture or employer for this project</span>
   </label>`;
+}
+
+function renderEntryKindField(kind, kindLabel) {
+  const current = kind || 'project';
+  const opts = DEFAULT_ENTRY_KINDS.map(k =>
+    `<option value="${esc(k)}" ${current === k ? 'selected' : ''}>${esc(ENTRY_KIND_LABELS[k] || k)}</option>`
+  ).join('');
+  const showCustom = current === 'custom';
+  return `
+    <label>Entry type <span class="muted small">project, life moment, gallery, or your own label</span>
+      <select name="entryKind" id="entry-kind-select">${opts}</select>
+    </label>
+    <label id="entry-kind-label-wrap" ${showCustom ? '' : 'hidden'}>Custom type label
+      <input name="entryKindLabel" id="entry-kind-label" value="${esc(kindLabel || '')}" placeholder="e.g. Our wedding, Family trip">
+      <span class="muted small">Shown on the site when type is Custom — or overrides the default label</span>
+    </label>`;
+}
+
+function wireEntryKindField() {
+  const sel = document.getElementById('entry-kind-select');
+  const wrap = document.getElementById('entry-kind-label-wrap');
+  if (!sel || !wrap) return;
+  const sync = () => {
+    wrap.hidden = sel.value !== 'custom';
+  };
+  sel.addEventListener('change', sync);
+  sync();
 }
 
 function renderCategoryField(current, categories) {
@@ -605,16 +635,16 @@ async function renderList() {
   const { projects } = await api('/api/projects');
   main.innerHTML = `
     <div class="toolbar">
-      <a href="#/projects/new" class="btn primary">+ New project</a>
+      <a href="#/projects/new" class="btn primary">+ New entry</a>
       <a href="#/data" class="btn">Import resume JSON</a>
     </div>
-    <p class="muted small" style="margin-bottom:16px">Upload photos per project via <strong>Edit</strong>. Batch resume/timeline import lives under <a href="#/data">Resume Data</a>.</p>
+    <p class="muted small" style="margin-bottom:16px">Work projects, life moments, photo galleries — upload photos per entry via <strong>Edit</strong>.</p>
     <div class="project-list">
       ${projects.length ? projects.map(p => `
         <div class="project-row glass">
           <div>
             <h3>${esc(p.title)}</h3>
-            <p class="muted small">${esc(p.slug)} · ${esc(categoryLabel(p.category))}${p.organizationId ? ` · ${esc(p.organizationId)}` : ''}${p.featuredDiscover ? ' · Discover' : ''} · ${p.media?.length || 0} media</p>
+            <p class="muted small">${esc(p.slug)} · ${esc(entryKindLabel(p.entryKind, p.entryKindLabel))}${p.organizationId ? ` · ${esc(p.organizationId)}` : ''}${p.featuredDiscover ? ' · Discover' : ''} · ${p.media?.length || 0} media</p>
           </div>
           <div style="display:flex;gap:8px;align-items:center">
             <span class="badge ${p.status === 'published' ? 'published' : ''}">${esc(p.status)}</span>
@@ -634,7 +664,8 @@ async function renderEdit(id) {
   let project = {
     title: '', slug: '', subtitle: '', description: '', tags: [], role: '', tools: [],
     year: new Date().getFullYear(), date: '', category: 'engineering', links: [],
-    status: 'draft', featured: false, featuredDiscover: false, sortOrder: 0, timelineRef: '', organizationId: '', media: [],
+    status: 'draft', featured: false, featuredDiscover: false, sortOrder: 0, timelineRef: '', organizationId: '',
+    entryKind: 'project', entryKindLabel: '', media: [],
   };
   if (id) {
     const res = await api(`/api/projects/${id}`);
@@ -651,6 +682,7 @@ async function renderEdit(id) {
       <label>Slug <span class="muted small">stable key for photos — avoid changing after upload</span>
         <input name="slug" value="${esc(project.slug)}" placeholder="auto-from-title"></label>
       <label>Subtitle<input name="subtitle" value="${esc(project.subtitle || '')}"></label>
+      ${renderEntryKindField(project.entryKind, project.entryKindLabel)}
       <label>Description<textarea name="description">${esc(project.description || project.details || '')}</textarea></label>
       ${renderTagField(tagsStr, meta.tags)}
       <label>Role<input name="role" value="${esc(project.role || '')}"></label>
@@ -701,6 +733,7 @@ async function renderEdit(id) {
 
   wireCategoryField();
   wireTagSuggestions();
+  wireEntryKindField();
 
   document.getElementById('project-form').addEventListener('submit', async e => {
     e.preventDefault();
@@ -718,6 +751,8 @@ async function renderEdit(id) {
       category: resolveCategoryFromForm(fd),
       timelineRef: fd.get('timelineRef') || null,
       organizationId: fd.get('organizationId') || null,
+      entryKind: fd.get('entryKind') || 'project',
+      entryKindLabel: fd.get('entryKindLabel') || '',
       status: fd.get('status'),
       featured: !!fd.get('featured'),
       featuredDiscover: !!fd.get('featuredDiscover'),

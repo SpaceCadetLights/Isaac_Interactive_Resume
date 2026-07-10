@@ -137,6 +137,8 @@ export function normalizeProjectForImport(p) {
     featuredDiscover: !!p.featuredDiscover,
     sortOrder: p.sortOrder ?? 0,
     organizationId: p.organizationId || p.organization_id || null,
+    entryKind: p.entryKind || p.entry_kind || 'project',
+    entryKindLabel: p.entryKindLabel || p.entry_kind_label || '',
     timelineRef: p.timelineRef || p.timeline_ref || null,
   };
 }
